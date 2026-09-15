@@ -74,10 +74,19 @@ jobs:
     needs: [binaries, image]
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/download-artifact@v4
-        with:
-          merge-multiple: true
-          path: dist
+      - name: download artifacts
+        run: |
+          mkdir -p dist
+          for name in goacos-linux-amd64 goacos-linux-arm64 goacos-darwin-amd64 goacos-darwin-arm64; do
+            gh api "repos/${GITHUB_REPOSITORY}/actions/artifacts?name=${name}" --jq '.artifacts[0].id' > /dev/null
+            gh run download "${GITHUB_RUN_ID}" -n "${name}" -D "dist/${name}"
+          done
+          # flatten: linux artifacts are already tar.gz; keep all files at dist root
+          find dist -type f -exec mv {} dist/ \;
+          find dist -mindepth 1 -type d -empty -delete
+          ls -la dist/
+        env:
+          GH_TOKEN: ${{ github.token }}
       - uses: softprops/action-gh-release@v2
         with:
           files: dist/*
