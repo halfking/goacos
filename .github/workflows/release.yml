@@ -76,13 +76,14 @@ jobs:
     steps:
       - name: download artifacts
         run: |
-          mkdir -p dist
+          mkdir -p dist raw
           for name in goacos-linux-amd64 goacos-linux-arm64 goacos-darwin-amd64 goacos-darwin-arm64; do
-            gh run download "${GITHUB_RUN_ID}" -R "${GITHUB_REPOSITORY}" -n "${name}" -D "dist/${name}"
+            gh run download "${GITHUB_RUN_ID}" -R "${GITHUB_REPOSITORY}" -n "${name}" -D "raw/${name}"
           done
-          # flatten: linux artifacts are already tar.gz; keep all files at dist root
-          find dist -type f -exec mv {} dist/ \;
-          find dist -mindepth 1 -type d -empty -delete
+          # flatten into dist/ (download dirs share names with their payload,
+          # so mv out of a separate raw/ tree to avoid nesting)
+          find raw -type f -exec mv {} dist/ \;
+          rm -rf raw
           ls -la dist/
         env:
           GH_TOKEN: ${{ github.token }}
