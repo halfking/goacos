@@ -172,13 +172,17 @@ func (s *Server) namespaceDeleteV2(w http.ResponseWriter, r *http.Request) {
 
 // serverState handles GET /nacos/v1/console/server/state.
 func (s *Server) serverState(w http.ResponseWriter, r *http.Request) {
+	runtime := buildinfo.RuntimeInfo()
 	writeJSON(w, http.StatusOK, map[string]any{
 		"consoleUiEnabled": true,
 		"functionMode":     "ALL",
 		"version":          buildinfo.Version,
+		"gitCommit":        buildinfo.GitCommit,
+		"buildDate":        buildinfo.BuildDate,
 		"compatibility":    buildinfo.NacosAPICompat,
 		"standaloneMode":   true,
 		"authEnabled":      s.Cfg.AuthEnabled,
+		"runtime":          runtime,
 	})
 }
 

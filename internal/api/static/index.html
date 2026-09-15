@@ -311,9 +311,39 @@ async function removeUser(u){ await del(`/nacos/v1/auth/users?username=${u}`); t
 async function loadAbout(){
   try {
     const s = await get('/nacos/v1/console/server/state');
+    const r = s.runtime || {};
+    const commit = s.gitCommit && s.gitCommit !== 'unknown' ? ` (${s.gitCommit.substring(0,7)})` : '';
+    const uptimeMin = Math.floor((r.uptimeSeconds || 0) / 60);
+    const uptimeHr = Math.floor(uptimeMin / 60);
+    const uptimeDisplay = uptimeHr > 0 ? `${uptimeHr}h ${uptimeMin % 60}m` : `${uptimeMin}m`;
+    
     document.getElementById('about-body').innerHTML =
-      `goacos version <b>${s.version}</b><br>Nacos API compatibility: <b>${s.compatibility}</b><br>auth enabled: ${s.authEnabled}<br>
-       Lightweight Nacos-compatible config & discovery server in Go. Storage: MySQL. Docs: README.md`;
+      `<div style="font-family:ui-monospace,SFMono-Regular,Consolas,monospace;line-height:1.8;">
+        <div style="font-size:15px;font-weight:700;margin-bottom:8px;">goacos <span style="color:#2f6fed;">${s.version}</span>${commit}</div>
+        <div style="color:#6b7280;font-size:13px;margin-bottom:12px;">
+          Build: ${s.buildDate || 'dev'} | Go: ${r.goVersion || 'unknown'}
+        </div>
+        <div style="color:#6b7280;font-size:13px;margin-bottom:12px;">
+          Nacos API: <b>${s.compatibility}</b>
+        </div>
+        <div style="background:#f8fafc;border:1px solid #e3e8ef;border-radius:8px;padding:12px;margin-bottom:12px;">
+          <div style="font-weight:600;margin-bottom:6px;color:#1f2937;">Runtime Metrics</div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;font-size:12px;">
+            <div>Memory: <b>${r.allocMB || 0} MB</b> (alloc)</div>
+            <div>System: <b>${r.sysMB || 0} MB</b></div>
+            <div>Goroutines: <b>${r.numGoroutine || 0}</b></div>
+            <div>GC cycles: <b>${r.numGC || 0}</b></div>
+            <div>CPU cores: <b>${r.numCPU || 0}</b></div>
+            <div>Uptime: <b>${uptimeDisplay}</b></div>
+          </div>
+        </div>
+        <div style="color:#6b7280;font-size:13px;">
+          Auth: <b>${s.authEnabled ? 'enabled' : 'disabled'}</b> | Storage: <b>MySQL</b>
+        </div>
+        <div style="color:#9ca3af;font-size:12px;margin-top:10px;">
+          Lightweight Nacos-compatible config & discovery server in Go.
+        </div>
+      </div>`;
   } catch(e){ document.getElementById('about-body').textContent = e.message; }
 }
 
