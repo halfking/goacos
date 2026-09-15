@@ -1,0 +1,324 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>goacos console</title>
+<style>
+  :root { --bg:#f5f7fa; --card:#fff; --line:#e3e8ef; --ink:#1f2937; --muted:#6b7280; --brand:#2f6fed; }
+  * { box-sizing:border-box; margin:0; padding:0; }
+  body { font:14px/1.5 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"PingFang SC","Microsoft YaHei",sans-serif; background:var(--bg); color:var(--ink); }
+  header { display:flex; align-items:center; gap:16px; padding:10px 20px; background:var(--card); border-bottom:1px solid var(--line); position:sticky; top:0; z-index:5; }
+  header h1 { font-size:16px; font-weight:700; }
+  header h1 span { color:var(--brand); }
+  nav { display:flex; gap:4px; flex:1; }
+  nav button { border:0; background:none; padding:8px 14px; border-radius:6px; cursor:pointer; color:var(--muted); font-size:14px; }
+  nav button.active { background:#eaf1ff; color:var(--brand); font-weight:600; }
+  .userbox { color:var(--muted); display:flex; gap:8px; align-items:center; }
+  .userbox input { width:110px; }
+  main { padding:20px; max-width:1200px; margin:0 auto; }
+  .card { background:var(--card); border:1px solid var(--line); border-radius:10px; padding:16px; margin-bottom:16px; }
+  .card h2 { font-size:15px; margin-bottom:10px; }
+  .toolbar { display:flex; gap:8px; margin-bottom:12px; flex-wrap:wrap; align-items:center; }
+  input, select, textarea { border:1px solid var(--line); border-radius:6px; padding:6px 10px; font:inherit; }
+  textarea { width:100%; min-height:180px; font-family:ui-monospace,SFMono-Regular,Consolas,monospace; }
+  button.btn { border:1px solid var(--line); background:#fff; border-radius:6px; padding:6px 12px; cursor:pointer; }
+  button.btn.primary { background:var(--brand); border-color:var(--brand); color:#fff; }
+  button.btn.danger { color:#d33; }
+  table { width:100%; border-collapse:collapse; }
+  th, td { text-align:left; padding:8px 10px; border-bottom:1px solid var(--line); vertical-align:top; word-break:break-all; }
+  th { color:var(--muted); font-weight:600; background:#fafbfc; }
+  .tag { display:inline-block; background:#eef4ff; color:var(--brand); border-radius:4px; padding:1px 6px; font-size:12px; margin-right:4px; }
+  .muted { color:var(--muted); }
+  .hidden { display:none; }
+  .toast { position:fixed; right:20px; bottom:20px; background:#111827; color:#fff; padding:10px 16px; border-radius:8px; opacity:0; transition:.2s; z-index:99; }
+  .toast.show { opacity:.95; }
+  a { color:var(--brand); text-decoration:none; }
+</style>
+</head>
+<body>
+<header>
+  <h1>goa<span>cos</span> console</h1>
+  <nav id="tabs">
+    <button data-tab="services" class="active">Services</button>
+    <button data-tab="configs">Configurations</button>
+    <button data-tab="namespaces">Namespaces</button>
+    <button data-tab="users">Users</button>
+    <button data-tab="about">About</button>
+  </nav>
+  <div class="userbox">
+    <span id="whoami" class="muted"></span>
+    <input id="login-user" placeholder="user">
+    <input id="login-pass" type="password" placeholder="password">
+    <button class="btn primary" onclick="doLogin()">Login</button>
+    <button class="btn" onclick="doLogout()">Logout</button>
+  </div>
+</header>
+<main>
+  <section id="tab-services">
+    <div class="card">
+      <h2>Services</h2>
+      <div class="toolbar">
+        <input id="svc-ns" placeholder="namespace (blank=public)" style="width:180px">
+        <input id="svc-group" placeholder="group (blank=all)" style="width:150px">
+        <button class="btn primary" onclick="loadServices()">Refresh</button>
+      </div>
+      <table id="svc-table"><thead><tr><th>Service</th><th>Group</th><th>Clusters</th><th>Instances</th><th>Protect</th><th></th></tr></thead><tbody></tbody></table>
+    </div>
+    <div class="card hidden" id="inst-card">
+      <h2>Instances of <span id="inst-svc"></span></h2>
+      <table id="inst-table"><thead><tr><th>IP</th><th>Port</th><th>Cluster</th><th>Healthy</th><th>Weight</th><th>Ephemeral</th><th>Metadata</th><th></th></tr></thead><tbody></tbody></table>
+    </div>
+  </section>
+
+  <section id="tab-configs" class="hidden">
+    <div class="card">
+      <h2>Configurations</h2>
+      <div class="toolbar">
+        <input id="cfg-ns" placeholder="namespace (blank=public)" style="width:180px">
+        <input id="cfg-dataid" placeholder="dataId contains…" style="width:180px">
+        <input id="cfg-group" placeholder="group contains…" style="width:150px">
+        <button class="btn primary" onclick="loadConfigs()">Search</button>
+        <button class="btn" onclick="editConfig(null)">+ New config</button>
+      </div>
+      <table id="cfg-table"><thead><tr><th>Data ID</th><th>Group</th><th>Type</th><th>Modified</th><th>Actions</th></tr></thead><tbody></tbody></table>
+    </div>
+    <div class="card hidden" id="editor-card">
+      <h2 id="editor-title">Config</h2>
+      <div class="toolbar">
+        <input id="ed-dataid" placeholder="dataId" style="width:220px">
+        <input id="ed-group" placeholder="group" value="DEFAULT_GROUP" style="width:170px">
+        <input id="ed-ns" placeholder="namespace (blank=public)" style="width:180px">
+        <select id="ed-type"><option>yaml</option><option>properties</option><option>json</option><option>text</option><option>xml</option><option>html</option></select>
+      </div>
+      <textarea id="ed-content" spellcheck="false"></textarea>
+      <div class="toolbar" style="margin-top:10px">
+        <button class="btn primary" onclick="publishConfig()">Publish</button>
+        <button class="btn" onclick="hideEditor()">Close</button>
+      </div>
+    </div>
+  </section>
+
+  <section id="tab-namespaces" class="hidden">
+    <div class="card">
+      <h2>Namespaces</h2>
+      <div class="toolbar">
+        <input id="ns-id" placeholder="namespace id" style="width:170px">
+        <input id="ns-name" placeholder="name" style="width:150px">
+        <input id="ns-desc" placeholder="description" style="width:220px">
+        <button class="btn primary" onclick="createNamespace()">Create</button>
+        <button class="btn" onclick="loadNamespaces()">Refresh</button>
+      </div>
+      <table id="ns-table"><thead><tr><th>ID</th><th>Name</th><th>Description</th><th>Configs</th><th></th></tr></thead><tbody></tbody></table>
+    </div>
+  </section>
+
+  <section id="tab-users" class="hidden">
+    <div class="card">
+      <h2>Users (admin only)</h2>
+      <div class="toolbar">
+        <input id="u-name" placeholder="username" style="width:150px">
+        <input id="u-pass" placeholder="password" style="width:150px">
+        <button class="btn primary" onclick="createUser()">Create</button>
+        <button class="btn" onclick="loadUsers()">Refresh</button>
+      </div>
+      <table id="u-table"><thead><tr><th>Username</th><th>Roles</th><th></th></tr></thead><tbody></tbody></table>
+    </div>
+  </section>
+
+  <section id="tab-about" class="hidden">
+    <div class="card">
+      <h2>About goacos</h2>
+      <p id="about-body" class="muted">loading…</p>
+    </div>
+  </section>
+</main>
+<div class="toast" id="toast"></div>
+<script>
+let token = localStorage.getItem('goacos_token') || '';
+let user  = localStorage.getItem('goacos_user') || '';
+
+function toast(msg){ const t=document.getElementById('toast'); t.textContent=msg; t.classList.add('show'); setTimeout(()=>t.classList.remove('show'),2200); }
+function api(path, opts={}){
+  opts = opts || {};
+  const sep = path.includes('?') ? '&' : '?';
+  const url = token ? path + sep + 'accessToken=' + encodeURIComponent(token) : path;
+  return fetch(url, opts).then(async r => {
+    const text = await r.text();
+    let data; try { data = JSON.parse(text); } catch { data = text; }
+    if (!r.ok) throw new Error((data && data.message) || ('HTTP ' + r.status));
+    return data;
+  });
+}
+function get(path){ return api(path); }
+function post(path, body){
+  return api(path, { method:'POST', headers:{'Content-Type':'application/x-www-form-urlencoded'},
+    body: new URLSearchParams(body||{}).toString() });
+}
+function del(path){ return api(path, { method:'DELETE' }); }
+
+async function doLogin(){
+  const u = document.getElementById('login-user').value.trim();
+  const p = document.getElementById('login-pass').value;
+  const res = await post('/nacos/v1/auth/users/login', { username:u, password:p });
+  const t = res.accessToken || (res.data && res.data.accessToken);
+  if (!t) { toast('login failed'); return; }
+  token = t; user = u;
+  localStorage.setItem('goacos_token', t); localStorage.setItem('goacos_user', u);
+  document.getElementById('whoami').textContent = user ? ('signed in: '+user) : '';
+  toast('login ok');
+}
+function doLogout(){ token=''; user=''; localStorage.removeItem('goacos_token'); localStorage.removeItem('goacos_user');
+  document.getElementById('whoami').textContent=''; toast('logged out'); }
+
+document.querySelectorAll('#tabs button').forEach(b => b.onclick = () => {
+  document.querySelectorAll('#tabs button').forEach(x=>x.classList.remove('active'));
+  b.classList.add('active');
+  ['services','configs','namespaces','users','about'].forEach(t=>
+    document.getElementById('tab-'+t).classList.toggle('hidden', t!==b.dataset.tab));
+  if (b.dataset.tab==='services') loadServices();
+  if (b.dataset.tab==='configs') loadConfigs();
+  if (b.dataset.tab==='namespaces') loadNamespaces();
+  if (b.dataset.tab==='users') loadUsers();
+  if (b.dataset.tab==='about') loadAbout();
+});
+
+async function loadServices(){
+  const ns = document.getElementById('svc-ns').value.trim();
+  const g = document.getElementById('svc-group').value.trim();
+  const d = await get(`/nacos/v1/ns/service/list?pageNo=1&pageSize=100&namespaceId=${encodeURIComponent(ns)}&groupName=${encodeURIComponent(g)}`);
+  const tb = document.querySelector('#svc-table tbody'); tb.innerHTML='';
+  (d.doms||[]).forEach(name=>{
+    const tr = document.createElement('tr');
+    tr.innerHTML = `<td><a href="javascript:showInstances('${encodeURIComponent(ns)}','${encodeURIComponent(g||'DEFAULT_GROUP')}','${encodeURIComponent(name)}')">${name}</a></td>
+      <td>${g||'DEFAULT_GROUP'}</td><td class="muted">-</td><td class="muted">-</td><td class="muted">0</td><td></td>`;
+    tb.appendChild(tr);
+  });
+  if(!(d.doms||[]).length) tb.innerHTML='<tr><td colspan="6" class="muted">no services</td></tr>';
+}
+async function showInstances(ns, g, name){
+  const d = await get(`/nacos/v1/ns/instance/list?serviceName=${name}&groupName=${g}&namespaceId=${ns}`);
+  document.getElementById('inst-card').classList.remove('hidden');
+  document.getElementById('inst-svc').textContent = d.name || name;
+  const tb = document.querySelector('#inst-table tbody'); tb.innerHTML='';
+  (d.hosts||[]).forEach(h=>{
+    const tr = document.createElement('tr');
+    tr.innerHTML = `<td>${h.ip}</td><td>${h.port}</td><td>${h.clusterName}</td>
+      <td>${h.healthy?'<span class="tag">UP</span>':'<span class="tag" style="background:#fee2e2;color:#d33">DOWN</span>'}</td>
+      <td>${h.weight}</td><td>${h.ephemeral}</td><td class="muted">${JSON.stringify(h.metadata)}</td>
+      <td><button class="btn danger" onclick="killInstance('${ns}','${g}','${name}','${h.clusterName}','${h.ip}',${h.port})">Remove</button></td>`;
+    tb.appendChild(tr);
+  });
+  if(!(d.hosts||[]).length) tb.innerHTML='<tr><td colspan="8" class="muted">no instances</td></tr>';
+}
+async function killInstance(ns,g,name,cluster,ip,port){
+  await del(`/nacos/v1/ns/instance?serviceName=${encodeURIComponent(name)}&groupName=${encodeURIComponent(g)}&namespaceId=${encodeURIComponent(ns)}&clusterName=${cluster}&ip=${ip}&port=${port}&ephemeral=true`);
+  toast('instance removed'); showInstances(ns,g,name);
+}
+
+async function loadConfigs(){
+  const ns = document.getElementById('cfg-ns').value.trim();
+  const di = document.getElementById('cfg-dataid').value.trim();
+  const g = document.getElementById('cfg-group').value.trim();
+  const d = await get(`/nacos/v1/cs/configs?search=blur&pageNo=1&pageSize=100&tenant=${encodeURIComponent(ns)}&dataId=${encodeURIComponent(di)}&group=${encodeURIComponent(g)}`);
+  const tb = document.querySelector('#cfg-table tbody'); tb.innerHTML='';
+  (d.pageItems||[]).forEach(c=>{
+    const tr = document.createElement('tr');
+    tr.innerHTML = `<td><a href="javascript:editConfig('${encodeURIComponent(c.dataId)}','${encodeURIComponent(c.group)}','${encodeURIComponent(c.tenantId||c.namespaceId||'')}')">${c.dataId}</a></td>
+      <td>${c.group}</td><td class="muted">${c.type||''}</td><td class="muted">${c.modifyDate||''}</td>
+      <td><button class="btn danger" onclick="removeConfig('${encodeURIComponent(c.dataId)}','${encodeURIComponent(c.group)}','${encodeURIComponent(c.tenantId||c.namespaceId||'')}')">Delete</button></td>`;
+    tb.appendChild(tr);
+  });
+  if(!(d.pageItems||[]).length) tb.innerHTML='<tr><td colspan="5" class="muted">no configs</td></tr>';
+}
+function hideEditor(){ document.getElementById('editor-card').classList.add('hidden'); }
+async function editConfig(dataId, group, ns){
+  document.getElementById('editor-card').classList.remove('hidden');
+  document.getElementById('ed-dataid').value = dataId ? decodeURIComponent(dataId) : '';
+  document.getElementById('ed-group').value = group ? decodeURIComponent(group) : 'DEFAULT_GROUP';
+  document.getElementById('ed-ns').value = ns ? decodeURIComponent(ns) : '';
+  document.getElementById('ed-content').value = '';
+  if (dataId){
+    const res = await fetch(`/nacos/v1/cs/configs?dataId=${dataId}&group=${group}&tenant=${ns||''}${token?'&accessToken='+encodeURIComponent(token):''}`);
+    document.getElementById('ed-content').value = await res.text();
+  }
+}
+async function publishConfig(){
+  const body = {
+    dataId: document.getElementById('ed-dataid').value.trim(),
+    group: document.getElementById('ed-group').value.trim(),
+    tenant: document.getElementById('ed-ns').value.trim(),
+    type: document.getElementById('ed-type').value,
+    content: document.getElementById('ed-content').value,
+  };
+  if(!body.dataId || !body.group){ toast('dataId and group required'); return; }
+  const ok = await post('/nacos/v1/cs/configs', body);
+  toast(ok === true || ok === 'true' ? 'published' : 'publish failed: '+ok);
+  loadConfigs();
+}
+async function removeConfig(dataId, group, ns){
+  await del(`/nacos/v1/cs/configs?dataId=${dataId}&group=${group}&tenant=${ns||''}`);
+  toast('deleted'); loadConfigs();
+}
+
+async function loadNamespaces(){
+  const d = await get('/nacos/v1/console/namespaces');
+  const list = d.data || [];
+  const tb = document.querySelector('#ns-table tbody'); tb.innerHTML='';
+  list.forEach(n=>{
+    const tr = document.createElement('tr');
+    tr.innerHTML = `<td>${n.namespace}</td><td>${n.namespaceShowName}</td><td class="muted">${n.namespaceDesc||''}</td>
+      <td>${n.configCount}</td>
+      <td>${n.namespace?`<button class="btn danger" onclick="removeNamespace('${encodeURIComponent(n.namespace)}')">Delete</button>`:''}</td>`;
+    tb.appendChild(tr);
+  });
+}
+async function createNamespace(){
+  const res = await post('/nacos/v1/console/namespaces', {
+    customNamespaceId: document.getElementById('ns-id').value.trim(),
+    customNamespaceName: document.getElementById('ns-name').value.trim(),
+    namespaceDesc: document.getElementById('ns-desc').value.trim(),
+  });
+  toast(res && res.code===200 ? 'created' : 'failed: '+(res && res.message));
+  loadNamespaces();
+}
+async function removeNamespace(ns){
+  await del(`/nacos/v1/console/namespaces?namespaceId=${ns}`); toast('deleted'); loadNamespaces();
+}
+
+async function loadUsers(){
+  try {
+    const d = await get('/nacos/v1/auth/users?pageNo=1&pageSize=100');
+    const list = d.pageItems || (d.data && d.data.pageItems) || [];
+    const tb = document.querySelector('#u-table tbody'); tb.innerHTML='';
+    list.forEach(u=>{
+      const tr = document.createElement('tr');
+      tr.innerHTML = `<td>${u.username}</td><td class="muted">${(u.roles||[]).join(', ')}</td>
+        <td><button class="btn danger" onclick="removeUser('${u.username}')">Delete</button></td>`;
+      tb.appendChild(tr);
+    });
+  } catch(e){ document.querySelector('#u-table tbody').innerHTML = `<tr><td colspan="3" class="muted">${e.message}</td></tr>`; }
+}
+async function createUser(){
+  await post('/nacos/v1/auth/users', {
+    username: document.getElementById('u-name').value.trim(),
+    password: document.getElementById('u-pass').value,
+  });
+  toast('user created'); loadUsers();
+}
+async function removeUser(u){ await del(`/nacos/v1/auth/users?username=${u}`); toast('deleted'); loadUsers(); }
+
+async function loadAbout(){
+  try {
+    const s = await get('/nacos/v1/console/server/state');
+    document.getElementById('about-body').innerHTML =
+      `goacos version <b>${s.version}</b><br>Nacos API compatibility: <b>${s.compatibility}</b><br>auth enabled: ${s.authEnabled}<br>
+       Lightweight Nacos-compatible config & discovery server in Go. Storage: MySQL. Docs: README.md`;
+  } catch(e){ document.getElementById('about-body').textContent = e.message; }
+}
+
+if (user) document.getElementById('whoami').textContent = 'signed in: '+user;
+loadServices();
+</script>
+</body>
+</html>

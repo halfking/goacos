@@ -1,0 +1,5 @@
+/goacos
+/goacos-linux-*
+*.tar.gz
+*.log
+.env.goacos
