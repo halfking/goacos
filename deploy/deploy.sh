@@ -13,12 +13,15 @@
 #   deploy/deploy.sh --auth --admin-pass S3cret
 #
 # Useful flags: --image IMG --port 8848 --name goacos --db goacos --force --list-only
+# Database engine: --db-type mysql|postgres|auto (default auto: discover either
+# engine; the resolved engine is passed to the container as GOACOS_DB_TYPE).
 set -euo pipefail
 
 IMAGE="${GOACOS_IMAGE:-ghcr.io/halfking/goacos:latest}"
 NAME=goacos
 PORT=8848
 DBNAME=goacos
+DB_TYPE="${GOACOS_DB_TYPE:-auto}"   # mysql | postgres | auto
 AUTH_ENABLED=false
 ADMIN_USER="${GOACOS_ADMIN_USERNAME:-nacos}"
 ADMIN_PASS="${GOACOS_ADMIN_PASSWORD:-nacos}"
@@ -37,6 +40,7 @@ while [ $# -gt 0 ]; do
     --name) NAME="$2"; shift 2;;
     --db) DBNAME="$2"; shift 2;;
     --db-name) DBNAME="$2"; shift 2;;
+    --db-type) DB_TYPE="$2"; shift 2;;
     --host) DB_HOST="$2"; shift 2;;
     --port-db) DB_PORT="$2"; shift 2;;
     --user) DB_USER="$2"; shift 2;;
@@ -71,20 +75,25 @@ fi
 
 # ---------------------------------------------------------------- discovery
 if [ -z "$DB_HOST" ]; then
-  say "==> discovering MySQL servers (docker containers, localhost${CIDR:+, subnet $CIDR})"
+  say "==> discovering database servers (docker containers, localhost${CIDR:+, subnet $CIDR}; engine=$DB_TYPE)"
   DISCOVER_ARGS=(db discover --best)
+  case "$DB_TYPE" in
+    mysql|postgres) DISCOVER_ARGS+=(--db-type "$DB_TYPE");;
+  esac
   [ -n "$CIDR" ] && DISCOVER_ARGS+=(--cidr "$CIDR")
-  OUT=$("$BIN" "${DISCOVER_ARGS[@]}") || die "no matching MySQL server found (pass --host/--user/--password, or start one: docker run -d -e MYSQL_ROOT_PASSWORD=... -p 3306:3306 mysql:8.0)"
+  OUT=$("$BIN" "${DISCOVER_ARGS[@]}") || die "no matching database server found (pass --host/--user/--password, or start one: docker run -d -e MYSQL_ROOT_PASSWORD=... -p 3306:3306 mysql:8.0)"
   [ "$LIST_ONLY" = 1 ] && { say "$OUT"; exit 0; }
+  DB_TYPE=$(echo "$OUT" | python3 -c 'import json,sys; print(json.load(sys.stdin)["type"])')
   DB_HOST=$(echo "$OUT" | python3 -c 'import json,sys; print(json.load(sys.stdin)["host"])')
   DB_PORT=$(echo "$OUT"  | python3 -c 'import json,sys; print(json.load(sys.stdin)["port"])')
   DB_USER=$(echo "$OUT"  | python3 -c 'import json,sys; print(json.load(sys.stdin)["user"])')
   DB_PASS=$(echo "$OUT"  | python3 -c 'import json,sys; print(json.load(sys.stdin)["password"])')
 fi
+case "$DB_TYPE" in mysql|postgres) ;; *) DB_TYPE=mysql ;; esac
 
-say "==> attaching to mysql $DB_HOST:$DB_PORT (db=$DBNAME, user=$DB_USER)"
-"$BIN" db verify --host "$DB_HOST" --port "$DB_PORT" --user "$DB_USER" --password "$DB_PASS" --db "$DBNAME"
-"$BIN" db init   --host "$DB_HOST" --port "$DB_PORT" --user "$DB_USER" --password "$DB_PASS" --db "$DBNAME"
+say "==> attaching to $DB_TYPE $DB_HOST:$DB_PORT (db=$DBNAME, user=$DB_USER)"
+"$BIN" db verify --db-type "$DB_TYPE" --host "$DB_HOST" --port "$DB_PORT" --user "$DB_USER" --password "$DB_PASS" --db "$DBNAME"
+"$BIN" db init   --db-type "$DB_TYPE" --host "$DB_HOST" --port "$DB_PORT" --user "$DB_USER" --password "$DB_PASS" --db "$DBNAME"
 
 # ---------------------------------------------------------------- reachability
 # The goacos container must reach MySQL. When the host address is loopback,
@@ -114,6 +123,7 @@ fi
 say "==> starting $NAME ($IMAGE) on :$PORT"
 docker run -d --name "$NAME" \
   -p "$PORT:8848" \
+  -e GOACOS_DB_TYPE="$DB_TYPE" \
   -e MYSQL_HOST="$CONTAINER_HOST" -e MYSQL_PORT="$DB_PORT" \
   -e MYSQL_DB="$DBNAME" -e MYSQL_USER="$DB_USER" -e MYSQL_PASSWORD="$DB_PASS" \
   -e GOACOS_AUTH_ENABLED="$AUTH_ENABLED" \
@@ -131,7 +141,7 @@ for i in $(seq 1 30); do
     say "  open api     http://127.0.0.1:$PORT/nacos/v1/... /nacos/v2/..."
     say "  health       http://127.0.0.1:$PORT/nacos/actuator/health"
     say "  admin        $ADMIN_USER / $ADMIN_PASS (change via GOACOS_ADMIN_PASSWORD)"
-    say "  mysql        $DB_HOST:$DB_PORT/$DBNAME"
+    say "  database     $DB_TYPE $DB_HOST:$DB_PORT/$DBNAME"
     say "  logs         docker logs -f $NAME"
     exit 0
   fi

@@ -20,6 +20,7 @@ services:
       mysql:
         condition: service_healthy
     environment:
+      GOACOS_DB_TYPE: mysql             # or use docker-compose.postgres.yml
       MYSQL_HOST: mysql
       MYSQL_PORT: "3306"
       MYSQL_DB: goacos

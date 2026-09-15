@@ -1,20 +1,39 @@
 #!/usr/bin/env bash
-# goacos end-to-end acceptance: boots (or reuses) a MySQL 8 container, starts
-# goacos against a fresh database, and drives the Nacos-compatible API surface.
-# Usage: scripts/e2e.sh [--keep]
+# goacos end-to-end acceptance: boots (or reuses) a MySQL 8 / PostgreSQL 16
+# container, starts goacos against a fresh database, and drives the
+# Nacos-compatible API surface.
+# Usage: E2E_DB=mysql|postgres scripts/e2e.sh [--keep]
 set -uo pipefail
 
 KEEP=0
 [ "${1:-}" = "--keep" ] && KEEP=1
 
+ENGINE="${E2E_DB:-mysql}"
+case "$ENGINE" in
+  mysql)    ;;
+  postgres) ;;
+  *) echo "E2E_DB must be mysql or postgres (got: $ENGINE)"; exit 2;;
+esac
+
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 BIN=/tmp/goacos-e2e-server
-MYSQL_NAME=goacos-e2e-mysql
-MYSQL_PORT=${MYSQL_PORT:-13310}
-MYSQL_PASS=${MYSQL_PASS:-e2eroot}
 HTTP_PORT=${HTTP_PORT:-18848}
 DB="goacos_e2e_$(date +%s)"
 PASS=0; FAIL=0
+
+if [ "$ENGINE" = mysql ]; then
+  DB_CONTAINER=goacos-e2e-mysql
+  DB_PORT=${MYSQL_PORT:-13310}
+  DB_PASS=${MYSQL_PASS:-e2eroot}
+  DB_USER=root
+  DB_IMAGE=mysql:8.0
+else
+  DB_CONTAINER=goacos-e2e-pg
+  DB_PORT=${PG_PORT:-15432}
+  DB_PASS=${PG_PASS:-e2eroot}
+  DB_USER=postgres
+  DB_IMAGE=postgres:16-alpine
+fi
 
 say()  { printf '%s\n' "$*"; }
 ok()   { PASS=$((PASS+1)); say "  PASS: $1"; }
@@ -24,8 +43,9 @@ check(){ if [ "$2" = "$3" ]; then ok "$1"; else bad "$1 (want '$3' got '$2')"; f
 cleanup() {
   [ -n "${SRV_PID:-}" ] && kill "$SRV_PID" 2>/dev/null
   [ -n "${SRV2_PID:-}" ] && kill "$SRV2_PID" 2>/dev/null
+  [ -n "${BEATER_PID:-}" ] && kill "$BEATER_PID" 2>/dev/null
   if [ "$KEEP" != 1 ]; then
-    docker rm -f "$MYSQL_NAME" >/dev/null 2>&1
+    docker rm -f "$DB_CONTAINER" >/dev/null 2>&1
     [ -n "${SRV_LOG:-}" ] && rm -f "$SRV_LOG"
   fi
 }
@@ -44,27 +64,46 @@ for P in "$HTTP_PORT" "$((HTTP_PORT+1))"; do
   fi
 done
 
-say "== mysql =="
-if ! nc -z 127.0.0.1 "$MYSQL_PORT" 2>/dev/null; then
-  say "  starting mysql container on :$MYSQL_PORT"
-  docker run -d --name "$MYSQL_NAME" -e MYSQL_ROOT_PASSWORD="$MYSQL_PASS" \
-    -p "127.0.0.1:$MYSQL_PORT:3306" mysql:8.0 >/dev/null || exit 1
-  for i in $(seq 1 60); do
-    docker exec "$MYSQL_NAME" mysqladmin ping -uroot -p"$MYSQL_PASS" --silent >/dev/null 2>&1 && break
-    sleep 2
-  done
+say "== database ($ENGINE) =="
+if ! nc -z 127.0.0.1 "$DB_PORT" 2>/dev/null; then
+  say "  starting $DB_IMAGE container on :$DB_PORT"
+  if [ "$ENGINE" = mysql ]; then
+    docker run -d --name "$DB_CONTAINER" -e MYSQL_ROOT_PASSWORD="$DB_PASS" \
+      -p "127.0.0.1:$DB_PORT:3306" "$DB_IMAGE" >/dev/null || exit 1
+    for i in $(seq 1 60); do
+      docker exec "$DB_CONTAINER" mysqladmin ping -uroot -p"$DB_PASS" --silent >/dev/null 2>&1 && break
+      sleep 2
+    done
+  else
+    docker run -d --name "$DB_CONTAINER" -e POSTGRES_PASSWORD="$DB_PASS" \
+      -p "127.0.0.1:$DB_PORT:5432" "$DB_IMAGE" >/dev/null || exit 1
+    for i in $(seq 1 60); do
+      docker exec "$DB_CONTAINER" pg_isready -U postgres >/dev/null 2>&1 && break
+      sleep 1
+    done
+  fi
 fi
-docker exec "$MYSQL_NAME" mysql -uroot -p"$MYSQL_PASS" -e "SELECT 1" >/dev/null 2>&1 || {
-  say "mysql not reachable; container status/logs:"
-  docker ps -a --format '{{.Names}}\t{{.Status}}' | grep "$MYSQL_NAME" || true
-  docker logs --tail 20 "$MYSQL_NAME" 2>&1 || true
-  exit 1
-}
+if [ "$ENGINE" = mysql ]; then
+  docker exec "$DB_CONTAINER" mysql -uroot -p"$DB_PASS" -e "SELECT 1" >/dev/null 2>&1 || {
+    say "mysql not reachable; container status/logs:"
+    docker ps -a --format '{{.Names}}\t{{.Status}}' | grep "$DB_CONTAINER" || true
+    docker logs --tail 20 "$DB_CONTAINER" 2>&1 || true
+    exit 1
+  }
+else
+  docker exec "$DB_CONTAINER" psql -U postgres -c "SELECT 1" >/dev/null 2>&1 || {
+    say "postgres not reachable; container status/logs:"
+    docker ps -a --format '{{.Names}}\t{{.Status}}' | grep "$DB_CONTAINER" || true
+    docker logs --tail 20 "$DB_CONTAINER" 2>&1 || true
+    exit 1
+  }
+fi
 
 say "== start goacos (fast sweep for lifecycle test) =="
 SRV_LOG=/tmp/goacos-e2e-server.log
-GOACOS_MYSQL_HOST=127.0.0.1 GOACOS_MYSQL_PORT=$MYSQL_PORT GOACOS_MYSQL_DB=$DB \
-GOACOS_MYSQL_USER=root GOACOS_MYSQL_PASSWORD="$MYSQL_PASS" GOACOS_PORT=$HTTP_PORT \
+GOACOS_DB_TYPE=$ENGINE \
+GOACOS_MYSQL_HOST=127.0.0.1 GOACOS_MYSQL_PORT=$DB_PORT GOACOS_MYSQL_DB=$DB \
+GOACOS_MYSQL_USER=$DB_USER GOACOS_MYSQL_PASSWORD="$DB_PASS" GOACOS_PORT=$HTTP_PORT \
 GOACOS_HEARTBEAT_TIMEOUT_MS=2000 GOACOS_EPHEMERAL_DELETE_AFTER_MS=4000 \
 GOACOS_SWEEP_INTERVAL_MS=1000 \
 "$BIN" serve >"$SRV_LOG" 2>&1 &
@@ -73,8 +112,13 @@ B="http://127.0.0.1:$HTTP_PORT"
 
 for i in $(seq 1 20); do curl -sf "$B/nacos/actuator/health" >/dev/null && break; sleep 0.5; done
 check "health" "$(curl -s -o /dev/null -w '%{http_code}' "$B/nacos/actuator/health")" "200"
-docker exec "$MYSQL_NAME" mysql -uroot -p"$MYSQL_PASS" -e "USE $DB; SHOW TABLES" 2>/dev/null | grep -q config_info \
-  && ok "auto-created database + schema" || bad "auto-created database + schema"
+if [ "$ENGINE" = mysql ]; then
+  docker exec "$DB_CONTAINER" mysql -uroot -p"$DB_PASS" -e "USE $DB; SHOW TABLES" 2>/dev/null | grep -q config_info \
+    && ok "auto-created database + schema" || bad "auto-created database + schema"
+else
+  CNT=$(docker exec "$DB_CONTAINER" psql -U postgres -d "$DB" -tAc "SELECT count(*) FROM information_schema.tables WHERE table_name='config_info'" 2>/dev/null)
+  [ "$CNT" = "1" ] && ok "auto-created database + schema" || bad "auto-created database + schema (count=$CNT)"
+fi
 
 say "== config center =="
 check "v1 publish" "$(curl -s -X POST "$B/nacos/v1/cs/configs" --data-urlencode 'dataId=app.yaml' --data-urlencode 'group=DEFAULT_GROUP' --data-urlencode 'content=key: v1' --data-urlencode 'type=yaml')" "true"
@@ -153,8 +197,9 @@ sleep 1.5
 check "deregistered gone" "$(curl -s "$B/nacos/v1/ns/instance/list?serviceName=order-svc" | python3 -c 'import json,sys; print(len(json.load(sys.stdin)["hosts"]))')" "0"
 
 say "== auth (second instance, same DB) =="
-GOACOS_MYSQL_HOST=127.0.0.1 GOACOS_MYSQL_PORT=$MYSQL_PORT GOACOS_MYSQL_DB=$DB \
-GOACOS_MYSQL_USER=root GOACOS_MYSQL_PASSWORD="$MYSQL_PASS" GOACOS_PORT=$((HTTP_PORT+1)) GOACOS_AUTH_ENABLED=true \
+GOACOS_DB_TYPE=$ENGINE \
+GOACOS_MYSQL_HOST=127.0.0.1 GOACOS_MYSQL_PORT=$DB_PORT GOACOS_MYSQL_DB=$DB \
+GOACOS_MYSQL_USER=$DB_USER GOACOS_MYSQL_PASSWORD="$DB_PASS" GOACOS_PORT=$((HTTP_PORT+1)) GOACOS_AUTH_ENABLED=true \
 "$BIN" serve >/dev/null 2>&1 &
 SRV2_PID=$!
 B2="http://127.0.0.1:$((HTTP_PORT+1))"

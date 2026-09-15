@@ -65,16 +65,18 @@ Usage:
   goacos version               print version
 
 Server configuration is environment-driven (GOACOS_* or NACOS_* prefix):
-  GOACOS_PORT=8848                       HTTP listen port
-  GOACOS_MYSQL_HOST=127.0.0.1            MySQL host (database auto-created)
-  GOACOS_MYSQL_PORT=3306                 MySQL port
-  GOACOS_MYSQL_DB=goacos                 database name
-  GOACOS_MYSQL_USER=root                 MySQL user
-  GOACOS_MYSQL_PASSWORD=                 MySQL password
-  GOACOS_AUTH_ENABLED=false              require access tokens
-  GOACOS_AUTH_TOKEN_SECRET=...           JWT signing secret (set in HA setups)
-  GOACOS_ADMIN_USERNAME=nacos            seeded admin username
-  GOACOS_ADMIN_PASSWORD=nacos            seeded admin password
+  GOACOS_DB_TYPE=mysql|postgres           database engine (default mysql)
+  GOACOS_DB_DSN=postgres://...            full DSN override (optional)
+  GOACOS_PORT=8848                        HTTP listen port
+  GOACOS_MYSQL_HOST=127.0.0.1             database host (database auto-created)
+  GOACOS_MYSQL_PORT=3306                  database port (mysql 3306 / pg 5432)
+  GOACOS_MYSQL_DB=goacos                  database name
+  GOACOS_MYSQL_USER=root                  database user
+  GOACOS_MYSQL_PASSWORD=                  database password
+  GOACOS_AUTH_ENABLED=false               require access tokens
+  GOACOS_AUTH_TOKEN_SECRET=...            JWT signing secret (set in HA setups)
+  GOACOS_ADMIN_USERNAME=nacos             seeded admin username
+  GOACOS_ADMIN_PASSWORD=nacos             seeded admin password
 `)
 		os.Exit(2)
 	}

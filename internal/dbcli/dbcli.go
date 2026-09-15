@@ -1,5 +1,5 @@
 // Package dbcli implements the `goacos db` subcommands used by deploy scripts
-// to discover, verify and initialize a matching MySQL server.
+// to discover, verify and initialize a matching MySQL or PostgreSQL server.
 package dbcli
 
 import (
@@ -15,12 +15,14 @@ import (
 	"time"
 
 	_ "github.com/go-sql-driver/mysql"
+	_ "github.com/lib/pq"
 
 	"github.com/halfking/goacos/internal/storage"
 )
 
-// Candidate is one discovered MySQL endpoint.
+// Candidate is one discovered database server.
 type Candidate struct {
+	Type         string `json:"type"` // mysql | postgres
 	Host         string `json:"host"`
 	Port         int    `json:"port"`
 	Source       string `json:"source"`
@@ -51,15 +53,16 @@ func Run(args []string) {
 }
 
 func usage() {
-	fmt.Println(`goacos db — MySQL discovery & initialization for deploy scripts
+	fmt.Println(`goacos db — MySQL/PostgreSQL discovery & initialization for deploy scripts
 
 Usage:
-  goacos db discover [--cidr 10.0.0.0/24] [--json] [--best]
-      Find MySQL servers via Docker containers, localhost and (optionally)
-      a subnet scan; probe common credentials; print candidates.
-  goacos db verify --host H --port P --user U --password W [--db NAME]
+  goacos db discover [--db-type mysql|postgres] [--cidr 10.0.0.0/24] [--json] [--best]
+      Find database servers via Docker containers, localhost and (optionally)
+      a subnet scan (MySQL :3306, PostgreSQL :5432); probe common credentials;
+      print candidates. --db-type restricts discovery to one engine.
+  goacos db verify --db-type mysql|postgres --host H --port P --user U --password W [--db NAME]
       Check connectivity (and CREATE DATABASE privilege when --db given).
-  goacos db init --host H --port P --user U --password W --db NAME
+  goacos db init --db-type mysql|postgres --host H --port P --user U --password W --db NAME
       Create the database if missing and apply the embedded schema + seed.`)
 }
 
@@ -82,19 +85,47 @@ func parseKV(args []string) map[string]string {
 	return out
 }
 
+// dialectOf resolves a --db-type flag value (default mysql).
+func dialectOf(kv map[string]string) storage.Dialect {
+	return storage.DialectFor(kv["db-type"], "")
+}
+
+func defaultPortFor(d storage.Dialect) int {
+	if d == storage.DialectPostgres {
+		return 5432
+	}
+	return 3306
+}
+
 func discoverCmd(args []string) {
 	kv := parseKV(args)
+	// three-state engine filter: only an explicit --db-type mysql|postgres
+	// restricts discovery; absent/`auto` discovers BOTH engines.
+	wantStr := strings.ToLower(strings.TrimSpace(kv["db-type"]))
+	wantSet := wantStr != "" && wantStr != "auto"
+	var want storage.Dialect
+	if wantSet {
+		want = storage.DialectFor(wantStr, "")
+	}
 	cands := dockerCandidates()
-	cands = append(cands, Candidate{Host: "127.0.0.1", Port: 3306, Source: "localhost"})
+	cands = append(cands, Candidate{Type: "mysql", Host: "127.0.0.1", Port: 3306, Source: "localhost"})
+	cands = append(cands, Candidate{Type: "postgres", Host: "127.0.0.1", Port: 5432, Source: "localhost"})
 	if v, ok := kv["host"]; ok && v != "" {
-		cands = append(cands, Candidate{Host: v, Port: portOf(kv, 3306), Source: "flag"})
+		flagD := storage.DialectMySQL
+		if wantSet {
+			flagD = want
+		}
+		cands = append(cands, Candidate{Type: string(flagD), Host: v, Port: portOf(kv, defaultPortFor(flagD)), Source: "flag"})
 	}
 	if cidr, ok := kv["cidr"]; ok && cidr != "false" {
 		cands = append(cands, scanCIDR(cidr)...)
 	}
-	// TCP reachability prefilter
+	// TCP reachability prefilter (+ explicit --db-type filter)
 	alive := make([]Candidate, 0, len(cands))
 	for _, c := range cands {
+		if wantSet && storage.Dialect(c.Type) != want {
+			continue
+		}
 		if tcpOK(c.Host, c.Port, 600*time.Millisecond) {
 			alive = append(alive, c)
 		}
@@ -102,8 +133,9 @@ func discoverCmd(args []string) {
 	// credential probing
 	verified := make([]Candidate, 0, len(alive))
 	for _, c := range alive {
+		d := storage.Dialect(c.Type)
 		for _, cred := range credList(c) {
-			ok, canCreate := probe(c.Host, c.Port, cred.user, cred.pass)
+			ok, canCreate := probe(d, c.Host, c.Port, cred.user, cred.pass)
 			if ok {
 				c.User, c.Password = cred.user, cred.pass
 				c.ConnectOK, c.CanCreateDB, c.Verified = true, canCreate, true
@@ -165,17 +197,32 @@ func credList(c Candidate) []cred {
 		}
 		out = append(out, cred{u, p})
 	}
+	isPG := storage.Dialect(c.Type) == storage.DialectPostgres
+	super := "root"
+	if isPG {
+		super = "postgres"
+		if c.User != "" {
+			super = c.User
+		}
+	}
 	if c.RootPassword != "" {
-		add("root", c.RootPassword)
+		add(super, c.RootPassword)
 	}
 	if c.User != "" && c.Password != "" {
 		add(c.User, c.Password)
 	}
-	add("root", "root")
-	add("root", "123456")
-	add("root", "password")
-	add("mysql", "mysql")
-	add("root", "")
+	if isPG {
+		add("postgres", "postgres")
+		add("postgres", "password")
+		add("postgres", "123456")
+		add("postgres", "")
+	} else {
+		add("root", "root")
+		add("root", "123456")
+		add("root", "password")
+		add("mysql", "mysql")
+		add("root", "")
+	}
 	return out
 }
 
@@ -197,7 +244,13 @@ func dockerCandidates() []Candidate {
 			continue
 		}
 		img := strings.ToLower(parts[1])
-		if !strings.Contains(img, "mysql") && !strings.Contains(img, "mariadb") {
+		var ctype storage.Dialect
+		switch {
+		case strings.Contains(img, "mysql") || strings.Contains(img, "mariadb"):
+			ctype = storage.DialectMySQL
+		case strings.Contains(img, "postgres") || strings.Contains(img, "pgvector"):
+			ctype = storage.DialectPostgres
+		default:
 			continue
 		}
 		insp, err := exec.CommandContext(ctx, docker, "inspect", parts[0]).Output()
@@ -223,7 +276,7 @@ func dockerCandidates() []Candidate {
 			continue
 		}
 		it := items[0]
-		c := Candidate{Source: "docker"}
+		c := Candidate{Type: string(ctype), Source: "docker"}
 		for _, e := range it.Config.Env {
 			switch {
 			case strings.HasPrefix(e, "MYSQL_ROOT_PASSWORD="):
@@ -234,10 +287,20 @@ func dockerCandidates() []Candidate {
 				c.User = strings.TrimPrefix(e, "MYSQL_USER=")
 			case strings.HasPrefix(e, "MYSQL_DATABASE="):
 				c.DBHint = strings.TrimPrefix(e, "MYSQL_DATABASE=")
+			case strings.HasPrefix(e, "POSTGRES_PASSWORD="):
+				c.RootPassword = strings.TrimPrefix(e, "POSTGRES_PASSWORD=")
+			case strings.HasPrefix(e, "POSTGRES_USER="):
+				c.User = strings.TrimPrefix(e, "POSTGRES_USER=")
+			case strings.HasPrefix(e, "POSTGRES_DB="):
+				c.DBHint = strings.TrimPrefix(e, "POSTGRES_DB=")
 			}
 		}
 		// prefer published host ports (works on macOS Docker Desktop)
+		found := false
 		for _, bindings := range it.NetworkSettings.Ports {
+			if found {
+				break
+			}
 			for _, b := range bindings {
 				if p, err := strconv.Atoi(b.HostPort); err == nil && p > 0 {
 					host := b.HostIP
@@ -246,14 +309,18 @@ func dockerCandidates() []Candidate {
 					}
 					c.Host, c.Port = host, p
 					out = append(out, c)
-					return out // one reachable mapping is enough
+					found = true
+					break // one reachable mapping per container is enough
 				}
 			}
+		}
+		if found {
+			continue
 		}
 		// fall back to container IPs (works on Linux hosts)
 		for _, nw := range it.NetworkSettings.Networks {
 			if nw.IPAddress != "" {
-				c.Host, c.Port = nw.IPAddress, 3306
+				c.Host, c.Port = nw.IPAddress, defaultPortFor(ctype)
 				out = append(out, c)
 				break
 			}
@@ -272,19 +339,28 @@ func scanCIDR(cidr string) []Candidate {
 	var wg sync.WaitGroup
 	sem := make(chan struct{}, 64)
 	base := ip.Mask(ipnet.Mask).To4()
+	ports := []struct {
+		port  int
+		ctype storage.Dialect
+	}{
+		{3306, storage.DialectMySQL},
+		{5432, storage.DialectPostgres},
+	}
 	for i := 1; i < 255; i++ {
 		host := fmt.Sprintf("%d.%d.%d.%d", base[0], base[1], base[2], base[3]+byte(i))
-		wg.Add(1)
-		sem <- struct{}{}
-		go func(h string) {
-			defer wg.Done()
-			defer func() { <-sem }()
-			if tcpOK(h, 3306, 500*time.Millisecond) {
-				mu.Lock()
-				out = append(out, Candidate{Host: h, Port: 3306, Source: "scan"})
-				mu.Unlock()
-			}
-		}(host)
+		for _, p := range ports {
+			wg.Add(1)
+			sem <- struct{}{}
+			go func(h string, port int, ctype storage.Dialect) {
+				defer wg.Done()
+				defer func() { <-sem }()
+				if tcpOK(h, port, 500*time.Millisecond) {
+					mu.Lock()
+					out = append(out, Candidate{Type: string(ctype), Host: h, Port: port, Source: "scan"})
+					mu.Unlock()
+				}
+			}(host, p.port, p.ctype)
+		}
 	}
 	wg.Wait()
 	return out
@@ -299,10 +375,10 @@ func tcpOK(host string, port int, timeout time.Duration) bool {
 	return true
 }
 
-func probe(host string, port int, user, pass string) (connectOK, canCreate bool) {
+func probe(d storage.Dialect, host string, port int, user, pass string) (connectOK, canCreate bool) {
 	ctx, cancel := context.WithTimeout(context.Background(), 4*time.Second)
 	defer cancel()
-	db, err := sql.Open("mysql", storage.DSN(host, port, user, pass, ""))
+	db, err := sql.Open(d.DriverName(), storage.DSNFor(d, host, port, user, pass, d.ServerDB()))
 	if err != nil {
 		return false, false
 	}
@@ -312,9 +388,16 @@ func probe(host string, port int, user, pass string) (connectOK, canCreate bool)
 	}
 	connectOK = true
 	probeDB := fmt.Sprintf("goacos_probe_%d", time.Now().UnixNano()%100000)
-	if _, err := db.ExecContext(ctx, "CREATE DATABASE `"+probeDB+"`"); err == nil {
-		canCreate = true
-		_, _ = db.ExecContext(ctx, "DROP DATABASE `"+probeDB+"`")
+	if d == storage.DialectPostgres {
+		if _, err := db.ExecContext(ctx, fmt.Sprintf(`CREATE DATABASE %q`, probeDB)); err == nil {
+			canCreate = true
+			_, _ = db.ExecContext(ctx, fmt.Sprintf(`DROP DATABASE %q`, probeDB))
+		}
+	} else {
+		if _, err := db.ExecContext(ctx, "CREATE DATABASE `"+probeDB+"`"); err == nil {
+			canCreate = true
+			_, _ = db.ExecContext(ctx, "DROP DATABASE `"+probeDB+"`")
+		}
 	}
 	return connectOK, canCreate
 }
@@ -326,8 +409,9 @@ func verifyCmd(args []string) {
 		fmt.Fprintln(osWriter(), "--host required")
 		osExit(2)
 	}
+	d := dialectOf(kv)
 	user, pass := kv["user"], kv["password"]
-	ok, canCreate := probe(host, portOf(kv, 3306), user, pass)
+	ok, canCreate := probe(d, host, portOf(kv, defaultPortFor(d)), user, pass)
 	if !ok {
 		fmt.Fprintln(osWriter(), "VERIFY FAIL: cannot connect")
 		osExit(1)
@@ -346,7 +430,8 @@ func initCmd(args []string) {
 		fmt.Fprintln(osWriter(), "--host and --db required")
 		osExit(2)
 	}
-	cfg := testConfig(host, portOf(kv, 3306), kv["user"], kv["password"], name)
+	d := dialectOf(kv)
+	cfg := testConfig(d, host, portOf(kv, defaultPortFor(d)), kv["user"], kv["password"], name)
 	ctx, cancel := context.WithTimeout(context.Background(), 60*time.Second)
 	defer cancel()
 	st, err := storage.Open(ctx, cfg)
@@ -355,7 +440,7 @@ func initCmd(args []string) {
 		osExit(1)
 	}
 	st.Close()
-	fmt.Fprintf(osWriter(), "INIT OK: database %q ready (schema+seed applied)\n", name)
+	fmt.Fprintf(osWriter(), "INIT OK: %s database %q ready (schema+seed applied)\n", d, name)
 }
 
 func portOf(kv map[string]string, def int) int {

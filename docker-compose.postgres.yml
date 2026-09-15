@@ -1,0 +1,38 @@
+# Self-contained stack: PostgreSQL 16 + goacos.
+# Force the PostgreSQL engine via GOACOS_DB_TYPE — the server applies its
+# embedded PostgreSQL schema (schema.postgres.sql) automatically.
+#   docker compose -f docker-compose.postgres.yml up -d
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_PASSWORD: goacos_root   # change me
+      POSTGRES_DB: goacos
+    volumes:
+      - pg-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d goacos"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+  goacos:
+    build: .
+    image: goacos:local
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      GOACOS_DB_TYPE: postgres
+      MYSQL_HOST: postgres            # generic conn parts (names kept for compat)
+      MYSQL_PORT: "5432"
+      MYSQL_DB: goacos
+      MYSQL_USER: postgres
+      MYSQL_PASSWORD: goacos_root     # change me
+      # GOACOS_AUTH_ENABLED: "true"
+      # GOACOS_AUTH_TOKEN_SECRET: "change-me-in-production"
+    ports:
+      - "8848:8848"
+
+volumes:
+  pg-data:

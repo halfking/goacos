@@ -61,7 +61,7 @@ func (s *ServiceRow) Metadata() map[string]string {
 	return m
 }
 
-const instanceCols = "id, namespace_id, group_name, service_name, cluster_name, ip, port, weight, healthy, enabled, ephemeral, IFNULL(metadata,''), last_heartbeat_ms, gmt_create, gmt_modified"
+const instanceCols = "id, namespace_id, group_name, service_name, cluster_name, ip, port, weight, healthy, enabled, ephemeral, COALESCE(metadata,''), last_heartbeat_ms, gmt_create, gmt_modified"
 
 func scanInstance(row interface{ Scan(...any) error }) (*Instance, error) {
 	var i Instance
@@ -77,15 +77,14 @@ func scanInstance(row interface{ Scan(...any) error }) (*Instance, error) {
 
 // EnsureService creates the service row when missing.
 func (s *Store) EnsureService(ctx context.Context, ns, group, name string) error {
-	_, err := s.DB.ExecContext(ctx,
-		"INSERT IGNORE INTO naming_service (namespace_id, group_name, name) VALUES (?,?,?)", ns, group, name)
+	_, err := s.Exec(ctx, s.dialect.Rebind(s.dialect.InsertIgnore("naming_service", "namespace_id", "group_name", "name")), ns, group, name)
 	return err
 }
 
 // GetService returns the service row or nil.
 func (s *Store) GetService(ctx context.Context, ns, group, name string) (*ServiceRow, error) {
-	row := s.DB.QueryRowContext(ctx,
-		`SELECT s.id, s.namespace_id, s.group_name, s.name, s.protect_threshold, IFNULL(s.metadata,''), IFNULL(s.app_name,''),
+	row := s.QueryRow(ctx,
+		`SELECT s.id, s.namespace_id, s.group_name, s.name, s.protect_threshold, COALESCE(s.metadata,''), COALESCE(s.app_name,''),
 		        s.gmt_create, s.gmt_modified,
 		        (SELECT COUNT(*) FROM naming_instance i WHERE i.namespace_id=s.namespace_id AND i.group_name=s.group_name AND i.service_name=s.name),
 		        (SELECT COUNT(DISTINCT i.cluster_name) FROM naming_instance i WHERE i.namespace_id=s.namespace_id AND i.group_name=s.group_name AND i.service_name=s.name)
@@ -119,14 +118,14 @@ func (s *Store) UpdateService(ctx context.Context, ns, group, name string, prote
 		args = append(args, *appName)
 	}
 	args = append(args, ns, group, name)
-	_, err := s.DB.ExecContext(ctx,
+	_, err := s.Exec(ctx,
 		"UPDATE naming_service SET "+strings.Join(sets, ", ")+" WHERE namespace_id=? AND group_name=? AND name=?", args...)
 	return err
 }
 
 // DeleteService removes the service row when it has no instances.
 func (s *Store) DeleteService(ctx context.Context, ns, group, name string) (bool, error) {
-	res, err := s.DB.ExecContext(ctx,
+	res, err := s.Exec(ctx,
 		"DELETE FROM naming_service WHERE namespace_id=? AND group_name=? AND name=? AND NOT EXISTS (SELECT 1 FROM naming_instance i WHERE i.namespace_id=naming_service.namespace_id AND i.group_name=naming_service.group_name AND i.service_name=naming_service.name)",
 		ns, group, name)
 	if err != nil {
@@ -154,12 +153,12 @@ func (s *Store) ListServices(ctx context.Context, q ServiceListQuery) ([]Service
 		args = append(args, q.GroupName)
 	}
 	if q.NameBlur != "" {
-		where = append(where, "s.name LIKE CONCAT('%',?,'%')")
+		where = append(where, "s.name "+s.dialect.BlurMatch())
 		args = append(args, q.NameBlur)
 	}
 	w := strings.Join(where, " AND ")
 	var total int64
-	if err := s.DB.QueryRowContext(ctx, "SELECT COUNT(*) FROM naming_service s WHERE "+w, args...).Scan(&total); err != nil {
+	if err := s.QueryRow(ctx, "SELECT COUNT(*) FROM naming_service s WHERE "+w, args...).Scan(&total); err != nil {
 		return nil, 0, err
 	}
 	if q.PageNo < 1 {
@@ -168,8 +167,8 @@ func (s *Store) ListServices(ctx context.Context, q ServiceListQuery) ([]Service
 	if q.PageSize < 1 || q.PageSize > 500 {
 		q.PageSize = 10
 	}
-	rows, err := s.DB.QueryContext(ctx,
-		`SELECT s.id, s.namespace_id, s.group_name, s.name, s.protect_threshold, IFNULL(s.metadata,''), IFNULL(s.app_name,''),
+	rows, err := s.Query(ctx,
+		`SELECT s.id, s.namespace_id, s.group_name, s.name, s.protect_threshold, COALESCE(s.metadata,''), COALESCE(s.app_name,''),
 		        s.gmt_create, s.gmt_modified,
 		        (SELECT COUNT(*) FROM naming_instance i WHERE i.namespace_id=s.namespace_id AND i.group_name=s.group_name AND i.service_name=s.name),
 		        (SELECT COUNT(DISTINCT i.cluster_name) FROM naming_instance i WHERE i.namespace_id=s.namespace_id AND i.group_name=s.group_name AND i.service_name=s.name)
@@ -223,7 +222,7 @@ func (s *Store) RegisterInstance(ctx context.Context, u InstanceUpsert) (bool, e
 	}
 	now := NowMS()
 	var id int64
-	err := s.DB.QueryRowContext(ctx,
+	err := s.QueryRow(ctx,
 		`SELECT id FROM naming_instance WHERE namespace_id=? AND group_name=? AND service_name=? AND cluster_name=? AND ip=? AND port=?`,
 		u.NamespaceId, u.GroupName, u.ServiceName, u.ClusterName, u.IP, u.Port).Scan(&id)
 	created := err == sql.ErrNoRows
@@ -234,14 +233,14 @@ func (s *Store) RegisterInstance(ctx context.Context, u InstanceUpsert) (bool, e
 		if err := s.EnsureService(ctx, u.NamespaceId, u.GroupName, u.ServiceName); err != nil {
 			return false, err
 		}
-		_, err = s.DB.ExecContext(ctx,
+		_, err = s.Exec(ctx,
 			`INSERT INTO naming_instance (namespace_id, group_name, service_name, cluster_name, ip, port, weight, healthy, enabled, ephemeral, metadata, last_heartbeat_ms)
 			 VALUES (?,?,?,?,?,?,?,1,?,?,?,?)`,
 			u.NamespaceId, u.GroupName, u.ServiceName, u.ClusterName, u.IP, u.Port, u.Weight,
 			boolInt(u.Enabled), boolInt(u.Ephemeral), meta, now)
 		return true, err
 	}
-	_, err = s.DB.ExecContext(ctx,
+	_, err = s.Exec(ctx,
 		`UPDATE naming_instance SET weight=?, enabled=?, ephemeral=?, metadata=?, last_heartbeat_ms=?, healthy=1, gmt_modified=NOW() WHERE id=?`,
 		u.Weight, boolInt(u.Enabled), boolInt(u.Ephemeral), meta, now, id)
 	return false, err
@@ -250,7 +249,7 @@ func (s *Store) RegisterInstance(ctx context.Context, u InstanceUpsert) (bool, e
 // BeatInstance refreshes a heartbeat; creates the instance when missing
 // (auto-attach convenience, mirrors client re-register behavior).
 func (s *Store) BeatInstance(ctx context.Context, u InstanceUpsert) (created bool, err error) {
-	res, err := s.DB.ExecContext(ctx,
+	res, err := s.Exec(ctx,
 		`UPDATE naming_instance SET last_heartbeat_ms=?, healthy=1, gmt_modified=NOW()
 		 WHERE namespace_id=? AND group_name=? AND service_name=? AND cluster_name=? AND ip=? AND port=?`,
 		NowMS(), u.NamespaceId, u.GroupName, u.ServiceName, u.ClusterName, u.IP, u.Port)
@@ -268,7 +267,7 @@ func (s *Store) DeleteInstance(ctx context.Context, ns, group, service, cluster,
 	if cluster == "" {
 		cluster = "DEFAULT"
 	}
-	res, err := s.DB.ExecContext(ctx,
+	res, err := s.Exec(ctx,
 		"DELETE FROM naming_instance WHERE namespace_id=? AND group_name=? AND service_name=? AND cluster_name=? AND ip=? AND port=?",
 		ns, group, service, cluster, ip, port)
 	if err != nil {
@@ -283,7 +282,7 @@ func (s *Store) GetInstance(ctx context.Context, ns, group, service, cluster, ip
 	if cluster == "" {
 		cluster = "DEFAULT"
 	}
-	i, err := scanInstance(s.DB.QueryRowContext(ctx,
+	i, err := scanInstance(s.QueryRow(ctx,
 		"SELECT "+instanceCols+" FROM naming_instance WHERE namespace_id=? AND group_name=? AND service_name=? AND cluster_name=? AND ip=? AND port=?",
 		ns, group, service, cluster, ip, port))
 	if err == sql.ErrNoRows {
@@ -323,7 +322,7 @@ func (s *Store) ListInstances(ctx context.Context, q InstanceListQuery) ([]Insta
 	if q.HealthyOnly {
 		where = append(where, "healthy=1")
 	}
-	rows, err := s.DB.QueryContext(ctx,
+	rows, err := s.Query(ctx,
 		"SELECT "+instanceCols+" FROM naming_instance WHERE "+strings.Join(where, " AND ")+" ORDER BY cluster_name, ip, port", args...)
 	if err != nil {
 		return nil, err
@@ -344,13 +343,13 @@ func (s *Store) ListInstances(ctx context.Context, q InstanceListQuery) ([]Insta
 // long-stale ones. Idempotent, safe with multiple goacos nodes.
 func (s *Store) SweepEphemeral(ctx context.Context, timeoutMS, deleteAfterMS int64) (markedUnhealthy, deleted int64, err error) {
 	now := NowMS()
-	res, err := s.DB.ExecContext(ctx,
+	res, err := s.Exec(ctx,
 		"UPDATE naming_instance SET healthy=0 WHERE ephemeral=1 AND healthy=1 AND last_heartbeat_ms < ?", now-timeoutMS)
 	if err != nil {
 		return 0, 0, fmt.Errorf("sweep unhealthy: %w", err)
 	}
 	markedUnhealthy, _ = res.RowsAffected()
-	res, err = s.DB.ExecContext(ctx,
+	res, err = s.Exec(ctx,
 		"DELETE FROM naming_instance WHERE ephemeral=1 AND last_heartbeat_ms < ?", now-deleteAfterMS)
 	if err != nil {
 		return markedUnhealthy, 0, fmt.Errorf("sweep delete: %w", err)
@@ -361,16 +360,16 @@ func (s *Store) SweepEphemeral(ctx context.Context, timeoutMS, deleteAfterMS int
 
 // CountNaming returns totals for the metrics endpoint.
 func (s *Store) CountNaming(ctx context.Context) (services, instances int64, err error) {
-	if err = s.DB.QueryRowContext(ctx, "SELECT COUNT(*) FROM naming_service").Scan(&services); err != nil {
+	if err = s.QueryRow(ctx, "SELECT COUNT(*) FROM naming_service").Scan(&services); err != nil {
 		return
 	}
-	err = s.DB.QueryRowContext(ctx, "SELECT COUNT(*) FROM naming_instance").Scan(&instances)
+	err = s.QueryRow(ctx, "SELECT COUNT(*) FROM naming_instance").Scan(&instances)
 	return
 }
 
 // CountConfigs returns config totals for metrics.
 func (s *Store) CountConfigs(ctx context.Context) (n int64, err error) {
-	err = s.DB.QueryRowContext(ctx, "SELECT COUNT(*) FROM config_info").Scan(&n)
+	err = s.QueryRow(ctx, "SELECT COUNT(*) FROM config_info").Scan(&n)
 	return
 }
 

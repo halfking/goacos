@@ -14,6 +14,16 @@ type Config struct {
 	Host string
 	Port int
 
+	// DBType selects the SQL engine: "mysql" (default) or "postgres".
+	// DBDSN optionally carries a full connection string; a postgres:// DSN
+	// implies PostgreSQL regardless of DBType. Deployment files (compose /
+	// deploy.sh / k8s env) force the choice through these two variables.
+	DBType string
+	DBDSN  string
+
+	// MySQL* fields carry the generic connection parts for the selected
+	// engine (the GOACOS_MYSQL_* names predate PostgreSQL support and are
+	// kept for backward compatibility; bare MYSQL_* also accepted).
 	MySQLHost     string
 	MySQLPort     int
 	MySQLDB       string
@@ -91,6 +101,8 @@ func FromEnv() *Config {
 	return &Config{
 		Host:                   getenv("HOST", "0.0.0.0"),
 		Port:                   getenvInt("PORT", 8848),
+		DBType:                 getenv("DB_TYPE", "mysql"),
+		DBDSN:                  getenv("DB_DSN", ""),
 		MySQLHost:              getenv("MYSQL_HOST", "127.0.0.1"),
 		MySQLPort:              getenvInt("MYSQL_PORT", 3306),
 		MySQLDB:                getenv("MYSQL_DB", "goacos"),

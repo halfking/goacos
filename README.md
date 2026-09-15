@@ -4,7 +4,7 @@
 
 [中文文档](README_zh.md)
 
-`goacos` reimplements the core of [Apache Nacos](https://github.com/alibaba/nacos) (latest stable line 3.2.x / LTS 2.5.x) as a single static Go binary. It speaks the Nacos HTTP Open API (v1 + v2), stores everything in MySQL, and deploys with one command — no JVM, no Derby, no Raft disks to babysit.
+`goacos` reimplements the core of [Apache Nacos](https://github.com/alibaba/nacos) (latest stable line 3.2.x / LTS 2.5.x) as a single static Go binary. It speaks the Nacos HTTP Open API (v1 + v2), stores everything in **MySQL or PostgreSQL**, and deploys with one command — no JVM, no Derby, no Raft disks to babysit.
 
 ## Why
 
@@ -25,8 +25,9 @@ Numbers measured locally: goacos RSS 10.9 MB after running the full e2e suite (c
 - **Service discovery** — register/deregister ephemeral & persistent instances, clusters, weights, metadata, heartbeats with the Nacos 15 s-unhealthy / 30 s-removed lifecycle, instance & service queries (v1 `ServiceInfo` shape + v2 envelope).
 - **Auth** — JWT access tokens (HS256, Nacos-compatible login endpoint), users/roles/permissions, admin-gated management APIs, optional (`GOACOS_AUTH_ENABLED=true`).
 - **Console** — embedded single-page UI at `/nacos/index.html`: services/instances, config editor, namespaces, users.
-- **MySQL-native** — the database is the single source of truth. Config tables mirror the official Nacos schema (interoperable); naming tables are goacos-native (Nacos keeps naming in memory; goacos persists it, so **no data loss on restart**).
-- **Self-initializing** — on boot goacos creates the database if missing, applies the schema, and seeds the admin user. Zero manual SQL.
+- **Dual-engine storage** — **MySQL** and **PostgreSQL** are both first-class. One embedded schema per engine (config tables mirror the official Nacos layout); a single dialect layer switches between them.
+- **Database auto-discovery** — `goacos db discover` finds reachable database servers automatically: Docker containers first (reads their `MYSQL_ROOT_PASSWORD` / `POSTGRES_PASSWORD` from container env), then localhost (MySQL :3306, PostgreSQL :5432), optionally a subnet scan (`--cidr`). Restrict to one engine with `--db-type`.
+- **Self-initializing** — on boot goacos creates the database if missing, applies the engine-specific schema, and seeds the admin user. Zero manual SQL.
 
 ## Quick start
 
@@ -43,10 +44,11 @@ The deploy script discovers a reachable MySQL server — Docker containers first
 ./deploy/deploy.sh --auth --admin-pass S3cret --db prod_goacos --force
 ```
 
-### Docker Compose (MySQL included)
+### Docker Compose (MySQL or PostgreSQL)
 
 ```bash
-docker compose up -d
+docker compose up -d                                  # MySQL stack
+docker compose -f docker-compose.postgres.yml up -d   # PostgreSQL stack
 # console: http://localhost:8848/nacos/index.html  (nacos / nacos)
 ```
 
@@ -61,7 +63,9 @@ make build && GOACOS_MYSQL_HOST=127.0.0.1 GOACOS_MYSQL_USER=root GOACOS_MYSQL_PA
 | Variable | Default | Meaning |
 |---|---|---|
 | `GOACOS_PORT` | `8848` | HTTP listen port |
-| `GOACOS_MYSQL_HOST` / `MYSQL_PORT` | `127.0.0.1` / `3306` | MySQL endpoint |
+| `GOACOS_DB_TYPE` | `mysql` | `mysql` or `postgres` — forced by deployment files |
+| `GOACOS_DB_DSN` | — | full DSN override (`postgres://...` implies PostgreSQL) |
+| `GOACOS_MYSQL_HOST` / `MYSQL_PORT` | `127.0.0.1` / `3306` | database endpoint (either engine) |
 | `GOACOS_MYSQL_DB` | `goacos` | database (auto-created) |
 | `GOACOS_MYSQL_USER` / `MYSQL_PASSWORD` | `root` / `` | credentials |
 | `GOACOS_AUTH_ENABLED` | `false` | require access tokens |
@@ -85,9 +89,10 @@ Because MySQL is the system of record, replicas are stateless: point N nodes at 
 ## Development
 
 ```bash
-make test    # unit tests
-make e2e     # full end-to-end acceptance (boots a throwaway MySQL 8 container)
-make image-multi  # build linux/amd64 + linux/arm64 images
+make test              # unit tests
+E2E_DB=mysql bash scripts/e2e.sh      # end-to-end on MySQL 8 (31 checks)
+E2E_DB=postgres bash scripts/e2e.sh   # end-to-end on PostgreSQL 16 (31 checks)
+make image-multi       # build linux/amd64 + linux/arm64 images
 ```
 
 Releases are built by [.github/workflows/release.yml](.github/workflows/release.yml): multi-arch image to GHCR plus binaries for linux (amd64/arm64) and macOS (amd64/arm64).

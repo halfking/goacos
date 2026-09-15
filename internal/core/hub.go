@@ -33,7 +33,7 @@ func NewConfigHub(ctx context.Context, st *storage.Store) (*ConfigHub, error) {
 		md5s:     map[ConfigKey]string{},
 		watchers: map[ConfigKey]map[chan struct{}]struct{}{},
 	}
-	rows, err := st.DB.QueryContext(ctx, "SELECT data_id, group_id, tenant_id, IFNULL(md5,'') FROM config_info")
+	rows, err := st.DB.QueryContext(ctx, "SELECT data_id, group_id, tenant_id, COALESCE(md5,'') FROM config_info")
 	if err != nil {
 		return nil, err
 	}

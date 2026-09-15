@@ -4,7 +4,7 @@
 
 [English](README.md)
 
-`goacos` 将 [Apache Nacos](https://github.com/alibaba/nacos)(最新稳定线 3.2.x / LTS 2.5.x)的核心能力用 Go 重新实现为一个静态编译的单二进制。它兼容 Nacos HTTP Open API(v1 + v2),所有数据存 MySQL,一条命令即可部署——没有 JVM、没有 Derby、没有 Raft 磁盘要维护。
+`goacos` 将 [Apache Nacos](https://github.com/alibaba/nacos)(最新稳定线 3.2.x / LTS 2.5.x)的核心能力用 Go 重新实现为一个静态编译的单二进制。它兼容 Nacos HTTP Open API(v1 + v2),所有数据存 **MySQL 或 PostgreSQL**,一条命令即可部署——没有 JVM、没有 Derby、没有 Raft 磁盘要维护。
 
 ## 为什么
 
@@ -25,8 +25,9 @@
 - **服务发现** — 临时/持久实例注册注销、集群、权重、元数据、心跳(Nacos 同款 15 秒不健康 / 30 秒摘除生命周期)、实例与服务查询(v1 `ServiceInfo` 形状 + v2 信封)。
 - **认证** — JWT access token(HS256,兼容 Nacos 登录端点)、用户/角色/权限、管理接口仅限管理员、可选开启(`GOACOS_AUTH_ENABLED=true`)。
 - **控制台** — 内嵌单页 UI(`/nacos/index.html`):服务/实例、配置编辑器、命名空间、用户。
-- **MySQL 原生** — 数据库是唯一事实源。配置表与 Nacos 官方 schema 一致(可互操作);naming 表为 goacos 自有设计(Nacos 的注册表在内存里,goacos 持久化——**重启零丢失**)。
-- **自初始化** — 启动时自动建库、应用 schema、播种管理员账号。零手工 SQL。
+- **双引擎存储** — **MySQL** 与 **PostgreSQL** 均为一等公民。每个引擎各内嵌一份 schema(配置表与 Nacos 官方布局一致);统一方言层自动切换。
+- **数据库自动发现** — `goacos db discover` 自动查找可达的数据库服务器:优先 Docker 容器(直接读取容器 env 中的 `MYSQL_ROOT_PASSWORD` / `POSTGRES_PASSWORD`),其次 localhost(MySQL :3306、PostgreSQL :5432),可选子网扫描(`--cidr`);`--db-type` 可限定引擎。
+- **自初始化** — 启动时自动建库、按引擎应用 schema、播种管理员账号。零手工 SQL。
 
 ## 快速开始
 
@@ -43,10 +44,11 @@
 ./deploy/deploy.sh --auth --admin-pass S3cret --db prod_goacos --force
 ```
 
-### Docker Compose(自带 MySQL)
+### Docker Compose(自带 MySQL 或 PostgreSQL)
 
 ```bash
-docker compose up -d
+docker compose up -d                                  # MySQL 栈
+docker compose -f docker-compose.postgres.yml up -d   # PostgreSQL 栈
 # 控制台: http://localhost:8848/nacos/index.html  (nacos / nacos)
 ```
 
@@ -61,7 +63,9 @@ make build && GOACOS_MYSQL_HOST=127.0.0.1 GOACOS_MYSQL_USER=root GOACOS_MYSQL_PA
 | 变量 | 默认值 | 说明 |
 |---|---|---|
 | `GOACOS_PORT` | `8848` | HTTP 监听端口 |
-| `GOACOS_MYSQL_HOST` / `MYSQL_PORT` | `127.0.0.1` / `3306` | MySQL 地址 |
+| `GOACOS_DB_TYPE` | `mysql` | `mysql` 或 `postgres`——部署文件强制指定入口 |
+| `GOACOS_DB_DSN` | — | 完整 DSN 覆盖(`postgres://...` 前缀自动识别为 PostgreSQL) |
+| `GOACOS_MYSQL_HOST` / `MYSQL_PORT` | `127.0.0.1` / `3306` | 数据库地址(双引擎通用) |
 | `GOACOS_MYSQL_DB` | `goacos` | 数据库(不存在则自动创建) |
 | `GOACOS_MYSQL_USER` / `MYSQL_PASSWORD` | `root` / `` | 凭据 |
 | `GOACOS_AUTH_ENABLED` | `false` | 是否强制 access token |
@@ -85,9 +89,10 @@ MySQL 即事实源,副本无状态:多个节点指向同一数据库、挂在同
 ## 开发
 
 ```bash
-make test         # 单元测试
-make e2e          # 全链路验收(自动起一个一次性 MySQL 8 容器)
-make image-multi  # 构建 linux/amd64 + linux/arm64 镜像
+make test                            # 单元测试
+E2E_DB=mysql bash scripts/e2e.sh     # MySQL 8 全链路验收(31 项)
+E2E_DB=postgres bash scripts/e2e.sh  # PostgreSQL 16 全链路验收(31 项)
+make image-multi                     # 构建 linux/amd64 + linux/arm64 镜像
 ```
 
 发布由 [.github/workflows/release.yml](.github/workflows/release.yml) 自动完成:双架构镜像推 GHCR,同时产出 linux(amd64/arm64)与 macOS(amd64/arm64)二进制。
