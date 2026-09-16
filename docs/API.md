@@ -61,7 +61,8 @@ JWT HS256 with `GOACOS_AUTH_TOKEN_SECRET`.
 
 ## Divergences from Nacos (by design)
 
-1. **Everything is persisted in MySQL**, including the service registry. Nacos
+1. **Everything is persisted in the configured database (MySQL or
+   PostgreSQL, `GOACOS_DB_TYPE`)**, including the service registry. Nacos
    keeps naming data in memory (Distro) — goacos instances survive restarts.
 2. **No Raft/Distro**: replicas share MySQL; cross-node config change
    visibility ≤ ~1 s; the ephemeral-instance sweeper is idempotent.

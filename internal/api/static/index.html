@@ -338,7 +338,7 @@ async function loadAbout(){
           </div>
         </div>
         <div style="color:#6b7280;font-size:13px;">
-          Auth: <b>${s.authEnabled ? 'enabled' : 'disabled'}</b> | Storage: <b>MySQL</b>
+          Auth: <b>${s.authEnabled ? 'enabled' : 'disabled'}</b> | Storage: <b>${(s.dbType || 'mysql').toUpperCase()}</b>
         </div>
         <div style="color:#9ca3af;font-size:12px;margin-top:10px;">
           Lightweight Nacos-compatible config & discovery server in Go.

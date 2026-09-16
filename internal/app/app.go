@@ -30,7 +30,7 @@ func RunServer(cfg *config.Config) error {
 		return err
 	}
 	defer st.Close()
-	log.Printf("[goacos] attached to mysql %s db=%s", cfg.MySQLAddr(), cfg.MySQLDB)
+	log.Printf("[goacos] attached to %s %s db=%s", st.Dialect(), cfg.MySQLAddr(), cfg.MySQLDB)
 
 	hub, err := core.NewConfigHub(openCtx, st)
 	if err != nil {

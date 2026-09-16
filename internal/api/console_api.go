@@ -182,6 +182,7 @@ func (s *Server) serverState(w http.ResponseWriter, r *http.Request) {
 		"compatibility":    buildinfo.NacosAPICompat,
 		"standaloneMode":   true,
 		"authEnabled":      s.Cfg.AuthEnabled,
+		"dbType":           string(s.ST.Dialect()),
 		"runtime":          runtime,
 	})
 }

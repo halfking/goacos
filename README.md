@@ -41,6 +41,7 @@ The deploy script discovers a reachable MySQL server — Docker containers first
 
 ```bash
 ./deploy/deploy.sh --host 10.0.0.5 --port-db 3306 --user root --password secret
+./deploy/deploy.sh --db-type postgres --host 10.0.0.6 --port-db 5432 --user postgres --password secret
 ./deploy/deploy.sh --auth --admin-pass S3cret --db prod_goacos --force
 ```
 

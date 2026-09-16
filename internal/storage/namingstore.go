@@ -233,12 +233,19 @@ func (s *Store) RegisterInstance(ctx context.Context, u InstanceUpsert) (bool, e
 		if err := s.EnsureService(ctx, u.NamespaceId, u.GroupName, u.ServiceName); err != nil {
 			return false, err
 		}
-		_, err = s.Exec(ctx,
+		if _, err = s.Exec(ctx,
 			`INSERT INTO naming_instance (namespace_id, group_name, service_name, cluster_name, ip, port, weight, healthy, enabled, ephemeral, metadata, last_heartbeat_ms)
 			 VALUES (?,?,?,?,?,?,?,1,?,?,?,?)`,
 			u.NamespaceId, u.GroupName, u.ServiceName, u.ClusterName, u.IP, u.Port, u.Weight,
-			boolInt(u.Enabled), boolInt(u.Ephemeral), meta, now)
-		return true, err
+			boolInt(u.Enabled), boolInt(u.Ephemeral), meta, now); err == nil {
+			return true, nil
+		}
+		// lost a concurrent register race — fall back to update by unique key
+		if err := s.QueryRow(ctx,
+			`SELECT id FROM naming_instance WHERE namespace_id=? AND group_name=? AND service_name=? AND cluster_name=? AND ip=? AND port=?`,
+			u.NamespaceId, u.GroupName, u.ServiceName, u.ClusterName, u.IP, u.Port).Scan(&id); err != nil {
+			return false, err
+		}
 	}
 	_, err = s.Exec(ctx,
 		`UPDATE naming_instance SET weight=?, enabled=?, ephemeral=?, metadata=?, last_heartbeat_ms=?, healthy=1, gmt_modified=NOW() WHERE id=?`,

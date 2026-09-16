@@ -55,6 +55,7 @@ while [ $# -gt 0 ]; do
     *) die "unknown flag: $1 (see --help)";;
   esac
 done
+case "$DB_TYPE" in mysql|postgres|auto) ;; *) die "invalid --db-type '$DB_TYPE' (mysql|postgres|auto)";; esac
 
 # ---------------------------------------------------------------- goacos binary
 # (used host-side for DB discovery & initialization; multi-arch, no deps)

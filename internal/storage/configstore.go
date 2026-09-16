@@ -112,24 +112,32 @@ func (s *Store) UpsertConfig(ctx context.Context, u ConfigUpsert) (int64, bool, 
 		args := []any{u.DataId, u.GroupId, u.Content, md5v, nullIfEmpty(u.SrcUser), nullIfEmpty(u.SrcIp), nullIfEmpty(u.AppName), u.TenantId,
 			nullIfEmpty(u.CDesc), nullIfEmpty(u.CUse), nullIfEmpty(u.Effect), nullIfEmpty(u.Type), nullIfEmpty(u.CSchema)}
 		var id int64
+		var ierr error
 		if s.dialect == DialectPostgres {
-			err := s.QueryRow(ctx, s.dialect.Rebind(insertSQL)+" RETURNING id", args...).Scan(&id)
-			if err != nil {
-				return 0, false, err
+			ierr = s.QueryRow(ctx, s.dialect.Rebind(insertSQL)+" RETURNING id", args...).Scan(&id)
+		} else {
+			var res sql.Result
+			res, ierr = s.Exec(ctx, insertSQL, args...)
+			if ierr == nil {
+				id, _ = res.LastInsertId()
+			}
+		}
+		if ierr != nil {
+			// lost a concurrent create race — fall through to the UPDATE path
+			created = false
+			if err := s.QueryRow(ctx,
+				"SELECT id FROM config_info WHERE data_id=? AND group_id=? AND tenant_id=?",
+				u.DataId, u.GroupId, u.TenantId).Scan(&existID); err != nil {
+				return 0, false, ierr
 			}
 		} else {
-			res, err := s.Exec(ctx, insertSQL, args...)
-			if err != nil {
-				return 0, false, err
+			if err := s.insertHistory(ctx, HistoryInfo{ID: id, DataId: u.DataId, GroupId: u.GroupId, TenantId: u.TenantId,
+				Content: u.Content, Md5: md5v, SrcUser: u.SrcUser, SrcIp: u.SrcIp, AppName: u.AppName, OpType: "I",
+				GmtCreate: time.Now(), GmtModified: time.Now()}); err != nil {
+				return id, false, err
 			}
-			id, _ = res.LastInsertId()
+			return id, true, nil
 		}
-		if err := s.insertHistory(ctx, HistoryInfo{ID: id, DataId: u.DataId, GroupId: u.GroupId, TenantId: u.TenantId,
-			Content: u.Content, Md5: md5v, SrcUser: u.SrcUser, SrcIp: u.SrcIp, AppName: u.AppName, OpType: "I",
-			GmtCreate: time.Now(), GmtModified: time.Now()}); err != nil {
-			return id, false, err
-		}
-		return id, true, nil
 	}
 	if _, err := s.Exec(ctx,
 		`UPDATE config_info SET content=?, md5=?, gmt_modified=NOW(), src_user=?, src_ip=?, app_name=?, c_desc=?, c_use=?, effect=?, type=?, c_schema=?

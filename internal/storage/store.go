@@ -182,8 +182,10 @@ func (s *Store) Seed(ctx context.Context) error {
 		if err != nil {
 			return err
 		}
-		if _, err := s.Exec(ctx,
-			"INSERT INTO users (username, password, enabled) VALUES (?, ?, 1)", s.cfg.AdminUsername, string(hash)); err != nil {
+		// InsertIgnore: several replicas may boot against an empty database at
+		// once; the count guard above is best-effort, the unique key decides.
+		if _, err := s.Exec(ctx, s.dialect.InsertIgnore("users", "username", "password", "enabled"),
+			s.cfg.AdminUsername, string(hash), 1); err != nil {
 			return err
 		}
 		if _, err := s.Exec(ctx, s.dialect.Rebind(s.dialect.InsertIgnore("roles", "username", "role")),
@@ -196,12 +198,12 @@ func (s *Store) Seed(ctx context.Context) error {
 		}
 		log.Printf("[goacos] seeded admin user %q (initial password from ADMIN_PASSWORD)", s.cfg.AdminUsername)
 	}
-	// public namespace row so console tooling sees it
+	// public namespace row so console tooling sees it (idempotent under races)
 	var m int
 	if err := s.QueryRow(ctx,
 		"SELECT COUNT(*) FROM tenant_info WHERE kp='1' AND tenant_id=''").Scan(&m); err == nil && m == 0 {
-		_, _ = s.Exec(ctx,
-			"INSERT INTO tenant_info (kp, tenant_id, namespace_name, namespace_desc) VALUES ('1','', 'public', 'Public Namespace')")
+		_, _ = s.Exec(ctx, s.dialect.InsertIgnore("tenant_info", "kp", "tenant_id", "namespace_name", "namespace_desc"),
+			"1", "", "public", "Public Namespace")
 	}
 	return nil
 }
