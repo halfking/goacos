@@ -13,8 +13,8 @@
 | Binary/image | ~1 GB image (JDK + server) | **~17 MB image, single ~15 MB static binary** |
 | App memory (RSS) | ~700 MB – 1.2 GB (JVM) | **~11 MB measured** after a full API exercise |
 | Startup | 20–40 s | **< 1 s** |
-| Dependencies | JDK 17+, embedded Derby or MySQL | MySQL only |
-| Scaling model | Distro/JRaft gossip + snapshots | **Shared MySQL = stateless replicas** (add nodes behind an LB) |
+| Dependencies | JDK 17+, embedded Derby or MySQL | MySQL or PostgreSQL (one env switch) |
+| Scaling model | Distro/JRaft gossip + snapshots | **Shared database = stateless replicas** (add nodes behind an LB) |
 | Operations | JVM tuning, raft data dirs, console fat jar | one env-var-driven process |
 
 Numbers measured locally: goacos RSS 10.9 MB after running the full e2e suite (config publish/listen, instance register/heartbeat); Nacos figures are the project's documented defaults (`-Xms512m` and up, plus metaspace/off-heap overhead).
@@ -85,7 +85,7 @@ Works out of the box with: curl/scripts, [nacos-sdk-go](https://github.com/nacos
 
 ## Running multiple replicas
 
-Because MySQL is the system of record, replicas are stateless: point N nodes at the same database, put them behind a load balancer, set the same `GOACOS_AUTH_TOKEN_SECRET`. Config long-poll detects cross-node changes within ~1 s; the instance lifecycle sweeper is idempotent and safe to run concurrently.
+Because the configured database (MySQL or PostgreSQL, `GOACOS_DB_TYPE`) is the system of record, replicas are stateless: point N nodes at the same database, put them behind a load balancer, set the same `GOACOS_AUTH_TOKEN_SECRET`. Config long-poll detects cross-node changes within ~1 s; the instance lifecycle sweeper is idempotent and safe to run concurrently.
 
 ## Development
 

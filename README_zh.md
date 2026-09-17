@@ -13,8 +13,8 @@
 | 镜像体积 | ~1 GB(JDK + server) | **~17 MB 镜像,~15 MB 静态二进制** |
 | 应用内存(RSS) | ~700 MB – 1.2 GB(JVM) | 完整 API 压测后实测 **~11 MB** |
 | 启动时间 | 20–40 秒 | **< 1 秒** |
-| 依赖 | JDK 17+,内嵌 Derby 或 MySQL | 仅 MySQL |
-| 扩展模型 | Distro/JRaft gossip + 快照 | **共享 MySQL = 无状态多副本**(LB 后直接加节点) |
+| 依赖 | JDK 17+,内嵌 Derby 或 MySQL | MySQL 或 PostgreSQL(`GOACOS_DB_TYPE` 切换) |
+| 扩展模型 | Distro/JRaft gossip + 快照 | **共享数据库 = 无状态多副本**(LB 后直接加节点) |
 | 运维 | JVM 调优、raft 数据目录、console fat jar | 一个环境变量驱动的进程 |
 
 本机实测:goacos 跑完整个 e2e 场景(配置发布/监听、实例注册/心跳)后 RSS 10.9 MB;Nacos 数据取自项目默认 JVM 参数(-Xms512m 起步,另有 metaspace/堆外开销)。
@@ -85,7 +85,7 @@ make build && GOACOS_MYSQL_HOST=127.0.0.1 GOACOS_MYSQL_USER=root GOACOS_MYSQL_PA
 
 ## 多副本
 
-MySQL 即事实源,副本无状态:多个节点指向同一数据库、挂在同一 LB 后、设置相同的 `GOACOS_AUTH_TOKEN_SECRET` 即可。配置长轮询 ~1 秒内感知跨节点变更;实例生命周期清扫幂等,多节点并发执行安全。
+所配数据库(MySQL 或 PostgreSQL,`GOACOS_DB_TYPE`)即事实源,副本无状态:多个节点指向同一数据库、挂在同一 LB 后、设置相同的 `GOACOS_AUTH_TOKEN_SECRET` 即可。配置长轮询 ~1 秒内感知跨节点变更;实例生命周期清扫幂等,多节点并发执行安全。
 
 ## 开发
 
