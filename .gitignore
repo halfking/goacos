@@ -3,3 +3,6 @@
 *.tar.gz
 *.log
 .env.goacos
+
+# codegraph 知识图谱本地缓存
+.codegraph/
