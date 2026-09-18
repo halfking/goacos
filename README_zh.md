@@ -1,6 +1,6 @@
 # goacos
 
-**用 Go 重写的 Nacos 兼容配置中心 + 服务发现服务器，MySQL 存储，单二进制，极低资源占用。**
+**用 Go 重写的 Nacos 兼容配置中心 + 服务发现服务器，MySQL 或 PostgreSQL 存储，单二进制，极低资源占用。**
 
 [English](README.md)
 
@@ -37,7 +37,7 @@
 ./deploy/deploy.sh
 ```
 
-部署脚本会自动发现可达的 MySQL——优先 Docker 容器(直接读取容器 env 里的 `MYSQL_ROOT_PASSWORD`),其次 localhost,可选子网扫描(`--cidr 192.168.1.0/24`)——校验凭据、建库,然后启动 goacos 容器(linux/amd64 + linux/arm64 双架构镜像)。也可以显式指定:
+部署脚本会自动发现可达的 MySQL 或 PostgreSQL——优先 Docker 容器(直接读取容器 env 里的 `MYSQL_ROOT_PASSWORD` / `POSTGRES_PASSWORD`),其次 localhost,可选子网扫描(`--cidr 192.168.1.0/24`)——校验凭据、建库,然后启动 goacos 容器(linux/amd64 + linux/arm64 双架构镜像)。也可以显式指定:
 
 ```bash
 ./deploy/deploy.sh --host 10.0.0.5 --port-db 3306 --user root --password secret
@@ -74,6 +74,7 @@ make build && GOACOS_MYSQL_HOST=127.0.0.1 GOACOS_MYSQL_USER=root GOACOS_MYSQL_PA
 | `GOACOS_ADMIN_USERNAME` / `ADMIN_PASSWORD` | `nacos` / `nacos` | 播种管理员(仅 users 表为空时) |
 | `GOACOS_HEARTBEAT_TIMEOUT_MS` | `15000` | 临时实例转不健康阈值 |
 | `GOACOS_EPHEMERAL_DELETE_AFTER_MS` | `30000` | 临时实例删除阈值 |
+| `GOACOS_SWEEP_INTERVAL_MS` | `5000` | 实例清理扫描间隔 |
 
 `NACOS_*` 前缀同样有效。
 

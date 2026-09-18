@@ -1,6 +1,6 @@
 # goacos
 
-**A lightweight, Nacos-compatible configuration center and service discovery server — rewritten in Go, backed by MySQL.**
+**A lightweight, Nacos-compatible configuration center and service discovery server — rewritten in Go, backed by MySQL or PostgreSQL.**
 
 [中文文档](README_zh.md)
 
@@ -21,7 +21,7 @@ Numbers measured locally: goacos RSS 10.9 MB after running the full e2e suite (c
 
 ## Features
 
-- **Config center** — publish/get/delete, namespaces, groups, tags, gray-listing tables, change history + revert, **long-polling listeners** (v1 `\x02/\x01` protocol and v2 JSON), MD5 change detection with in-process hub (no DB polling storm).
+- **Config center** — publish/get/delete, namespaces, groups, tags, change history + revert, **long-polling listeners** (v1 `\x02/\x01` protocol and v2 JSON), MD5 change detection with in-process hub (no DB polling storm).
 - **Service discovery** — register/deregister ephemeral & persistent instances, clusters, weights, metadata, heartbeats with the Nacos 15 s-unhealthy / 30 s-removed lifecycle, instance & service queries (v1 `ServiceInfo` shape + v2 envelope).
 - **Auth** — JWT access tokens (HS256, Nacos-compatible login endpoint), users/roles/permissions, admin-gated management APIs, optional (`GOACOS_AUTH_ENABLED=true`).
 - **Console** — embedded single-page UI at `/nacos/index.html`: services/instances, config editor, namespaces, users.
@@ -37,7 +37,7 @@ Numbers measured locally: goacos RSS 10.9 MB after running the full e2e suite (c
 ./deploy/deploy.sh
 ```
 
-The deploy script discovers a reachable MySQL server — Docker containers first (reads their `MYSQL_ROOT_PASSWORD` from container env), then localhost, optionally a subnet scan (`--cidr 192.168.1.0/24`) — verifies credentials, creates the database, and starts the goacos container (linux/amd64 + linux/arm64 images). Override discovery:
+The deploy script discovers a reachable MySQL or PostgreSQL server — Docker containers first (reads their `MYSQL_ROOT_PASSWORD` / `POSTGRES_PASSWORD` from container env), then localhost, optionally a subnet scan (`--cidr 192.168.1.0/24`) — verifies credentials, creates the database, and starts the goacos container (linux/amd64 + linux/arm64 images). Override discovery:
 
 ```bash
 ./deploy/deploy.sh --host 10.0.0.5 --port-db 3306 --user root --password secret
@@ -74,6 +74,7 @@ make build && GOACOS_MYSQL_HOST=127.0.0.1 GOACOS_MYSQL_USER=root GOACOS_MYSQL_PA
 | `GOACOS_ADMIN_USERNAME` / `ADMIN_PASSWORD` | `nacos` / `nacos` | seeded admin (only when `users` is empty) |
 | `GOACOS_HEARTBEAT_TIMEOUT_MS` | `15000` | ephemeral instance → unhealthy |
 | `GOACOS_EPHEMERAL_DELETE_AFTER_MS` | `30000` | ephemeral instance → removed |
+| `GOACOS_SWEEP_INTERVAL_MS` | `5000` | instance cleanup sweep interval |
 
 `NACOS_*` is accepted as an alias prefix.
 
