@@ -92,8 +92,8 @@ Because the configured database (MySQL or PostgreSQL, `GOACOS_DB_TYPE`) is the s
 
 ```bash
 make test              # unit tests
-E2E_DB=mysql bash scripts/e2e.sh      # end-to-end on MySQL 8 (31 checks)
-E2E_DB=postgres bash scripts/e2e.sh   # end-to-end on PostgreSQL 16 (31 checks)
+E2E_DB=mysql bash scripts/e2e.sh      # end-to-end on MySQL 8 (28 checks)
+E2E_DB=postgres bash scripts/e2e.sh   # end-to-end on PostgreSQL 16 (28 checks)
 make image-multi       # build linux/amd64 + linux/arm64 images
 ```
 
