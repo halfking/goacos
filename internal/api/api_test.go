@@ -94,3 +94,29 @@ func TestParseInstanceParamsNamespaceDefault(t *testing.T) {
 		t.Errorf("explicit namespaceId must be honored, got %q", got)
 	}
 }
+
+func TestIsOpenPathConsoleStatic(t *testing.T) {
+	// 鉴权开启时控制台静态资源必须放行，否则 SPA 连登录页都渲染不出来
+	// （2026-10-09 生产发现：/nacos/assets/* 全 403）。
+	open := []struct{ m, p string }{
+		{"GET", "/nacos/"},
+		{"GET", "/nacos/assets/app.js"},
+		{"GET", "/nacos/index.html"},
+		{"POST", "/nacos/v1/auth/users/login"},
+	}
+	for _, c := range open {
+		if !isOpenPath(c.m, c.p) {
+			t.Errorf("isOpenPath(%s %s) = false, want true", c.m, c.p)
+		}
+	}
+	closed := []struct{ m, p string }{
+		{"GET", "/nacos/v1/ns/service/list"},
+		{"POST", "/nacos/v1/cs/configs"},
+		{"GET", "/nacos/v1/auth/users"},
+	}
+	for _, c := range closed {
+		if isOpenPath(c.m, c.p) {
+			t.Errorf("isOpenPath(%s %s) = true, want false", c.m, c.p)
+		}
+	}
+}

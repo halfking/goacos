@@ -103,6 +103,13 @@ func isOpenPath(method, path string) bool {
 	if path == "/" || path == "/nacos" || path == "/nacos/index.html" || path == "/nacos/favicon.ico" {
 		return true
 	}
+	// Console static assets must load before any login can happen; the SPA
+	// then authenticates via the open login endpoint and attaches its token.
+	// Found in production 2026-10-09: with auth enabled every /nacos/assets/*
+	// fetch 403'd and the console could not even render its login screen.
+	if method == http.MethodGet && (path == "/nacos/" || strings.HasPrefix(path, "/nacos/assets/")) {
+		return true
+	}
 	if strings.HasPrefix(path, "/nacos/actuator/") {
 		return true
 	}
