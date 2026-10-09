@@ -9,6 +9,18 @@ import (
 	"github.com/halfking/goacos/internal/storage"
 )
 
+// normalizeNamespace maps an absent/blank namespaceId to the Nacos default
+// namespace "public". Before this normalization (fixed 2026-10-09, found on
+// the 252 deployment) clients that omitted namespaceId split services into a
+// '' namespace parallel to "public", creating duplicate service rows and
+// hiding instances from default-namespace queries.
+func normalizeNamespace(ns string) string {
+	if ns == "" {
+		return "public"
+	}
+	return ns
+}
+
 // instanceParams extracts naming parameters from query/form/JSON body.
 type instanceParams struct {
 	NamespaceId string
@@ -26,7 +38,7 @@ type instanceParams struct {
 
 func parseInstanceParams(r *http.Request) instanceParams {
 	p := formOrJSON(r)
-	ns := firstNonEmpty(p["namespaceId"], p["namespace_id"], p["tenant"])
+	ns := normalizeNamespace(firstNonEmpty(p["namespaceId"], p["namespace_id"], p["tenant"]))
 	group := p["groupName"]
 	if group == "" {
 		group = p["group"]
@@ -181,7 +193,7 @@ func (s *Server) namingV1ListServices(w http.ResponseWriter, r *http.Request) {
 		group = qp.Get("group")
 	}
 	items, total, err := s.ST.ListServices(r.Context(), storage.ServiceListQuery{
-		NamespaceId: firstNonEmpty(qp.Get("namespaceId"), qp.Get("tenant")),
+		NamespaceId: normalizeNamespace(firstNonEmpty(qp.Get("namespaceId"), qp.Get("tenant"))),
 		GroupName:   group, NameBlur: qp.Get("serviceNameParam"), PageNo: pageNo, PageSize: pageSize,
 	})
 	if err != nil {

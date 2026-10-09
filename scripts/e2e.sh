@@ -70,8 +70,10 @@ if ! nc -z 127.0.0.1 "$DB_PORT" 2>/dev/null; then
   if [ "$ENGINE" = mysql ]; then
     docker run -d --name "$DB_CONTAINER" -e MYSQL_ROOT_PASSWORD="$DB_PASS" \
       -p "127.0.0.1:$DB_PORT:3306" "$DB_IMAGE" >/dev/null || exit 1
-    for i in $(seq 1 60); do
-      docker exec "$DB_CONTAINER" mysqladmin ping -uroot -p"$DB_PASS" --silent >/dev/null 2>&1 && break
+    # 2026-10-09: mysqladmin ping 在首启的临时服务器阶段（root 密码未设）也返回 0，
+    # 会过早 break 然后栽在下面的带密码检查上。改用真实带密码查询做就绪判定。
+    for i in $(seq 1 90); do
+      docker exec "$DB_CONTAINER" mysql -uroot -p"$DB_PASS" -e "SELECT 1" >/dev/null 2>&1 && break
       sleep 2
     done
   else

@@ -15,12 +15,18 @@ import (
 	"github.com/halfking/goacos/internal/dbcli"
 )
 
-// version is injected at build time via -ldflags "-X main.version=...".
-var version string
+// version and buildNumber are injected at build time via -ldflags
+// "-X main.version=... -X main.buildNumber=...". buildNumber is the compile
+// count (git rev-list --count HEAD); version+buildNumber composes the unique
+// build identity (see internal/buildinfo).
+var version, buildNumber string
 
 func main() {
 	if version != "" {
 		buildinfo.Version = version
+	}
+	if buildNumber != "" {
+		buildinfo.BuildNumber = buildNumber
 	}
 	args := os.Args[1:]
 	if len(args) == 0 {
@@ -33,8 +39,8 @@ func main() {
 			os.Exit(1)
 		}
 	case "version":
-		fmt.Printf("goacos %s (commit %s, built %s)\nnacos api compatibility: %s\n",
-			buildinfo.Version, buildinfo.GitCommit, buildinfo.BuildDate, buildinfo.NacosAPICompat)
+		fmt.Printf("goacos %s (unique %s, commit %s, built %s)\nnacos api compatibility: %s\n",
+			buildinfo.Version, buildinfo.UniqueVersion(), buildinfo.GitCommit, buildinfo.BuildDate, buildinfo.NacosAPICompat)
 	case "db":
 		dbcli.Run(args[1:])
 	case "healthcheck":

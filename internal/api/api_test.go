@@ -1,6 +1,7 @@
 package api
 
 import (
+	"net/http"
 	"testing"
 
 	"github.com/halfking/goacos/internal/core"
@@ -68,5 +69,28 @@ func TestConfigKeyEquality(t *testing.T) {
 	b := core.ConfigKey{Tenant: "", Group: "G", DataId: "D"}
 	if a != b {
 		t.Error("identical keys should be equal map keys")
+	}
+}
+
+func TestNormalizeNamespace(t *testing.T) {
+	// Nacos 语义：缺省 namespaceId = public。2026-10-09 修复前空值会落 ''
+	// 命名空间，与显式 public 的同名服务形成双轨（252 实机发现）。
+	if got := normalizeNamespace(""); got != "public" {
+		t.Errorf("empty namespace should default to public, got %q", got)
+	}
+	if got := normalizeNamespace("dev"); got != "dev" {
+		t.Errorf("explicit namespace must pass through, got %q", got)
+	}
+}
+
+func TestParseInstanceParamsNamespaceDefault(t *testing.T) {
+	req, _ := http.NewRequest("POST", "/nacos/v1/ns/instance?serviceName=acc&ip=10.0.0.1&port=8080", nil)
+	p := parseInstanceParams(req)
+	if p.NamespaceId != "public" {
+		t.Errorf("register without namespaceId should land in public, got %q", p.NamespaceId)
+	}
+	req2, _ := http.NewRequest("POST", "/nacos/v1/ns/instance?serviceName=acc&namespaceId=dev&ip=10.0.0.1&port=8080", nil)
+	if got := parseInstanceParams(req2).NamespaceId; got != "dev" {
+		t.Errorf("explicit namespaceId must be honored, got %q", got)
 	}
 }

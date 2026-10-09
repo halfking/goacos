@@ -90,7 +90,7 @@ func (s *Server) namingV2ListServices(w http.ResponseWriter, r *http.Request) {
 		group = qp.Get("group")
 	}
 	items, total, err := s.ST.ListServices(r.Context(), storage.ServiceListQuery{
-		NamespaceId: firstNonEmpty(qp.Get("namespaceId"), qp.Get("tenant")),
+		NamespaceId: normalizeNamespace(firstNonEmpty(qp.Get("namespaceId"), qp.Get("tenant"))),
 		GroupName:   group, NameBlur: qp.Get("serviceNameParam"),
 		PageNo: pageNo, PageSize: pageSize,
 	})

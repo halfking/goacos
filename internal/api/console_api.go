@@ -177,6 +177,8 @@ func (s *Server) serverState(w http.ResponseWriter, r *http.Request) {
 		"consoleUiEnabled": true,
 		"functionMode":     "ALL",
 		"version":          buildinfo.Version,
+		"buildNumber":      buildinfo.BuildNumber,
+		"uniqueVersion":    buildinfo.UniqueVersion(),
 		"gitCommit":        buildinfo.GitCommit,
 		"buildDate":        buildinfo.BuildDate,
 		"compatibility":    buildinfo.NacosAPICompat,
