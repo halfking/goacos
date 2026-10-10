@@ -249,7 +249,7 @@ func TestSingleActiveMountedRouteFencesAndAtomicHistory(t *testing.T) {
 	}
 	paths := []struct{ method, path, body string }{
 		{"GET", "/nacos/v1/cs/configs?" + q.Encode(), ""}, {"GET", "/nacos/v1/cs/configs?search=accurate&" + q.Encode(), ""}, {"POST", "/nacos/v1/cs/configs", form.Encode()}, {"DELETE", "/nacos/v1/cs/configs?" + q.Encode(), ""}, {"GET", "/nacos/v1/cs/history?" + q.Encode(), ""}, {"GET", "/nacos/v1/cs/history/configId?nid=1", ""}, {"POST", "/nacos/v1/cs/configs/listener", url.Values{"Listening-Configs": {"http.yaml\x02DEFAULT_GROUP\x02" + md5Of("first") + "\x02" + ns + "\x01"}}.Encode()},
-		{"GET", "/nacos/v2/cs/config?" + q.Encode(), ""}, {"POST", "/nacos/v2/cs/config", form.Encode()}, {"DELETE", "/nacos/v2/cs/config?" + q.Encode(), ""}, {"GET", "/nacos/v2/cs/history/list?" + q.Encode(), ""}, {"GET", "/nacos/v2/cs/history?nid=1", ""}, {"POST", "/nacos/v2/cs/config/listener", form.Encode()},
+		{"GET", "/nacos/v2/cs/config?" + q.Encode(), ""}, {"GET", "/nacos/v2/cs/config/list?" + q.Encode(), ""}, {"GET", "/nacos/v1/cs/history/configs?" + q.Encode() + "&nid=1", ""}, {"POST", "/nacos/v2/cs/config", form.Encode()}, {"DELETE", "/nacos/v2/cs/config?" + q.Encode(), ""}, {"GET", "/nacos/v2/cs/history/list?" + q.Encode(), ""}, {"GET", "/nacos/v2/cs/history?nid=1", ""}, {"POST", "/nacos/v2/cs/config/listener", form.Encode()},
 	}
 	for _, p := range paths {
 		t.Run(p.method+"-"+p.path, func(t *testing.T) {

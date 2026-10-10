@@ -1,0 +1,10 @@
+=== RUN   TestSingleActiveListenerMethodCompatibility
+2026/10/11 02:57:23 [goacos] database-active config hub preloaded 22 entries
+2026/10/11 02:57:23 [goacos] GET /nacos/v1/cs/configs/listener 3ms
+    config_fencing_integration_test.go:372: active listener method rejection changed to HTTP 404
+--- FAIL: TestSingleActiveListenerMethodCompatibility (0.19s)
+=== RUN   TestSingleActivePoolCannotStarveAuth
+--- PASS: TestSingleActivePoolCannotStarveAuth (0.19s)
+FAIL
+FAIL	github.com/halfking/goacos/internal/api	0.938s
+FAIL

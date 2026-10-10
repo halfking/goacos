@@ -47,9 +47,6 @@ func (s *Server) serveConfig(w http.ResponseWriter, r *http.Request, next http.H
 			if b.overflow {
 				return errConfigHandler
 			}
-			if b.code >= 400 {
-				return errConfigHandler
-			}
 			return nil
 		})
 		if e != nil {

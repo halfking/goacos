@@ -58,6 +58,11 @@ func (s *Store) AcquireConfigOwnership(ctx context.Context) error {
 		}
 		return s.CheckConfigOwnership(ctx)
 	}
+	// Reserve a physical config session while retaining pool capacity for
+	// fresh auth/registry checks that run before config admission.
+	if s.DB.Stats().MaxOpenConnections == 1 {
+		return ErrConfigInactive
+	}
 	conn, e := s.DB.Conn(ctx)
 	if e != nil {
 		return fmt.Errorf("%w: connection unavailable", ErrConfigInactive)
