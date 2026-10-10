@@ -79,10 +79,10 @@ Server configuration is environment-driven (GOACOS_* or NACOS_* prefix):
   GOACOS_MYSQL_DB=goacos                  database name
   GOACOS_MYSQL_USER=root                  database user
   GOACOS_MYSQL_PASSWORD=                  database password
-  GOACOS_AUTH_ENABLED=false               require access tokens
-  GOACOS_AUTH_TOKEN_SECRET=...            JWT signing secret (set in HA setups)
+  GOACOS_AUTH_ENABLED=false               unsecured compatibility mode; enable for private deployments
+  GOACOS_AUTH_TOKEN_SECRET=...            explicit private JWT key, at least 32 bytes when auth enabled
   GOACOS_ADMIN_USERNAME=nacos             seeded admin username
-  GOACOS_ADMIN_PASSWORD=nacos             seeded admin password
+  GOACOS_ADMIN_PASSWORD=...               private seed password, 12+ characters/72 bytes max when auth enabled
 `)
 		os.Exit(2)
 	}

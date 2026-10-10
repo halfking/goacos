@@ -137,8 +137,8 @@ func (h *ConfigHub) WaitChanged(ctx context.Context, keys []ConfigKey, known map
 		h.mu.Unlock()
 	}()
 
-	// Wake on: write notification, 1s safety tick (multi-node writes land in
-	// MySQL directly and only reach this node's index via the tick), timeout.
+	// Wake on: local write notification, a 1s recheck of the process-local
+	// index, or timeout. The tick does not reload cross-node database writes.
 	tick := time.NewTicker(1 * time.Second)
 	defer tick.Stop()
 	deadline := time.NewTimer(timeout)

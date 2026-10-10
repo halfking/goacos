@@ -1,0 +1,216 @@
+{
+  "base": "ff28237270777a7f161e2b0b0a3b840bc42dd86e",
+  "started_source_head": "30dfd0f2b1e09b402f8e27f2ccde845b0d7968dd",
+  "product_hashes": {
+    "internal/api/router.go": "f2cfcfcae2496eceb5c7902252241d68fb26fcd1990fdf3cbdfa296a9d874610",
+    "internal/core/auth.go": "8d7c433c9a30687572b87a6f03cce367c0d7ba40f4bd070de9b41f074b1cb61c",
+    "internal/storage/authstore.go": "074bb6bf8c40ea9a3a42f0577d2ef65320256a70b3dc86fc67347ed0a8d37fcd",
+    "internal/api/auth_guard_integration_test.go": "a2f66b74de77f5716801f9c5b5a514fcc15da13ad6e2213639e34facae335b65",
+    "internal/core/auth_test.go": "8a368310b38ff34b9e745da12dc8fe772c29516ac6c5d136cf4bf97a895d505d",
+    "internal/api/api_test.go": "e62430975ea5508bbe56f24656229fe36de43fc702a6b1de041eefe37d1e3628",
+    "internal/config/config.go": "955c0b89d428f519c603ae63744b72376d8da573ceae1cad148b91e590e26677",
+    "internal/config/auth_test.go": "01ae73372c2cf05200d6a518c2a98c48670d45dc923d4b909da3c405576cc9ec",
+    "internal/app/app.go": "063fa625b8622899b756ca30f63c3b7a5187d3cd7e0d33ef7696b8b38934bd93",
+    "internal/app/auth_configuration_test.go": "fad13e074dc2c4b795393933a6296db8798cc0a1adce5784dfc5260921514c2c",
+    "main.go": "d1bb0cfb95b558450780a5fe1e014d44bc5491749e037794f247bbb751654515",
+    "internal/core/hub.go": "41faf2dd467f3925355f6e97f487308803c1e0f6bbb286597b72dd887c5b1381"
+  },
+  "go": "go version go1.27.2 darwin/arm64",
+  "results": [
+    {
+      "name": "release-covered-race",
+      "argv": [
+        "/tmp/memora-w020-toolchain-20261011/go-cache/bin/go",
+        "test",
+        "-race",
+        "-count=1",
+        "-tags=integration",
+        "-coverpkg=./internal/api,./internal/core,./internal/storage,./internal/config,./internal/app",
+        "-coverprofile=/Users/xutaohuang/.codex/worktrees/enterprise-goal-20261011/goacos/docs/evidence/w038-auth-20261011/release-coverage.out",
+        "-v",
+        "./internal/api",
+        "./internal/core",
+        "./internal/storage",
+        "./internal/config",
+        "./internal/app"
+      ],
+      "exit_code": 0,
+      "started_utc": "2026-10-10T18:15:30.407653+00:00",
+      "log_sha256": "bf3db0bf30e751e923fecc74da260c6c51bc17a86b371f0ab52e1fc31840ad69",
+      "env": {
+        "GOTOOLCHAIN": "local",
+        "GOCACHE": "/tmp/goacos-auth-gocache-20261011",
+        "GOACOS_TEST_PG_DSN": "explicit private synthetic loopback fixture; omitted"
+      }
+    },
+    {
+      "name": "release-unit",
+      "argv": [
+        "/tmp/memora-w020-toolchain-20261011/go-cache/bin/go",
+        "test",
+        "-count=1",
+        "./..."
+      ],
+      "exit_code": 0,
+      "started_utc": "2026-10-10T18:15:30.408128+00:00",
+      "log_sha256": "f979d0b8016ecf589c190069700d01b21b63e026d664fb52f51b1f70234791af",
+      "env": {
+        "GOTOOLCHAIN": "local",
+        "GOCACHE": "/tmp/goacos-auth-gocache-20261011",
+        "GOACOS_TEST_PG_DSN": "explicit private synthetic loopback fixture; omitted"
+      }
+    },
+    {
+      "name": "release-vet",
+      "argv": [
+        "/tmp/memora-w020-toolchain-20261011/go-cache/bin/go",
+        "vet",
+        "./..."
+      ],
+      "exit_code": 0,
+      "started_utc": "2026-10-10T18:15:30.410763+00:00",
+      "log_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "env": {
+        "GOTOOLCHAIN": "local",
+        "GOCACHE": "/tmp/goacos-auth-gocache-20261011",
+        "GOACOS_TEST_PG_DSN": "explicit private synthetic loopback fixture; omitted"
+      }
+    },
+    {
+      "name": "release-build-linux-arm64",
+      "argv": [
+        "/tmp/memora-w020-toolchain-20261011/go-cache/bin/go",
+        "build",
+        "-trimpath",
+        "-o",
+        "/tmp/goacos-w038-auth-linux-arm64-20261011",
+        "."
+      ],
+      "exit_code": 0,
+      "started_utc": "2026-10-10T18:15:38.267721+00:00",
+      "log_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "env": {
+        "GOTOOLCHAIN": "local",
+        "GOCACHE": "/tmp/goacos-auth-gocache-20261011",
+        "GOACOS_TEST_PG_DSN": "explicit private synthetic loopback fixture; omitted",
+        "CGO_ENABLED": "0",
+        "GOOS": "linux",
+        "GOARCH": "arm64"
+      }
+    },
+    {
+      "name": "release-source-symbol",
+      "argv": [
+        "/tmp/memora-w020-dependency-tools-patched-20261011/govulncheck",
+        "./..."
+      ],
+      "exit_code": 1,
+      "started_utc": "2026-10-10T18:15:41.056389+00:00",
+      "log_sha256": "aa3c3fa14aed5d54af13b8383f7aacaea1616a7092686d70f4941020b138be9d",
+      "env": {
+        "GOTOOLCHAIN": "local",
+        "GOCACHE": "/tmp/goacos-auth-gocache-20261011",
+        "GOACOS_TEST_PG_DSN": "explicit private synthetic loopback fixture; omitted"
+      }
+    },
+    {
+      "name": "release-module-verify",
+      "argv": [
+        "/tmp/memora-w020-toolchain-20261011/go-cache/bin/go",
+        "mod",
+        "verify"
+      ],
+      "exit_code": 0,
+      "started_utc": "2026-10-10T18:15:42.292994+00:00",
+      "log_sha256": "b4537ed75f533f993f371954de47e42a793b8e5b0587577de7e27fb3e50696bd",
+      "env": {
+        "GOTOOLCHAIN": "local",
+        "GOCACHE": "/tmp/goacos-auth-gocache-20261011",
+        "GOACOS_TEST_PG_DSN": "explicit private synthetic loopback fixture; omitted"
+      }
+    },
+    {
+      "name": "release-binary-symbol",
+      "argv": [
+        "/tmp/memora-w020-dependency-tools-patched-20261011/govulncheck",
+        "-mode=binary",
+        "/tmp/goacos-w038-auth-linux-arm64-20261011"
+      ],
+      "exit_code": 0,
+      "started_utc": "2026-10-10T18:15:56.973140+00:00",
+      "log_sha256": "b5ae54ddcfa4cb39e85f84ad2d9e43556bd817c480eaab2a71bab63bfc29353b",
+      "env": {
+        "GOTOOLCHAIN": "local",
+        "GOCACHE": "/tmp/goacos-auth-gocache-20261011",
+        "GOACOS_TEST_PG_DSN": "explicit private synthetic loopback fixture; omitted"
+      }
+    },
+    {
+      "name": "release-source-symbol-retry",
+      "argv": [
+        "/tmp/memora-w020-dependency-tools-patched-20261011/govulncheck",
+        "./..."
+      ],
+      "exit_code": 0,
+      "started_utc": "2026-10-10T18:25:42.095617+00:00",
+      "log_sha256": "b5ae54ddcfa4cb39e85f84ad2d9e43556bd817c480eaab2a71bab63bfc29353b",
+      "env": {
+        "GOTOOLCHAIN": "local",
+        "GOCACHE": "/tmp/goacos-auth-gocache-20261011"
+      },
+      "retries": "original source scan failed downloading public vulnerability index with EOF; original result/log retained"
+    },
+    {
+      "name": "release-module-invalid-command",
+      "argv": [
+        "/tmp/memora-w020-dependency-tools-patched-20261011/govulncheck",
+        "-json",
+        "-scan=module",
+        "./..."
+      ],
+      "exit_code": null,
+      "log_sha256": "69d05631f81a33de1e585a59dcb1c9fbf3253f28c4b0b66ea520fdf46df14b08",
+      "scope": "scanner rejected module-only pattern; collector failed to parse non-JSON diagnostic; neither is a successful vulnerability scan",
+      "collector_exit_code": 1,
+      "scanner_exit_code": "not retained before JSON parse failed"
+    },
+    {
+      "name": "release-module-vulnerabilities",
+      "argv": [
+        "/tmp/memora-w020-dependency-tools-patched-20261011/govulncheck",
+        "-json",
+        "-scan=module"
+      ],
+      "exit_code": 0,
+      "started_utc": "2026-10-10T18:26:31.798943+00:00",
+      "log_sha256": "6069a2a52f62944431c51238be0aaac14846ca0d8977f84edb8eb259b87db041",
+      "env": {
+        "GOTOOLCHAIN": "local",
+        "GOCACHE": "/tmp/goacos-auth-gocache-20261011"
+      }
+    }
+  ],
+  "production_deployment": false,
+  "scope": "request-time token/live-role admission and admin writes, strict auth bootstrap config, public read routes; no fine-grained read/ownership, commit-atomic revocation, MySQL, multi-replica or production acceptance",
+  "binary": {
+    "path": "/tmp/goacos-w038-auth-linux-arm64-20261011",
+    "target": "linux/arm64",
+    "sha256": "34d68f13f31c2ae2e3709435332eadbcab0003cfb835bf36659dfc0cfa06b0b9"
+  },
+  "covered_replay_counts": {
+    "top_level_passes": 33,
+    "nested_passes": 129,
+    "skips": 0,
+    "api_top_level_passes": 7
+  },
+  "module_advisories": [
+    {
+      "id": "GO-2026-5932",
+      "summary": "The golang.org/x/crypto/openpgp package is unmaintained, unsafe by design, and has known security issues",
+      "modified": "2026-07-07T22:15:29Z"
+    }
+  ],
+  "module_finding_records": 1,
+  "module_database_records_received": 227,
+  "module_finding_scope": "affected required-module findings; historical/fixed/withdrawn OSV payloads received from database are not all affected findings"
+}

@@ -29,6 +29,9 @@ func NewAuthService(cfg *config.Config, st *storage.Store) *AuthService {
 
 // Login verifies credentials and returns (token, ttlSeconds, globalAdmin).
 func (a *AuthService) Login(ctx context.Context, username, password string) (string, int, bool, error) {
+	if err := a.cfg.ValidateAuth(); err != nil {
+		return "", 0, false, err
+	}
 	u, err := a.st.GetUser(ctx, username)
 	if err != nil {
 		return "", 0, false, err
@@ -71,6 +74,9 @@ type Claims struct {
 
 // Parse validates a token string and returns its claims.
 func (a *AuthService) Parse(tokenString string) (*Claims, error) {
+	if err := a.cfg.ValidateAuth(); err != nil {
+		return nil, err
+	}
 	tok, err := jwt.Parse(tokenString, func(t *jwt.Token) (any, error) {
 		if t.Method != jwt.SigningMethodHS256 {
 			return nil, errors.New("unexpected signing method")

@@ -23,7 +23,7 @@ Numbers measured locally: goacos RSS 10.9 MB after running the full e2e suite (c
 
 - **Config center** — publish/get/delete, namespaces, groups, tags, change history + revert, **long-polling listeners** (v1 `\x02/\x01` protocol and v2 JSON), MD5 change detection with in-process hub (no DB polling storm).
 - **Service discovery** — register/deregister ephemeral & persistent instances, clusters, weights, metadata, heartbeats with the Nacos 15 s-unhealthy / 30 s-removed lifecycle, instance & service queries (v1 `ServiceInfo` shape + v2 envelope).
-- **Auth** — JWT access tokens (HS256, Nacos-compatible login endpoint), users/roles/permissions, admin-gated management APIs, optional (`GOACOS_AUTH_ENABLED=true`).
+- **Auth** — JWT access tokens (HS256, required goacos issuer/expiry), live enabled-user/role admission and admin-gated writes when `GOACOS_AUTH_ENABLED=true`. Fine-grained resource permission enforcement remains unimplemented.
 - **Console** — embedded single-page UI at `/nacos/index.html`: services/instances, config editor, namespaces, users.
 - **Dual-engine storage** — **MySQL** and **PostgreSQL** are both first-class. One embedded schema per engine (config tables mirror the official Nacos layout); a single dialect layer switches between them.
 - **Database auto-discovery** — `goacos db discover` finds reachable database servers automatically: Docker containers first (reads their `MYSQL_ROOT_PASSWORD` / `POSTGRES_PASSWORD` from container env), then localhost (MySQL :3306, PostgreSQL :5432), optionally a subnet scan (`--cidr`). Restrict to one engine with `--db-type`.
@@ -42,7 +42,6 @@ The deploy script discovers a reachable MySQL or PostgreSQL server — Docker co
 ```bash
 ./deploy/deploy.sh --host 10.0.0.5 --port-db 3306 --user root --password secret
 ./deploy/deploy.sh --db-type postgres --host 10.0.0.6 --port-db 5432 --user postgres --password secret
-./deploy/deploy.sh --auth --admin-pass S3cret --db prod_goacos --force
 ```
 
 ### Docker Compose (MySQL or PostgreSQL)
@@ -69,14 +68,16 @@ make build && GOACOS_MYSQL_HOST=127.0.0.1 GOACOS_MYSQL_USER=root GOACOS_MYSQL_PA
 | `GOACOS_MYSQL_HOST` / `MYSQL_PORT` | `127.0.0.1` / `3306` | database endpoint (either engine) |
 | `GOACOS_MYSQL_DB` | `goacos` | database (auto-created) |
 | `GOACOS_MYSQL_USER` / `MYSQL_PASSWORD` | `root` / `` | credentials |
-| `GOACOS_AUTH_ENABLED` | `false` | require access tokens |
-| `GOACOS_AUTH_TOKEN_SECRET` | built-in dev secret | JWT signing key (set the same value on all replicas) |
-| `GOACOS_ADMIN_USERNAME` / `ADMIN_PASSWORD` | `nacos` / `nacos` | seeded admin (only when `users` is empty) |
+| `GOACOS_AUTH_ENABLED` | `false` | unsecured compatibility mode; enable for private deployments |
+| `GOACOS_AUTH_TOKEN_SECRET` | empty | explicit private JWT key, at least 32 bytes; old public default rejected when auth enabled |
+| `GOACOS_ADMIN_USERNAME` / `ADMIN_PASSWORD` | `nacos` / `nacos` | seed values; auth-enabled startup requires nonblank username and private password with 12+ characters/72 bytes max |
 | `GOACOS_HEARTBEAT_TIMEOUT_MS` | `15000` | ephemeral instance → unhealthy |
 | `GOACOS_EPHEMERAL_DELETE_AFTER_MS` | `30000` | ephemeral instance → removed |
 | `GOACOS_SWEEP_INTERVAL_MS` | `5000` | instance cleanup sweep interval |
 
 `NACOS_*` is accepted as an alias prefix.
+
+Auth-enabled startup validates configuration before opening storage. Token TTL must be positive and at most 86400 seconds. Login tokens require HS256, issuer `goacos` and expiry; protected requests reload enabled users and current roles. Normal users cannot register, heartbeat, deregister, change namespaces/configuration or list the user directory. GET/HEAD heartbeat is a write; the two POST config-listener routes remain reads. Existing read routes have no namespace/service ACL enforcement, and revocation is checked at request admission rather than atomically with each business commit. Private deployment admission still requires those remaining gates. See the scoped [verification evidence](docs/evidence/w038-auth-20261011/README.md).
 
 ## API compatibility
 
@@ -86,7 +87,7 @@ Works out of the box with: curl/scripts, [nacos-sdk-go](https://github.com/nacos
 
 ## Running multiple replicas
 
-Because the configured database (MySQL or PostgreSQL, `GOACOS_DB_TYPE`) is the system of record, replicas are stateless: point N nodes at the same database, put them behind a load balancer, set the same `GOACOS_AUTH_TOKEN_SECRET`. Config long-poll detects cross-node changes within ~1 s; the instance lifecycle sweeper is idempotent and safe to run concurrently.
+The database persists configuration, but `ConfigHub` loads its notification index once and updates it in process. Its 1s tick only rereads that in-memory index; cross-node writes do not reach another replica's listeners. Route all configuration reads/writes/listeners to one active instance until a real cross-replica consistency mechanism and failure tests are implemented. This routing fence is not yet enforced by the server; multiple replicas and HA are not accepted.
 
 ## Development
 

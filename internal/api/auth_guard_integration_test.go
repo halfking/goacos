@@ -74,6 +74,21 @@ func authGuardFixture(t *testing.T) (*Server, string, string, func(string, strin
 
 func TestW038NormalUserCannotMutateRegistryConfigurationOrNamespace(t *testing.T) {
 	s, ns, token, request := authGuardFixture(t)
+	principal, err := s.Auth.Parse(token)
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, route := range []struct{ method, path, body string }{
+		{"POST", "/nacos/v1/auth/roles", url.Values{"username": {principal.Username}, "role": {"ROLE_ADMIN"}}.Encode()},
+		{"GET", "/nacos/v1/auth/roles?username=" + url.QueryEscape(s.Cfg.AdminUsername), ""},
+		{"DELETE", "/nacos/v1/auth/roles?" + url.Values{"username": {s.Cfg.AdminUsername}, "role": {"ROLE_ADMIN"}}.Encode(), ""},
+	} {
+		t.Run("role-management-"+route.method, func(t *testing.T) {
+			if got := request(route.method, route.path, route.body, token); got != 403 {
+				t.Errorf("normal user role management returned %d", got)
+			}
+		})
+	}
 	naming := url.Values{"namespaceId": {ns}, "serviceName": {"auth-guard"}, "ip": {"127.0.0.1"}, "port": {"18301"}}
 	config := url.Values{"tenant": {ns}, "namespaceId": {ns}, "dataId": {"auth-guard.yaml"}, "group": {"DEFAULT_GROUP"}, "content": {"synthetic: true"}}
 	console := url.Values{"namespaceId": {ns}, "namespaceName": {"synthetic namespace"}}

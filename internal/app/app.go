@@ -20,6 +20,9 @@ import (
 // RunServer opens MySQL (auto-create database + schema + seed), then serves
 // the Nacos-compatible HTTP API until interrupted.
 func RunServer(cfg *config.Config) error {
+	if err := cfg.ValidateAuth(); err != nil {
+		return err
+	}
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer stop()
 

@@ -8,6 +8,7 @@ import (
 	"strconv"
 	"strings"
 	"time"
+	"unicode/utf8"
 )
 
 type Config struct {
@@ -109,7 +110,7 @@ func FromEnv() *Config {
 		MySQLUser:              getenv("MYSQL_USER", "root"),
 		MySQLPassword:          getenv("MYSQL_PASSWORD", ""),
 		AuthEnabled:            getenvBool("AUTH_ENABLED", false),
-		TokenSecret:            getenv("AUTH_TOKEN_SECRET", "goacos-default-secret-SecretKey012345678901234567890123456789012345678901234567890123456789"),
+		TokenSecret:            getenv("AUTH_TOKEN_SECRET", ""),
 		TokenTTLSeconds:        getenvInt("AUTH_TOKEN_TTL_SECONDS", 18000),
 		AdminUsername:          getenv("ADMIN_USERNAME", "nacos"),
 		AdminPassword:          getenv("ADMIN_PASSWORD", "nacos"),
@@ -122,6 +123,33 @@ func FromEnv() *Config {
 		ConnMaxLifetime:        time.Duration(getenvInt64("MYSQL_CONN_MAX_LIFETIME_SECONDS", 1800)) * time.Second,
 		LogLevel:               getenv("LOG_LEVEL", "info"),
 	}
+}
+
+// ValidateAuth fails before opening storage or admitting an authenticated
+// request. Auth-disabled compatibility mode is explicitly unsecured; enterprise
+// deployments must enable authentication and provide private configuration.
+func (c *Config) ValidateAuth() error {
+	if c == nil {
+		return fmt.Errorf("auth configuration: missing configuration")
+	}
+	if !c.AuthEnabled {
+		return nil
+	}
+	// Reject the old public repository default even though its length is large.
+	const oldPublicKey = "goacos-default-secret-SecretKey012345678901234567890123456789012345678901234567890123456789"
+	if len(c.TokenSecret) < 32 || c.TokenSecret == oldPublicKey || strings.TrimSpace(c.TokenSecret) != c.TokenSecret {
+		return fmt.Errorf("auth configuration: an explicit private JWT key of at least 32 bytes is required")
+	}
+	if c.AdminUsername == "" || strings.TrimSpace(c.AdminUsername) != c.AdminUsername {
+		return fmt.Errorf("auth configuration: a nonblank admin seed username is required")
+	}
+	if utf8.RuneCountInString(c.AdminPassword) < 12 || len(c.AdminPassword) > 72 || strings.TrimSpace(c.AdminPassword) != c.AdminPassword {
+		return fmt.Errorf("auth configuration: a private admin seed password of at least 12 characters and at most 72 bytes is required")
+	}
+	if c.TokenTTLSeconds <= 0 || c.TokenTTLSeconds > 86400 {
+		return fmt.Errorf("auth configuration: JWT TTL must be positive and at most 86400 seconds")
+	}
+	return nil
 }
 
 // Addr returns the HTTP listen address.
