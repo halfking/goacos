@@ -1,0 +1,43 @@
+=== RUN   TestW038EnabledAuthRejectsPublicDefaultsAndWeakConfiguration
+2026/10/11 02:08:36 [goacos] config hub loaded 0 md5 entries
+=== RUN   TestW038EnabledAuthRejectsPublicDefaultsAndWeakConfiguration/empty-key
+    auth_guard_integration_test.go:248: unsafe auth configuration issued a token
+2026/10/11 02:08:38 [goacos] POST /nacos/v1/ns/instance 4ms
+    auth_guard_integration_test.go:273: unsafe configuration admitted a signed request: HTTP 200
+=== RUN   TestW038EnabledAuthRejectsPublicDefaultsAndWeakConfiguration/short-key
+    auth_guard_integration_test.go:248: unsafe auth configuration issued a token
+2026/10/11 02:08:39 [goacos] POST /nacos/v1/ns/instance 3ms
+    auth_guard_integration_test.go:273: unsafe configuration admitted a signed request: HTTP 200
+=== RUN   TestW038EnabledAuthRejectsPublicDefaultsAndWeakConfiguration/public-default-key
+    auth_guard_integration_test.go:248: unsafe auth configuration issued a token
+2026/10/11 02:08:39 [goacos] POST /nacos/v1/ns/instance 4ms
+    auth_guard_integration_test.go:273: unsafe configuration admitted a signed request: HTTP 200
+=== RUN   TestW038EnabledAuthRejectsPublicDefaultsAndWeakConfiguration/padded-key
+    auth_guard_integration_test.go:248: unsafe auth configuration issued a token
+2026/10/11 02:08:40 [goacos] POST /nacos/v1/ns/instance 2ms
+    auth_guard_integration_test.go:273: unsafe configuration admitted a signed request: HTTP 200
+=== RUN   TestW038EnabledAuthRejectsPublicDefaultsAndWeakConfiguration/public-default-seed-password
+    auth_guard_integration_test.go:248: unsafe auth configuration issued a token
+2026/10/11 02:08:40 [goacos] POST /nacos/v1/ns/instance 3ms
+    auth_guard_integration_test.go:273: unsafe configuration admitted a signed request: HTTP 200
+=== RUN   TestW038EnabledAuthRejectsPublicDefaultsAndWeakConfiguration/empty-seed-username
+    auth_guard_integration_test.go:248: unsafe auth configuration issued a token
+2026/10/11 02:08:41 [goacos] POST /nacos/v1/ns/instance 2ms
+    auth_guard_integration_test.go:273: unsafe configuration admitted a signed request: HTTP 200
+=== RUN   TestW038EnabledAuthRejectsPublicDefaultsAndWeakConfiguration/nonpositive-token-ttl
+    auth_guard_integration_test.go:248: unsafe auth configuration issued a token
+2026/10/11 02:08:42 [goacos] POST /nacos/v1/ns/instance 3ms
+    auth_guard_integration_test.go:273: unsafe configuration admitted a signed request: HTTP 200
+=== NAME  TestW038EnabledAuthRejectsPublicDefaultsAndWeakConfiguration
+    auth_guard_integration_test.go:279: unsafe configurations mutated store: count=1 error=<nil>
+--- FAIL: TestW038EnabledAuthRejectsPublicDefaultsAndWeakConfiguration (5.68s)
+    --- FAIL: TestW038EnabledAuthRejectsPublicDefaultsAndWeakConfiguration/empty-key (0.59s)
+    --- FAIL: TestW038EnabledAuthRejectsPublicDefaultsAndWeakConfiguration/short-key (0.56s)
+    --- FAIL: TestW038EnabledAuthRejectsPublicDefaultsAndWeakConfiguration/public-default-key (0.56s)
+    --- FAIL: TestW038EnabledAuthRejectsPublicDefaultsAndWeakConfiguration/padded-key (0.56s)
+    --- FAIL: TestW038EnabledAuthRejectsPublicDefaultsAndWeakConfiguration/public-default-seed-password (0.57s)
+    --- FAIL: TestW038EnabledAuthRejectsPublicDefaultsAndWeakConfiguration/empty-seed-username (0.56s)
+    --- FAIL: TestW038EnabledAuthRejectsPublicDefaultsAndWeakConfiguration/nonpositive-token-ttl (0.56s)
+FAIL
+FAIL	github.com/halfking/goacos/internal/api	6.234s
+FAIL

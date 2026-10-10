@@ -100,24 +100,19 @@ func (s *Server) Handler() http.Handler {
 
 // openEndpoints lists path prefixes/methods that bypass auth.
 func isOpenPath(method, path string) bool {
+	read := method == http.MethodGet || method == http.MethodHead
 	if path == "/" || path == "/nacos" || path == "/nacos/index.html" || path == "/nacos/favicon.ico" {
-		return true
+		return read
 	}
 	// Console static assets must load before any login can happen; the SPA
 	// then authenticates via the open login endpoint and attaches its token.
 	// Found in production 2026-10-09: with auth enabled every /nacos/assets/*
 	// fetch 403'd and the console could not even render its login screen.
-	if method == http.MethodGet && (path == "/nacos/" || strings.HasPrefix(path, "/nacos/assets/")) {
+	if read && (path == "/nacos/" || strings.HasPrefix(path, "/nacos/assets/")) {
 		return true
 	}
-	if strings.HasPrefix(path, "/nacos/actuator/") {
-		return true
-	}
-	if strings.HasPrefix(path, "/nacos/v1/console/health/") {
-		return true
-	}
-	if path == "/nacos/v1/console/server/state" {
-		return true
+	if path == "/nacos/actuator/health" || path == "/nacos/v1/console/health/readiness" || path == "/nacos/v1/console/health/liveness" || path == "/nacos/v1/console/server/state" {
+		return read
 	}
 	if path == "/nacos/v1/auth/users/login" || path == "/nacos/v2/auth/user/login" {
 		return method == http.MethodPost || method == http.MethodGet

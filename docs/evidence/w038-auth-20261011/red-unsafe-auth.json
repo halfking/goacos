@@ -1,0 +1,46 @@
+{
+  "source_head": "d3717ad9ee01aeaf9bc559370cb504e6a75aac82",
+  "config_product_unchanged": true,
+  "results": [
+    {
+      "name": "red-unsafe-auth-startup",
+      "argv": [
+        "/tmp/memora-w020-toolchain-20261011/go-cache/bin/go",
+        "test",
+        "-count=1",
+        "-run",
+        "TestServerRejectsUnsafeAuthBeforeOpeningDatabase",
+        "-v",
+        "./internal/app"
+      ],
+      "actual_exit_code": 1,
+      "started_utc": "2026-10-10T18:08:26.977871+00:00",
+      "log_sha256": "e2e1dca8f535d55e09b7eae0c4719513013100f733f54a2704bfe5c7608a4ea4",
+      "env": {
+        "GOTOOLCHAIN": "local",
+        "GOACOS_TEST_PG_DSN": "private synthetic loopback fixture; omitted"
+      }
+    },
+    {
+      "name": "red-unsafe-auth-http",
+      "argv": [
+        "/tmp/memora-w020-toolchain-20261011/go-cache/bin/go",
+        "test",
+        "-race",
+        "-count=1",
+        "-tags=integration",
+        "-run",
+        "TestW038EnabledAuthRejectsPublicDefaultsAndWeakConfiguration",
+        "-v",
+        "./internal/api"
+      ],
+      "actual_exit_code": 1,
+      "started_utc": "2026-10-10T18:08:26.978900+00:00",
+      "log_sha256": "c620f7ca35be611b3f6c6fdb185c3159bb6ef54cf957d69be9475849b5b6c219",
+      "env": {
+        "GOTOOLCHAIN": "local",
+        "GOACOS_TEST_PG_DSN": "private synthetic loopback fixture; omitted"
+      }
+    }
+  ]
+}

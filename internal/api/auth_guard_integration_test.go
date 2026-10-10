@@ -13,6 +13,7 @@ import (
 	"time"
 
 	"github.com/golang-jwt/jwt/v5"
+	"github.com/halfking/goacos/internal/config"
 	"github.com/halfking/goacos/internal/core"
 	"github.com/halfking/goacos/internal/storage"
 )
@@ -222,6 +223,63 @@ func TestW038IssuerContractEnforcedOnAuthenticatedHTTP(t *testing.T) {
 	}
 }
 
+func TestW038EnabledAuthRejectsPublicDefaultsAndWeakConfiguration(t *testing.T) {
+	s, ns, _, _ := authGuardFixture(t)
+	// This is the repository's previously public default, not a user secret.
+	publicDefault := "goacos-default-secret-SecretKey012345678901234567890123456789012345678901234567890123456789"
+	cases := []struct {
+		name   string
+		mutate func(*config.Config)
+	}{
+		{"empty-key", func(c *config.Config) { c.TokenSecret = "" }},
+		{"short-key", func(c *config.Config) { c.TokenSecret = "short" }},
+		{"public-default-key", func(c *config.Config) { c.TokenSecret = publicDefault }},
+		{"padded-key", func(c *config.Config) { c.TokenSecret = " " + c.TokenSecret }},
+		{"public-default-seed-password", func(c *config.Config) { c.AdminPassword = "nacos" }},
+		{"empty-seed-username", func(c *config.Config) { c.AdminUsername = "" }},
+		{"nonpositive-token-ttl", func(c *config.Config) { c.TokenTTLSeconds = 0 }},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			cfg := *s.Cfg
+			tc.mutate(&cfg)
+			auth := core.NewAuthService(&cfg, s.ST)
+			if _, _, _, err := auth.Login(context.Background(), s.Cfg.AdminUsername, s.Cfg.AdminPassword); err == nil {
+				t.Error("unsafe auth configuration issued a token")
+			}
+			weakServer := *s
+			weakServer.Cfg = &cfg
+			weakServer.Auth = auth
+			srv := httptest.NewServer(weakServer.Handler())
+			defer srv.Close()
+			claims := jwt.MapClaims{"sub": s.Cfg.AdminUsername, "roles": []string{"ROLE_ADMIN"}, "iss": "goacos", "exp": time.Now().Add(time.Minute).Unix()}
+			token, err := jwt.NewWithClaims(jwt.SigningMethodHS256, claims).SignedString([]byte(cfg.TokenSecret))
+			if err != nil {
+				t.Fatal(err)
+			}
+			path := "/nacos/v1/ns/instance?" + url.Values{"namespaceId": {ns}, "serviceName": {"unsafe-auth"}, "ip": {"127.0.0.1"}, "port": {"18305"}}.Encode()
+			req, err := http.NewRequest("POST", srv.URL+path, nil)
+			if err != nil {
+				t.Fatal(err)
+			}
+			req.Header.Set("Authorization", "Bearer "+token)
+			resp, err := srv.Client().Do(req)
+			if err != nil {
+				t.Fatal(err)
+			}
+			defer resp.Body.Close()
+			_, _ = io.Copy(io.Discard, resp.Body)
+			if resp.StatusCode != 403 {
+				t.Errorf("unsafe configuration admitted a signed request: HTTP %d", resp.StatusCode)
+			}
+		})
+	}
+	var count int
+	if err := s.ST.QueryRow(context.Background(), "SELECT COUNT(*) FROM naming_instance WHERE namespace_id=?", ns).Scan(&count); err != nil || count != 0 {
+		t.Fatalf("unsafe configurations mutated store: count=%d error=%v", count, err)
+	}
+}
+
 func TestW038ReadListenerAndLiveAdminCompatibility(t *testing.T) {
 	s, ns, token, request := authGuardFixture(t)
 	for _, path := range []string{"/nacos/v1/cs/configs/listener", "/nacos/v2/cs/config/listener"} {
@@ -243,11 +301,51 @@ func TestW038ReadListenerAndLiveAdminCompatibility(t *testing.T) {
 			}
 		})
 	}
+	for _, version := range []string{"v1", "v2"} {
+		t.Run(version+"-admin-config-namespace", func(t *testing.T) {
+			configPath, namespacePath := "/nacos/"+version+"/cs/config", "/nacos/"+version+"/console/namespace"
+			if version == "v1" {
+				configPath += "s"
+				namespacePath += "s"
+			}
+			c := url.Values{"tenant": {ns}, "namespaceId": {ns}, "dataId": {"admin.yaml"}, "group": {"DEFAULT_GROUP"}, "content": {"synthetic: admin"}}
+			if got := request("POST", configPath, c.Encode(), adminToken); got != 200 {
+				t.Fatalf("admin publish returned %d", got)
+			}
+			stored, err := s.ST.GetConfig(context.Background(), "admin.yaml", "DEFAULT_GROUP", ns)
+			if err != nil || stored == nil || stored.Content != "synthetic: admin" || stored.SrcUser != s.Cfg.AdminUsername {
+				t.Fatal("admin publish content/actor was not durably stored")
+			}
+			listenBody := url.Values{"Listening-Configs": {"admin.yaml\x02DEFAULT_GROUP\x02unknown\x02" + ns + "\x01"}}.Encode()
+			if version == "v2" {
+				listenBody = `{"configInfos":[{"dataId":"admin.yaml","group":"DEFAULT_GROUP","namespaceId":"` + ns + `","md5":"unknown"}]}`
+			}
+			if got := request("POST", configPath+"/listener", listenBody, token); got != 200 {
+				t.Errorf("nonempty read listener returned %d", got)
+			}
+			if got := request("DELETE", configPath+"?"+c.Encode(), "", adminToken); got != 200 {
+				t.Errorf("admin config delete returned %d", got)
+			}
+			n := url.Values{"namespaceId": {ns}, "namespaceName": {"admin namespace"}}
+			for _, method := range []string{"POST", "PUT", "DELETE"} {
+				if got := request(method, namespacePath+"?"+n.Encode(), "", adminToken); got != 200 {
+					t.Errorf("admin namespace %s returned %d", method, got)
+				}
+			}
+		})
+	}
 	t.Run("unknown-write", func(t *testing.T) {
 		if got := request("POST", "/nacos/v3/new-mutating-endpoint", "", token); got != 403 {
 			t.Errorf("unknown ordinary-user write returned %d", got)
 		}
 	})
+	for _, path := range []string{"/nacos/actuator/new-action", "/nacos/v1/console/health/new-action"} {
+		t.Run("unknown-health-write"+path, func(t *testing.T) {
+			if got := request("POST", path, "", token); got != 403 {
+				t.Errorf("unknown health write returned %d", got)
+			}
+		})
+	}
 	t.Run("user-directory", func(t *testing.T) {
 		if got := request("GET", "/nacos/v1/auth/users", "", token); got != 403 {
 			t.Errorf("user directory returned %d", got)

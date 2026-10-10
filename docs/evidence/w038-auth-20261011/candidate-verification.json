@@ -1,0 +1,115 @@
+{
+  "base": "ff28237270777a7f161e2b0b0a3b840bc42dd86e",
+  "started_source_head": "d3717ad9ee01aeaf9bc559370cb504e6a75aac82",
+  "dirty_product_hashes": {
+    "internal/api/router.go": "f2cfcfcae2496eceb5c7902252241d68fb26fcd1990fdf3cbdfa296a9d874610",
+    "internal/core/auth.go": "f68badd41a1bb6af52f56d8d2e7221b0921ade8f17053d100265fa20ddb79a9a",
+    "internal/storage/authstore.go": "074bb6bf8c40ea9a3a42f0577d2ef65320256a70b3dc86fc67347ed0a8d37fcd",
+    "internal/api/auth_guard_integration_test.go": "9156b7453a3f8ff987a3466836760f962e05e458a980385f54f93aea31f4f492",
+    "internal/core/auth_test.go": "8a368310b38ff34b9e745da12dc8fe772c29516ac6c5d136cf4bf97a895d505d",
+    "internal/api/api_test.go": "e62430975ea5508bbe56f24656229fe36de43fc702a6b1de041eefe37d1e3628"
+  },
+  "go": "go version go1.27.2 darwin/arm64",
+  "results": [
+    {
+      "name": "candidate-covered-race",
+      "argv": [
+        "/tmp/memora-w020-toolchain-20261011/go-cache/bin/go",
+        "test",
+        "-race",
+        "-count=1",
+        "-tags=integration",
+        "-coverpkg=./internal/api,./internal/core,./internal/storage",
+        "-coverprofile=/Users/xutaohuang/.codex/worktrees/enterprise-goal-20261011/goacos/docs/evidence/w038-auth-20261011/candidate-coverage.out",
+        "-v",
+        "./internal/api",
+        "./internal/core",
+        "./internal/storage"
+      ],
+      "exit_code": 0,
+      "started_utc": "2026-10-10T17:55:55.206468+00:00",
+      "log_sha256": "e29d91471a50a03c645d50beb713de39609595f6f4874f20d6ae2ca0ab31ab4f",
+      "env": {
+        "GOTOOLCHAIN": "local",
+        "GOACOS_TEST_PG_DSN": "explicit private loopback synthetic fixture; omitted"
+      }
+    },
+    {
+      "name": "candidate-unit",
+      "argv": [
+        "/tmp/memora-w020-toolchain-20261011/go-cache/bin/go",
+        "test",
+        "-count=1",
+        "./..."
+      ],
+      "exit_code": 0,
+      "started_utc": "2026-10-10T17:55:55.208079+00:00",
+      "log_sha256": "50c986d70e3f380c00287af4c86752cdeaf1d37d036f5e7a26049e663feed163",
+      "env": {
+        "GOTOOLCHAIN": "local",
+        "GOACOS_TEST_PG_DSN": "explicit private loopback synthetic fixture; omitted"
+      }
+    },
+    {
+      "name": "candidate-vet",
+      "argv": [
+        "/tmp/memora-w020-toolchain-20261011/go-cache/bin/go",
+        "vet",
+        "./..."
+      ],
+      "exit_code": 0,
+      "started_utc": "2026-10-10T17:55:55.208265+00:00",
+      "log_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "env": {
+        "GOTOOLCHAIN": "local",
+        "GOACOS_TEST_PG_DSN": "explicit private loopback synthetic fixture; omitted"
+      }
+    },
+    {
+      "name": "candidate-build",
+      "argv": [
+        "/tmp/memora-w020-toolchain-20261011/go-cache/bin/go",
+        "build",
+        "./..."
+      ],
+      "exit_code": 0,
+      "started_utc": "2026-10-10T17:55:55.799850+00:00",
+      "log_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "env": {
+        "GOTOOLCHAIN": "local",
+        "GOACOS_TEST_PG_DSN": "explicit private loopback synthetic fixture; omitted"
+      }
+    },
+    {
+      "name": "candidate-source-symbol",
+      "argv": [
+        "/tmp/memora-w020-dependency-tools-patched-20261011/govulncheck",
+        "./..."
+      ],
+      "exit_code": 0,
+      "started_utc": "2026-10-10T17:55:56.280658+00:00",
+      "log_sha256": "b5ae54ddcfa4cb39e85f84ad2d9e43556bd817c480eaab2a71bab63bfc29353b",
+      "env": {
+        "GOTOOLCHAIN": "local",
+        "GOACOS_TEST_PG_DSN": "explicit private loopback synthetic fixture; omitted"
+      }
+    },
+    {
+      "name": "candidate-module-verify",
+      "argv": [
+        "/tmp/memora-w020-toolchain-20261011/go-cache/bin/go",
+        "mod",
+        "verify"
+      ],
+      "exit_code": 0,
+      "started_utc": "2026-10-10T17:55:57.610635+00:00",
+      "log_sha256": "b4537ed75f533f993f371954de47e42a793b8e5b0587577de7e27fb3e50696bd",
+      "env": {
+        "GOTOOLCHAIN": "local",
+        "GOACOS_TEST_PG_DSN": "explicit private loopback synthetic fixture; omitted"
+      }
+    }
+  ],
+  "production_deployment": false,
+  "scope": "request-time token/live-role admission and admin writes; no fine-grained ownership, commit-atomic revocation, MySQL or enterprise acceptance"
+}
