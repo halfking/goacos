@@ -1,0 +1,108 @@
+{
+  "source_head": "5be47d0e748cbb4dc03d7783f1f22e538c345bbb",
+  "dirty_product": [
+    "internal/core/auth.go",
+    "internal/storage/authstore.go",
+    "internal/api/router.go"
+  ],
+  "go_version": "go version go1.27.2 darwin/arm64",
+  "results": [
+    {
+      "name": "green-pg-race",
+      "argv": [
+        "/tmp/memora-w020-toolchain-20261011/go-cache/bin/go",
+        "test",
+        "-race",
+        "-count=1",
+        "-tags=integration",
+        "-run",
+        "TestW038",
+        "-v",
+        "./internal/api"
+      ],
+      "exit_code": 0,
+      "started_utc": "2026-10-10T17:50:53.603901+00:00",
+      "log_sha256": "3635095990ba9a958d14225919745d0b414503d81dfcf362ed1e04d736205d9d",
+      "env": {
+        "GOTOOLCHAIN": "local",
+        "GOACOS_TEST_PG_DSN": "explicit private synthetic loopback fixture; omitted"
+      }
+    },
+    {
+      "name": "green-unit",
+      "argv": [
+        "/tmp/memora-w020-toolchain-20261011/go-cache/bin/go",
+        "test",
+        "-count=1",
+        "./..."
+      ],
+      "exit_code": 0,
+      "started_utc": "2026-10-10T17:50:53.607058+00:00",
+      "log_sha256": "d3fd9dca78ecbf29bdf4f8900842134ddc85bce46f65578996b9fb803d84ee1a",
+      "env": {
+        "GOTOOLCHAIN": "local",
+        "GOACOS_TEST_PG_DSN": "explicit private synthetic loopback fixture; omitted"
+      }
+    },
+    {
+      "name": "green-vet",
+      "argv": [
+        "/tmp/memora-w020-toolchain-20261011/go-cache/bin/go",
+        "vet",
+        "./..."
+      ],
+      "exit_code": 0,
+      "started_utc": "2026-10-10T17:50:53.608871+00:00",
+      "log_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "env": {
+        "GOTOOLCHAIN": "local",
+        "GOACOS_TEST_PG_DSN": "explicit private synthetic loopback fixture; omitted"
+      }
+    },
+    {
+      "name": "green-build",
+      "argv": [
+        "/tmp/memora-w020-toolchain-20261011/go-cache/bin/go",
+        "build",
+        "./..."
+      ],
+      "exit_code": 0,
+      "started_utc": "2026-10-10T17:50:54.933264+00:00",
+      "log_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "env": {
+        "GOTOOLCHAIN": "local",
+        "GOACOS_TEST_PG_DSN": "explicit private synthetic loopback fixture; omitted"
+      }
+    },
+    {
+      "name": "green-source-symbol",
+      "argv": [
+        "/tmp/memora-w020-dependency-tools-patched-20261011/govulncheck",
+        "./..."
+      ],
+      "exit_code": 0,
+      "started_utc": "2026-10-10T17:50:55.695891+00:00",
+      "log_sha256": "b5ae54ddcfa4cb39e85f84ad2d9e43556bd817c480eaab2a71bab63bfc29353b",
+      "env": {
+        "GOTOOLCHAIN": "local",
+        "GOACOS_TEST_PG_DSN": "explicit private synthetic loopback fixture; omitted"
+      }
+    },
+    {
+      "name": "green-module-verify",
+      "argv": [
+        "/tmp/memora-w020-toolchain-20261011/go-cache/bin/go",
+        "mod",
+        "verify"
+      ],
+      "exit_code": 0,
+      "started_utc": "2026-10-10T17:50:56.469329+00:00",
+      "log_sha256": "b4537ed75f533f993f371954de47e42a793b8e5b0587577de7e27fb3e50696bd",
+      "env": {
+        "GOTOOLCHAIN": "local",
+        "GOACOS_TEST_PG_DSN": "explicit private synthetic loopback fixture; omitted"
+      }
+    }
+  ],
+  "scope": "PG17.11 live user/admin HTTP guards and old freshness; no MySQL/production/atomic commit revocation/fine-grained ownership acceptance"
+}

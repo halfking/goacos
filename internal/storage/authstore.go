@@ -114,6 +114,31 @@ func (s *Store) ListRolesByUser(ctx context.Context, username string) ([]string,
 	return out, rows.Err()
 }
 
+// EnabledUserRoles reads account activity and current grants in one database
+// snapshot. An enabled account with no roles remains a valid read principal.
+func (s *Store) EnabledUserRoles(ctx context.Context, username string) ([]string, bool, error) {
+	rows, err := s.Query(ctx, `SELECT r.role FROM users u
+		LEFT JOIN roles r ON r.username=u.username
+		WHERE u.username=? AND u.enabled=1`, username)
+	if err != nil {
+		return nil, false, err
+	}
+	defer rows.Close()
+	var roles []string
+	active := false
+	for rows.Next() {
+		var role sql.NullString
+		if err := rows.Scan(&role); err != nil {
+			return nil, false, err
+		}
+		active = true
+		if role.Valid {
+			roles = append(roles, role.String)
+		}
+	}
+	return roles, active, rows.Err()
+}
+
 // AddRole grants a role to a user.
 func (s *Store) AddRole(ctx context.Context, username, role string) error {
 	_, err := s.Exec(ctx, s.dialect.Rebind(s.dialect.InsertIgnore("roles", "username", "role")), username, role)

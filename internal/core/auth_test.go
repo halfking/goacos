@@ -1,6 +1,7 @@
 package core
 
 import (
+	"context"
 	"testing"
 	"time"
 
@@ -38,6 +39,18 @@ func TestAuthServiceParseRoundTrip(t *testing.T) {
 	tokExp, _ := jwt.NewWithClaims(jwt.SigningMethodHS256, claims).SignedString([]byte(cfg.TokenSecret))
 	if _, err := a.Parse(tokExp); err == nil {
 		t.Error("expired token must fail")
+	}
+}
+
+func TestAuthServiceCannotAuthenticateWithoutLiveStore(t *testing.T) {
+	cfg := &config.Config{TokenSecret: "unit-test-live-store"}
+	claims := jwt.MapClaims{"sub": "reader", "roles": []string{"ROLE_ADMIN"}, "iss": "goacos", "exp": time.Now().Add(time.Minute).Unix()}
+	token, err := jwt.NewWithClaims(jwt.SigningMethodHS256, claims).SignedString([]byte(cfg.TokenSecret))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := NewAuthService(cfg, nil).Authenticate(context.Background(), token); err == nil {
+		t.Fatal("valid signed token without live principal store was accepted")
 	}
 }
 

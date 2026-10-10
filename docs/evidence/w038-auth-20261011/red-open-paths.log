@@ -1,0 +1,48 @@
+=== RUN   TestIsOpenPathDoesNotBypassUnknownWrites
+=== RUN   TestIsOpenPathDoesNotBypassUnknownWrites/POST/
+    api_test.go:134: unknown route or write bypassed authentication
+=== RUN   TestIsOpenPathDoesNotBypassUnknownWrites/PUT/nacos/index.html
+    api_test.go:134: unknown route or write bypassed authentication
+=== RUN   TestIsOpenPathDoesNotBypassUnknownWrites/POST/nacos/actuator/health
+    api_test.go:134: unknown route or write bypassed authentication
+=== RUN   TestIsOpenPathDoesNotBypassUnknownWrites/POST/nacos/actuator/new-action
+    api_test.go:134: unknown route or write bypassed authentication
+=== RUN   TestIsOpenPathDoesNotBypassUnknownWrites/POST/nacos/v1/console/health/readiness
+    api_test.go:134: unknown route or write bypassed authentication
+=== RUN   TestIsOpenPathDoesNotBypassUnknownWrites/POST/nacos/v1/console/health/new-action
+    api_test.go:134: unknown route or write bypassed authentication
+=== RUN   TestIsOpenPathDoesNotBypassUnknownWrites/PUT/nacos/v1/console/server/state
+    api_test.go:134: unknown route or write bypassed authentication
+=== RUN   TestIsOpenPathDoesNotBypassUnknownWrites/GET/nacos/actuator/new-action
+    api_test.go:134: unknown route or write bypassed authentication
+=== RUN   TestIsOpenPathDoesNotBypassUnknownWrites/GET/nacos/v1/console/health/new-action
+    api_test.go:134: unknown route or write bypassed authentication
+=== RUN   TestIsOpenPathDoesNotBypassUnknownWrites/GET/nacos/actuator/health
+=== RUN   TestIsOpenPathDoesNotBypassUnknownWrites/HEAD/nacos/actuator/health
+=== RUN   TestIsOpenPathDoesNotBypassUnknownWrites/GET/nacos/v1/console/health/readiness
+=== RUN   TestIsOpenPathDoesNotBypassUnknownWrites/HEAD/nacos/v1/console/health/readiness
+=== RUN   TestIsOpenPathDoesNotBypassUnknownWrites/GET/nacos/v1/console/health/liveness
+=== RUN   TestIsOpenPathDoesNotBypassUnknownWrites/HEAD/nacos/v1/console/health/liveness
+=== RUN   TestIsOpenPathDoesNotBypassUnknownWrites/GET/nacos/v1/console/server/state
+=== RUN   TestIsOpenPathDoesNotBypassUnknownWrites/HEAD/nacos/v1/console/server/state
+--- FAIL: TestIsOpenPathDoesNotBypassUnknownWrites (0.00s)
+    --- FAIL: TestIsOpenPathDoesNotBypassUnknownWrites/POST/ (0.00s)
+    --- FAIL: TestIsOpenPathDoesNotBypassUnknownWrites/PUT/nacos/index.html (0.00s)
+    --- FAIL: TestIsOpenPathDoesNotBypassUnknownWrites/POST/nacos/actuator/health (0.00s)
+    --- FAIL: TestIsOpenPathDoesNotBypassUnknownWrites/POST/nacos/actuator/new-action (0.00s)
+    --- FAIL: TestIsOpenPathDoesNotBypassUnknownWrites/POST/nacos/v1/console/health/readiness (0.00s)
+    --- FAIL: TestIsOpenPathDoesNotBypassUnknownWrites/POST/nacos/v1/console/health/new-action (0.00s)
+    --- FAIL: TestIsOpenPathDoesNotBypassUnknownWrites/PUT/nacos/v1/console/server/state (0.00s)
+    --- FAIL: TestIsOpenPathDoesNotBypassUnknownWrites/GET/nacos/actuator/new-action (0.00s)
+    --- FAIL: TestIsOpenPathDoesNotBypassUnknownWrites/GET/nacos/v1/console/health/new-action (0.00s)
+    --- PASS: TestIsOpenPathDoesNotBypassUnknownWrites/GET/nacos/actuator/health (0.00s)
+    --- PASS: TestIsOpenPathDoesNotBypassUnknownWrites/HEAD/nacos/actuator/health (0.00s)
+    --- PASS: TestIsOpenPathDoesNotBypassUnknownWrites/GET/nacos/v1/console/health/readiness (0.00s)
+    --- PASS: TestIsOpenPathDoesNotBypassUnknownWrites/HEAD/nacos/v1/console/health/readiness (0.00s)
+    --- PASS: TestIsOpenPathDoesNotBypassUnknownWrites/GET/nacos/v1/console/health/liveness (0.00s)
+    --- PASS: TestIsOpenPathDoesNotBypassUnknownWrites/HEAD/nacos/v1/console/health/liveness (0.00s)
+    --- PASS: TestIsOpenPathDoesNotBypassUnknownWrites/GET/nacos/v1/console/server/state (0.00s)
+    --- PASS: TestIsOpenPathDoesNotBypassUnknownWrites/HEAD/nacos/v1/console/server/state (0.00s)
+FAIL
+FAIL	github.com/halfking/goacos/internal/api	0.410s
+FAIL

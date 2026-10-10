@@ -1,0 +1,268 @@
+=== RUN   TestParseV1ListeningConfigs
+--- PASS: TestParseV1ListeningConfigs (0.00s)
+=== RUN   TestParseServiceName
+--- PASS: TestParseServiceName (0.00s)
+=== RUN   TestConfigType
+--- PASS: TestConfigType (0.00s)
+=== RUN   TestMetaFromParam
+--- PASS: TestMetaFromParam (0.00s)
+=== RUN   TestConfigKeyEquality
+--- PASS: TestConfigKeyEquality (0.00s)
+=== RUN   TestNormalizeNamespace
+--- PASS: TestNormalizeNamespace (0.00s)
+=== RUN   TestParseInstanceParamsNamespaceDefault
+--- PASS: TestParseInstanceParamsNamespaceDefault (0.00s)
+=== RUN   TestIsOpenPathConsoleStatic
+--- PASS: TestIsOpenPathConsoleStatic (0.00s)
+=== RUN   TestW038NormalUserCannotMutateRegistryConfigurationOrNamespace
+2026/10/11 01:52:44 [goacos] config hub loaded 0 md5 entries
+=== RUN   TestW038NormalUserCannotMutateRegistryConfigurationOrNamespace/v1-POST-/nacos/v1/ns/instance
+=== RUN   TestW038NormalUserCannotMutateRegistryConfigurationOrNamespace/v1-PUT-/nacos/v1/ns/instance
+=== RUN   TestW038NormalUserCannotMutateRegistryConfigurationOrNamespace/v1-DELETE-/nacos/v1/ns/instance
+=== RUN   TestW038NormalUserCannotMutateRegistryConfigurationOrNamespace/v1-PUT-/nacos/v1/ns/service
+=== RUN   TestW038NormalUserCannotMutateRegistryConfigurationOrNamespace/v1-DELETE-/nacos/v1/ns/service
+=== RUN   TestW038NormalUserCannotMutateRegistryConfigurationOrNamespace/v1-GET-/nacos/v1/ns/instance/beat
+=== RUN   TestW038NormalUserCannotMutateRegistryConfigurationOrNamespace/v1-PUT-/nacos/v1/ns/instance/beat
+=== RUN   TestW038NormalUserCannotMutateRegistryConfigurationOrNamespace/v1-HEAD-/nacos/v1/ns/instance/beat
+=== RUN   TestW038NormalUserCannotMutateRegistryConfigurationOrNamespace/v1-POST-/nacos/v1/cs/configs
+=== RUN   TestW038NormalUserCannotMutateRegistryConfigurationOrNamespace/v1-DELETE-/nacos/v1/cs/configs
+=== RUN   TestW038NormalUserCannotMutateRegistryConfigurationOrNamespace/v1-POST-/nacos/v1/console/namespaces
+=== RUN   TestW038NormalUserCannotMutateRegistryConfigurationOrNamespace/v1-PUT-/nacos/v1/console/namespaces
+=== RUN   TestW038NormalUserCannotMutateRegistryConfigurationOrNamespace/v1-DELETE-/nacos/v1/console/namespaces
+=== RUN   TestW038NormalUserCannotMutateRegistryConfigurationOrNamespace/v2-POST-/nacos/v2/ns/instance
+=== RUN   TestW038NormalUserCannotMutateRegistryConfigurationOrNamespace/v2-PUT-/nacos/v2/ns/instance
+=== RUN   TestW038NormalUserCannotMutateRegistryConfigurationOrNamespace/v2-DELETE-/nacos/v2/ns/instance
+=== RUN   TestW038NormalUserCannotMutateRegistryConfigurationOrNamespace/v2-PUT-/nacos/v2/ns/service
+=== RUN   TestW038NormalUserCannotMutateRegistryConfigurationOrNamespace/v2-DELETE-/nacos/v2/ns/service
+=== RUN   TestW038NormalUserCannotMutateRegistryConfigurationOrNamespace/v2-POST-/nacos/v2/ns/instance/beat
+=== RUN   TestW038NormalUserCannotMutateRegistryConfigurationOrNamespace/v2-POST-/nacos/v2/ns/service
+=== RUN   TestW038NormalUserCannotMutateRegistryConfigurationOrNamespace/v2-POST-/nacos/v2/cs/config
+=== RUN   TestW038NormalUserCannotMutateRegistryConfigurationOrNamespace/v2-DELETE-/nacos/v2/cs/config
+=== RUN   TestW038NormalUserCannotMutateRegistryConfigurationOrNamespace/v2-POST-/nacos/v2/console/namespace
+=== RUN   TestW038NormalUserCannotMutateRegistryConfigurationOrNamespace/v2-PUT-/nacos/v2/console/namespace
+=== RUN   TestW038NormalUserCannotMutateRegistryConfigurationOrNamespace/v2-DELETE-/nacos/v2/console/namespace
+--- PASS: TestW038NormalUserCannotMutateRegistryConfigurationOrNamespace (2.08s)
+    --- PASS: TestW038NormalUserCannotMutateRegistryConfigurationOrNamespace/v1-POST-/nacos/v1/ns/instance (0.00s)
+    --- PASS: TestW038NormalUserCannotMutateRegistryConfigurationOrNamespace/v1-PUT-/nacos/v1/ns/instance (0.00s)
+    --- PASS: TestW038NormalUserCannotMutateRegistryConfigurationOrNamespace/v1-DELETE-/nacos/v1/ns/instance (0.00s)
+    --- PASS: TestW038NormalUserCannotMutateRegistryConfigurationOrNamespace/v1-PUT-/nacos/v1/ns/service (0.00s)
+    --- PASS: TestW038NormalUserCannotMutateRegistryConfigurationOrNamespace/v1-DELETE-/nacos/v1/ns/service (0.00s)
+    --- PASS: TestW038NormalUserCannotMutateRegistryConfigurationOrNamespace/v1-GET-/nacos/v1/ns/instance/beat (0.00s)
+    --- PASS: TestW038NormalUserCannotMutateRegistryConfigurationOrNamespace/v1-PUT-/nacos/v1/ns/instance/beat (0.00s)
+    --- PASS: TestW038NormalUserCannotMutateRegistryConfigurationOrNamespace/v1-HEAD-/nacos/v1/ns/instance/beat (0.00s)
+    --- PASS: TestW038NormalUserCannotMutateRegistryConfigurationOrNamespace/v1-POST-/nacos/v1/cs/configs (0.00s)
+    --- PASS: TestW038NormalUserCannotMutateRegistryConfigurationOrNamespace/v1-DELETE-/nacos/v1/cs/configs (0.00s)
+    --- PASS: TestW038NormalUserCannotMutateRegistryConfigurationOrNamespace/v1-POST-/nacos/v1/console/namespaces (0.00s)
+    --- PASS: TestW038NormalUserCannotMutateRegistryConfigurationOrNamespace/v1-PUT-/nacos/v1/console/namespaces (0.00s)
+    --- PASS: TestW038NormalUserCannotMutateRegistryConfigurationOrNamespace/v1-DELETE-/nacos/v1/console/namespaces (0.00s)
+    --- PASS: TestW038NormalUserCannotMutateRegistryConfigurationOrNamespace/v2-POST-/nacos/v2/ns/instance (0.00s)
+    --- PASS: TestW038NormalUserCannotMutateRegistryConfigurationOrNamespace/v2-PUT-/nacos/v2/ns/instance (0.00s)
+    --- PASS: TestW038NormalUserCannotMutateRegistryConfigurationOrNamespace/v2-DELETE-/nacos/v2/ns/instance (0.00s)
+    --- PASS: TestW038NormalUserCannotMutateRegistryConfigurationOrNamespace/v2-PUT-/nacos/v2/ns/service (0.00s)
+    --- PASS: TestW038NormalUserCannotMutateRegistryConfigurationOrNamespace/v2-DELETE-/nacos/v2/ns/service (0.00s)
+    --- PASS: TestW038NormalUserCannotMutateRegistryConfigurationOrNamespace/v2-POST-/nacos/v2/ns/instance/beat (0.00s)
+    --- PASS: TestW038NormalUserCannotMutateRegistryConfigurationOrNamespace/v2-POST-/nacos/v2/ns/service (0.00s)
+    --- PASS: TestW038NormalUserCannotMutateRegistryConfigurationOrNamespace/v2-POST-/nacos/v2/cs/config (0.00s)
+    --- PASS: TestW038NormalUserCannotMutateRegistryConfigurationOrNamespace/v2-DELETE-/nacos/v2/cs/config (0.00s)
+    --- PASS: TestW038NormalUserCannotMutateRegistryConfigurationOrNamespace/v2-POST-/nacos/v2/console/namespace (0.00s)
+    --- PASS: TestW038NormalUserCannotMutateRegistryConfigurationOrNamespace/v2-PUT-/nacos/v2/console/namespace (0.00s)
+    --- PASS: TestW038NormalUserCannotMutateRegistryConfigurationOrNamespace/v2-DELETE-/nacos/v2/console/namespace (0.00s)
+=== RUN   TestW038LiveAccountAndRolesOverrideTokenRoles
+2026/10/11 01:52:46 [goacos] config hub loaded 0 md5 entries
+=== RUN   TestW038LiveAccountAndRolesOverrideTokenRoles/live-grant
+2026/10/11 01:52:47 [goacos] POST /nacos/v1/ns/instance 5ms
+=== RUN   TestW038LiveAccountAndRolesOverrideTokenRoles/demoted-token
+=== RUN   TestW038LiveAccountAndRolesOverrideTokenRoles/token-role-not-authority
+=== RUN   TestW038LiveAccountAndRolesOverrideTokenRoles/enabled-roleless-read-principal
+2026/10/11 01:52:48 [goacos] GET /nacos/v1/console/namespaces 2ms
+=== RUN   TestW038LiveAccountAndRolesOverrideTokenRoles/disabled-user
+=== RUN   TestW038LiveAccountAndRolesOverrideTokenRoles/deleted-user
+--- PASS: TestW038LiveAccountAndRolesOverrideTokenRoles (2.43s)
+    --- PASS: TestW038LiveAccountAndRolesOverrideTokenRoles/live-grant (0.01s)
+    --- PASS: TestW038LiveAccountAndRolesOverrideTokenRoles/demoted-token (0.00s)
+    --- PASS: TestW038LiveAccountAndRolesOverrideTokenRoles/token-role-not-authority (0.00s)
+    --- PASS: TestW038LiveAccountAndRolesOverrideTokenRoles/enabled-roleless-read-principal (0.00s)
+    --- PASS: TestW038LiveAccountAndRolesOverrideTokenRoles/disabled-user (0.00s)
+    --- PASS: TestW038LiveAccountAndRolesOverrideTokenRoles/deleted-user (0.00s)
+=== RUN   TestW038IssuerContractEnforcedOnAuthenticatedHTTP
+2026/10/11 01:52:48 [goacos] config hub loaded 0 md5 entries
+=== RUN   TestW038IssuerContractEnforcedOnAuthenticatedHTTP/missing-issuer
+=== RUN   TestW038IssuerContractEnforcedOnAuthenticatedHTTP/wrong-issuer
+=== RUN   TestW038IssuerContractEnforcedOnAuthenticatedHTTP/missing-expiry
+=== RUN   TestW038IssuerContractEnforcedOnAuthenticatedHTTP/expired
+=== RUN   TestW038IssuerContractEnforcedOnAuthenticatedHTTP/future-issued-at
+=== RUN   TestW038IssuerContractEnforcedOnAuthenticatedHTTP/padded-subject
+=== RUN   TestW038IssuerContractEnforcedOnAuthenticatedHTTP/HS384
+=== RUN   TestW038IssuerContractEnforcedOnAuthenticatedHTTP/HS512
+--- PASS: TestW038IssuerContractEnforcedOnAuthenticatedHTTP (1.91s)
+    --- PASS: TestW038IssuerContractEnforcedOnAuthenticatedHTTP/missing-issuer (0.00s)
+    --- PASS: TestW038IssuerContractEnforcedOnAuthenticatedHTTP/wrong-issuer (0.00s)
+    --- PASS: TestW038IssuerContractEnforcedOnAuthenticatedHTTP/missing-expiry (0.00s)
+    --- PASS: TestW038IssuerContractEnforcedOnAuthenticatedHTTP/expired (0.00s)
+    --- PASS: TestW038IssuerContractEnforcedOnAuthenticatedHTTP/future-issued-at (0.00s)
+    --- PASS: TestW038IssuerContractEnforcedOnAuthenticatedHTTP/padded-subject (0.00s)
+    --- PASS: TestW038IssuerContractEnforcedOnAuthenticatedHTTP/HS384 (0.00s)
+    --- PASS: TestW038IssuerContractEnforcedOnAuthenticatedHTTP/HS512 (0.00s)
+=== RUN   TestW038ReadListenerAndLiveAdminCompatibility
+2026/10/11 01:52:50 [goacos] config hub loaded 0 md5 entries
+=== RUN   TestW038ReadListenerAndLiveAdminCompatibility//nacos/v1/cs/configs/listener
+2026/10/11 01:52:52 [goacos] POST /nacos/v1/cs/configs/listener 2ms
+=== RUN   TestW038ReadListenerAndLiveAdminCompatibility//nacos/v2/cs/config/listener
+2026/10/11 01:52:52 [goacos] POST /nacos/v2/cs/config/listener 2ms
+=== RUN   TestW038ReadListenerAndLiveAdminCompatibility/POST/nacos/v1/ns/instance
+2026/10/11 01:52:53 [goacos] POST /nacos/v1/ns/instance 7ms
+=== RUN   TestW038ReadListenerAndLiveAdminCompatibility/GET/nacos/v1/ns/instance/beat
+2026/10/11 01:52:53 [goacos] GET /nacos/v1/ns/instance/beat 3ms
+=== RUN   TestW038ReadListenerAndLiveAdminCompatibility/POST/nacos/v2/ns/instance/beat
+2026/10/11 01:52:53 [goacos] POST /nacos/v2/ns/instance/beat 3ms
+=== RUN   TestW038ReadListenerAndLiveAdminCompatibility/DELETE/nacos/v2/ns/instance
+2026/10/11 01:52:53 [goacos] DELETE /nacos/v2/ns/instance 3ms
+=== RUN   TestW038ReadListenerAndLiveAdminCompatibility/unknown-write
+=== RUN   TestW038ReadListenerAndLiveAdminCompatibility/user-directory
+--- PASS: TestW038ReadListenerAndLiveAdminCompatibility (2.97s)
+    --- PASS: TestW038ReadListenerAndLiveAdminCompatibility//nacos/v1/cs/configs/listener (0.00s)
+    --- PASS: TestW038ReadListenerAndLiveAdminCompatibility//nacos/v2/cs/config/listener (0.00s)
+    --- PASS: TestW038ReadListenerAndLiveAdminCompatibility/POST/nacos/v1/ns/instance (0.01s)
+    --- PASS: TestW038ReadListenerAndLiveAdminCompatibility/GET/nacos/v1/ns/instance/beat (0.00s)
+    --- PASS: TestW038ReadListenerAndLiveAdminCompatibility/POST/nacos/v2/ns/instance/beat (0.00s)
+    --- PASS: TestW038ReadListenerAndLiveAdminCompatibility/DELETE/nacos/v2/ns/instance (0.00s)
+    --- PASS: TestW038ReadListenerAndLiveAdminCompatibility/unknown-write (0.00s)
+    --- PASS: TestW038ReadListenerAndLiveAdminCompatibility/user-directory (0.00s)
+=== RUN   TestW038ReadTimeHealthWithoutSweeper
+=== RUN   TestW038ReadTimeHealthWithoutSweeper/v1
+=== RUN   TestW038ReadTimeHealthWithoutSweeper/v1/list-healthyOnly-false
+2026/10/11 01:52:53 [goacos] GET /nacos/v1/ns/instance/list 4ms
+=== RUN   TestW038ReadTimeHealthWithoutSweeper/v1/list-healthyOnly-true
+2026/10/11 01:52:53 [goacos] GET /nacos/v1/ns/instance/list 3ms
+=== RUN   TestW038ReadTimeHealthWithoutSweeper/v1/get-fresh
+2026/10/11 01:52:53 [goacos] GET /nacos/v1/ns/instance 2ms
+=== RUN   TestW038ReadTimeHealthWithoutSweeper/v1/get-stale
+2026/10/11 01:52:53 [goacos] GET /nacos/v1/ns/instance 3ms
+=== RUN   TestW038ReadTimeHealthWithoutSweeper/v1/get-missing-heartbeat
+2026/10/11 01:52:53 [goacos] GET /nacos/v1/ns/instance 3ms
+=== RUN   TestW038ReadTimeHealthWithoutSweeper/v1/get-future-heartbeat
+2026/10/11 01:52:53 [goacos] GET /nacos/v1/ns/instance 2ms
+=== RUN   TestW038ReadTimeHealthWithoutSweeper/v1/get-persistent
+2026/10/11 01:52:53 [goacos] GET /nacos/v1/ns/instance 2ms
+=== RUN   TestW038ReadTimeHealthWithoutSweeper/v1/get-explicit-unhealthy
+2026/10/11 01:52:53 [goacos] GET /nacos/v1/ns/instance 2ms
+=== RUN   TestW038ReadTimeHealthWithoutSweeper/v2
+=== RUN   TestW038ReadTimeHealthWithoutSweeper/v2/list-healthyOnly-false
+2026/10/11 01:52:53 [goacos] GET /nacos/v2/ns/instance/list 3ms
+=== RUN   TestW038ReadTimeHealthWithoutSweeper/v2/list-healthyOnly-true
+2026/10/11 01:52:53 [goacos] GET /nacos/v2/ns/instance/list 3ms
+=== RUN   TestW038ReadTimeHealthWithoutSweeper/v2/get-fresh
+2026/10/11 01:52:53 [goacos] GET /nacos/v2/ns/instance 2ms
+=== RUN   TestW038ReadTimeHealthWithoutSweeper/v2/get-stale
+2026/10/11 01:52:53 [goacos] GET /nacos/v2/ns/instance 2ms
+=== RUN   TestW038ReadTimeHealthWithoutSweeper/v2/get-missing-heartbeat
+2026/10/11 01:52:53 [goacos] GET /nacos/v2/ns/instance 3ms
+=== RUN   TestW038ReadTimeHealthWithoutSweeper/v2/get-future-heartbeat
+2026/10/11 01:52:53 [goacos] GET /nacos/v2/ns/instance 2ms
+=== RUN   TestW038ReadTimeHealthWithoutSweeper/v2/get-persistent
+2026/10/11 01:52:53 [goacos] GET /nacos/v2/ns/instance 3ms
+=== RUN   TestW038ReadTimeHealthWithoutSweeper/v2/get-explicit-unhealthy
+2026/10/11 01:52:53 [goacos] GET /nacos/v2/ns/instance 2ms
+--- PASS: TestW038ReadTimeHealthWithoutSweeper (0.81s)
+    --- PASS: TestW038ReadTimeHealthWithoutSweeper/v1 (0.03s)
+        --- PASS: TestW038ReadTimeHealthWithoutSweeper/v1/list-healthyOnly-false (0.00s)
+        --- PASS: TestW038ReadTimeHealthWithoutSweeper/v1/list-healthyOnly-true (0.00s)
+        --- PASS: TestW038ReadTimeHealthWithoutSweeper/v1/get-fresh (0.00s)
+        --- PASS: TestW038ReadTimeHealthWithoutSweeper/v1/get-stale (0.00s)
+        --- PASS: TestW038ReadTimeHealthWithoutSweeper/v1/get-missing-heartbeat (0.00s)
+        --- PASS: TestW038ReadTimeHealthWithoutSweeper/v1/get-future-heartbeat (0.00s)
+        --- PASS: TestW038ReadTimeHealthWithoutSweeper/v1/get-persistent (0.00s)
+        --- PASS: TestW038ReadTimeHealthWithoutSweeper/v1/get-explicit-unhealthy (0.00s)
+    --- PASS: TestW038ReadTimeHealthWithoutSweeper/v2 (0.02s)
+        --- PASS: TestW038ReadTimeHealthWithoutSweeper/v2/list-healthyOnly-false (0.00s)
+        --- PASS: TestW038ReadTimeHealthWithoutSweeper/v2/list-healthyOnly-true (0.00s)
+        --- PASS: TestW038ReadTimeHealthWithoutSweeper/v2/get-fresh (0.00s)
+        --- PASS: TestW038ReadTimeHealthWithoutSweeper/v2/get-stale (0.00s)
+        --- PASS: TestW038ReadTimeHealthWithoutSweeper/v2/get-missing-heartbeat (0.00s)
+        --- PASS: TestW038ReadTimeHealthWithoutSweeper/v2/get-future-heartbeat (0.00s)
+        --- PASS: TestW038ReadTimeHealthWithoutSweeper/v2/get-persistent (0.00s)
+        --- PASS: TestW038ReadTimeHealthWithoutSweeper/v2/get-explicit-unhealthy (0.00s)
+=== RUN   TestW038HeartbeatRecoversWithoutSweeper
+2026/10/11 01:52:54 [goacos] GET /nacos/v1/ns/instance 2ms
+2026/10/11 01:52:54 [goacos] PUT /nacos/v1/ns/instance/beat 3ms
+2026/10/11 01:52:54 [goacos] GET /nacos/v1/ns/instance 2ms
+--- PASS: TestW038HeartbeatRecoversWithoutSweeper (0.71s)
+PASS
+coverage: 29.6% of statements in ./internal/api, ./internal/core, ./internal/storage
+ok  	github.com/halfking/goacos/internal/api	12.398s	coverage: 29.6% of statements in ./internal/api, ./internal/core, ./internal/storage
+=== RUN   TestAuthServiceParseRoundTrip
+--- PASS: TestAuthServiceParseRoundTrip (0.00s)
+=== RUN   TestAuthServiceCannotAuthenticateWithoutLiveStore
+--- PASS: TestAuthServiceCannotAuthenticateWithoutLiveStore (0.00s)
+=== RUN   TestAuthServiceRejectsTokensOutsideIssuerContract
+=== RUN   TestAuthServiceRejectsTokensOutsideIssuerContract/missing-issuer
+=== RUN   TestAuthServiceRejectsTokensOutsideIssuerContract/wrong-issuer
+=== RUN   TestAuthServiceRejectsTokensOutsideIssuerContract/missing-expiry
+=== RUN   TestAuthServiceRejectsTokensOutsideIssuerContract/expired
+=== RUN   TestAuthServiceRejectsTokensOutsideIssuerContract/future-issued-at
+=== RUN   TestAuthServiceRejectsTokensOutsideIssuerContract/missing-subject
+=== RUN   TestAuthServiceRejectsTokensOutsideIssuerContract/blank-subject
+=== RUN   TestAuthServiceRejectsTokensOutsideIssuerContract/padded-subject
+=== RUN   TestAuthServiceRejectsTokensOutsideIssuerContract/HS384
+=== RUN   TestAuthServiceRejectsTokensOutsideIssuerContract/HS512
+--- PASS: TestAuthServiceRejectsTokensOutsideIssuerContract (0.00s)
+    --- PASS: TestAuthServiceRejectsTokensOutsideIssuerContract/missing-issuer (0.00s)
+    --- PASS: TestAuthServiceRejectsTokensOutsideIssuerContract/wrong-issuer (0.00s)
+    --- PASS: TestAuthServiceRejectsTokensOutsideIssuerContract/missing-expiry (0.00s)
+    --- PASS: TestAuthServiceRejectsTokensOutsideIssuerContract/expired (0.00s)
+    --- PASS: TestAuthServiceRejectsTokensOutsideIssuerContract/future-issued-at (0.00s)
+    --- PASS: TestAuthServiceRejectsTokensOutsideIssuerContract/missing-subject (0.00s)
+    --- PASS: TestAuthServiceRejectsTokensOutsideIssuerContract/blank-subject (0.00s)
+    --- PASS: TestAuthServiceRejectsTokensOutsideIssuerContract/padded-subject (0.00s)
+    --- PASS: TestAuthServiceRejectsTokensOutsideIssuerContract/HS384 (0.00s)
+    --- PASS: TestAuthServiceRejectsTokensOutsideIssuerContract/HS512 (0.00s)
+=== RUN   TestConfigHubWaitChanged
+--- PASS: TestConfigHubWaitChanged (0.65s)
+=== RUN   TestConfigHubMultiKey
+--- PASS: TestConfigHubMultiKey (0.00s)
+PASS
+coverage: 4.7% of statements in ./internal/api, ./internal/core, ./internal/storage
+ok  	github.com/halfking/goacos/internal/core	2.975s	coverage: 4.7% of statements in ./internal/api, ./internal/core, ./internal/storage
+=== RUN   TestDialectFor
+--- PASS: TestDialectFor (0.00s)
+=== RUN   TestRebind
+--- PASS: TestRebind (0.00s)
+=== RUN   TestInsertIgnore
+--- PASS: TestInsertIgnore (0.00s)
+=== RUN   TestUpsertNoop
+--- PASS: TestUpsertNoop (0.00s)
+=== RUN   TestDSNFor
+--- PASS: TestDSNFor (0.00s)
+=== RUN   TestSplitSQLStatementsPostgres
+--- PASS: TestSplitSQLStatementsPostgres (0.00s)
+=== RUN   TestEffectiveInstanceHealthDeadlineAndConfiguration
+=== RUN   TestEffectiveInstanceHealthDeadlineAndConfiguration/just-before-deadline
+=== RUN   TestEffectiveInstanceHealthDeadlineAndConfiguration/at-deadline
+=== RUN   TestEffectiveInstanceHealthDeadlineAndConfiguration/past-deadline
+=== RUN   TestEffectiveInstanceHealthDeadlineAndConfiguration/future-heartbeat
+=== RUN   TestEffectiveInstanceHealthDeadlineAndConfiguration/zero-heartbeat
+=== RUN   TestEffectiveInstanceHealthDeadlineAndConfiguration/missing-configuration
+=== RUN   TestEffectiveInstanceHealthDeadlineAndConfiguration/zero-timeout
+=== RUN   TestEffectiveInstanceHealthDeadlineAndConfiguration/negative-timeout
+=== RUN   TestEffectiveInstanceHealthDeadlineAndConfiguration/explicit-unhealthy
+=== RUN   TestEffectiveInstanceHealthDeadlineAndConfiguration/persistent-healthy
+=== RUN   TestEffectiveInstanceHealthDeadlineAndConfiguration/persistent-unhealthy
+--- PASS: TestEffectiveInstanceHealthDeadlineAndConfiguration (0.00s)
+    --- PASS: TestEffectiveInstanceHealthDeadlineAndConfiguration/just-before-deadline (0.00s)
+    --- PASS: TestEffectiveInstanceHealthDeadlineAndConfiguration/at-deadline (0.00s)
+    --- PASS: TestEffectiveInstanceHealthDeadlineAndConfiguration/past-deadline (0.00s)
+    --- PASS: TestEffectiveInstanceHealthDeadlineAndConfiguration/future-heartbeat (0.00s)
+    --- PASS: TestEffectiveInstanceHealthDeadlineAndConfiguration/zero-heartbeat (0.00s)
+    --- PASS: TestEffectiveInstanceHealthDeadlineAndConfiguration/missing-configuration (0.00s)
+    --- PASS: TestEffectiveInstanceHealthDeadlineAndConfiguration/zero-timeout (0.00s)
+    --- PASS: TestEffectiveInstanceHealthDeadlineAndConfiguration/negative-timeout (0.00s)
+    --- PASS: TestEffectiveInstanceHealthDeadlineAndConfiguration/explicit-unhealthy (0.00s)
+    --- PASS: TestEffectiveInstanceHealthDeadlineAndConfiguration/persistent-healthy (0.00s)
+    --- PASS: TestEffectiveInstanceHealthDeadlineAndConfiguration/persistent-unhealthy (0.00s)
+=== RUN   TestSplitSQLStatements
+--- PASS: TestSplitSQLStatements (0.00s)
+=== RUN   TestMD5Hex
+--- PASS: TestMD5Hex (0.00s)
+PASS
+coverage: 3.6% of statements in ./internal/api, ./internal/core, ./internal/storage
+ok  	github.com/halfking/goacos/internal/storage	1.897s	coverage: 3.6% of statements in ./internal/api, ./internal/core, ./internal/storage

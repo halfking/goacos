@@ -165,13 +165,26 @@ func (s *Server) middleware(next http.Handler) http.Handler {
 }
 
 func isAdminOnly(path, method string) bool {
-	if strings.HasPrefix(path, "/nacos/v1/auth/users") && method != http.MethodGet {
+	if strings.HasPrefix(path, "/nacos/v1/auth/users") {
 		return true
 	}
 	if strings.HasPrefix(path, "/nacos/v1/auth/roles") {
 		return true
 	}
-	return false
+	// Nacos v1 supports heartbeat writes via GET (and net/http's implicit
+	// HEAD route). The HTTP verb alone cannot classify these as reads.
+	if path == "/nacos/v1/ns/instance/beat" {
+		return true
+	}
+	// Listener POSTs only read configuration. Keep the exception exact so
+	// another method/path or a future mutation does not inherit read access.
+	if method == http.MethodPost && (path == "/nacos/v1/cs/configs/listener" || path == "/nacos/v2/cs/config/listener") {
+		return false
+	}
+	// Until scoped service/namespace ownership is implemented, state changes
+	// require a live global admin. Future mutating endpoints fail closed for
+	// normal users rather than silently inheriting authenticated-only access.
+	return method != http.MethodGet && method != http.MethodHead
 }
 
 type claimsKeyType struct{}
@@ -205,7 +218,7 @@ func (s *Server) tokenFromRequest(r *http.Request) (*core.Claims, error) {
 	if tok == "" {
 		return nil, errUnauthorized
 	}
-	return s.Auth.Parse(tok)
+	return s.Auth.Authenticate(r.Context(), tok)
 }
 
 var errUnauthorized = errors.New("unauthorized")

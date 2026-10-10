@@ -87,6 +87,7 @@ func TestW038NormalUserCannotMutateRegistryConfigurationOrNamespace(t *testing.T
 		}
 		if version == "v1" {
 			routes = append(routes, struct{ method, path, body string }{"GET", base + "/ns/instance/beat?" + naming.Encode(), ""}, struct{ method, path, body string }{"PUT", base + "/ns/instance/beat?" + naming.Encode(), ""})
+			routes = append(routes, struct{ method, path, body string }{"HEAD", base + "/ns/instance/beat?" + naming.Encode(), ""})
 		} else {
 			routes = append(routes, struct{ method, path, body string }{"POST", base + "/ns/instance/beat?" + naming.Encode(), ""}, struct{ method, path, body string }{"POST", base + "/ns/service?" + naming.Encode(), ""})
 		}
@@ -159,6 +160,14 @@ func TestW038LiveAccountAndRolesOverrideTokenRoles(t *testing.T) {
 			t.Errorf("ungranted token role returned %d", got)
 		}
 	})
+	if err := s.ST.DeleteRole(ctx, username, "ROLE_USER"); err != nil {
+		t.Fatal(err)
+	}
+	t.Run("enabled-roleless-read-principal", func(t *testing.T) {
+		if got := request("GET", "/nacos/v1/console/namespaces", "", token); got != 200 {
+			t.Errorf("enabled account without roles returned %d", got)
+		}
+	})
 	if _, err := s.ST.Exec(ctx, "UPDATE users SET enabled=0 WHERE username=?", username); err != nil {
 		t.Fatal(err)
 	}
@@ -175,6 +184,42 @@ func TestW038LiveAccountAndRolesOverrideTokenRoles(t *testing.T) {
 			t.Errorf("deleted user returned %d", got)
 		}
 	})
+}
+
+func TestW038IssuerContractEnforcedOnAuthenticatedHTTP(t *testing.T) {
+	s, ns, _, request := authGuardFixture(t)
+	cases := []struct {
+		name   string
+		method jwt.SigningMethod
+		mutate func(jwt.MapClaims)
+	}{
+		{"missing-issuer", jwt.SigningMethodHS256, func(c jwt.MapClaims) { delete(c, "iss") }},
+		{"wrong-issuer", jwt.SigningMethodHS256, func(c jwt.MapClaims) { c["iss"] = "another-service" }},
+		{"missing-expiry", jwt.SigningMethodHS256, func(c jwt.MapClaims) { delete(c, "exp") }},
+		{"expired", jwt.SigningMethodHS256, func(c jwt.MapClaims) { c["exp"] = time.Now().Add(-time.Minute).Unix() }},
+		{"future-issued-at", jwt.SigningMethodHS256, func(c jwt.MapClaims) { c["iat"] = time.Now().Add(time.Hour).Unix() }},
+		{"padded-subject", jwt.SigningMethodHS256, func(c jwt.MapClaims) { c["sub"] = " " + s.Cfg.AdminUsername + " " }},
+		{"HS384", jwt.SigningMethodHS384, func(jwt.MapClaims) {}},
+		{"HS512", jwt.SigningMethodHS512, func(jwt.MapClaims) {}},
+	}
+	path := "/nacos/v1/ns/instance?" + url.Values{"namespaceId": {ns}, "serviceName": {"issuer-guard"}, "ip": {"127.0.0.1"}, "port": {"18304"}}.Encode()
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			claims := jwt.MapClaims{"sub": s.Cfg.AdminUsername, "roles": []string{"ROLE_ADMIN"}, "iss": "goacos", "iat": time.Now().Unix(), "exp": time.Now().Add(time.Minute).Unix()}
+			tc.mutate(claims)
+			token, err := jwt.NewWithClaims(tc.method, claims).SignedString([]byte(s.Cfg.TokenSecret))
+			if err != nil {
+				t.Fatal(err)
+			}
+			if got := request("POST", path, "", token); got != 403 {
+				t.Errorf("invalid issuer token returned %d", got)
+			}
+		})
+	}
+	var count int
+	if err := s.ST.QueryRow(context.Background(), "SELECT COUNT(*) FROM naming_instance WHERE namespace_id=?", ns).Scan(&count); err != nil || count != 0 {
+		t.Fatalf("invalid tokens affected storage: count=%d err=%v", count, err)
+	}
 }
 
 func TestW038ReadListenerAndLiveAdminCompatibility(t *testing.T) {
