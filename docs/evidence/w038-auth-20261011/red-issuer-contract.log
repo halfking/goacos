@@ -1,0 +1,33 @@
+=== RUN   TestAuthServiceRejectsTokensOutsideIssuerContract
+=== RUN   TestAuthServiceRejectsTokensOutsideIssuerContract/missing-issuer
+    auth_test.go:73: token outside goacos issuer contract was accepted
+=== RUN   TestAuthServiceRejectsTokensOutsideIssuerContract/wrong-issuer
+    auth_test.go:73: token outside goacos issuer contract was accepted
+=== RUN   TestAuthServiceRejectsTokensOutsideIssuerContract/missing-expiry
+    auth_test.go:73: token outside goacos issuer contract was accepted
+=== RUN   TestAuthServiceRejectsTokensOutsideIssuerContract/expired
+=== RUN   TestAuthServiceRejectsTokensOutsideIssuerContract/future-issued-at
+    auth_test.go:73: token outside goacos issuer contract was accepted
+=== RUN   TestAuthServiceRejectsTokensOutsideIssuerContract/missing-subject
+=== RUN   TestAuthServiceRejectsTokensOutsideIssuerContract/blank-subject
+    auth_test.go:73: token outside goacos issuer contract was accepted
+=== RUN   TestAuthServiceRejectsTokensOutsideIssuerContract/padded-subject
+    auth_test.go:73: token outside goacos issuer contract was accepted
+=== RUN   TestAuthServiceRejectsTokensOutsideIssuerContract/HS384
+    auth_test.go:73: token outside goacos issuer contract was accepted
+=== RUN   TestAuthServiceRejectsTokensOutsideIssuerContract/HS512
+    auth_test.go:73: token outside goacos issuer contract was accepted
+--- FAIL: TestAuthServiceRejectsTokensOutsideIssuerContract (0.00s)
+    --- FAIL: TestAuthServiceRejectsTokensOutsideIssuerContract/missing-issuer (0.00s)
+    --- FAIL: TestAuthServiceRejectsTokensOutsideIssuerContract/wrong-issuer (0.00s)
+    --- FAIL: TestAuthServiceRejectsTokensOutsideIssuerContract/missing-expiry (0.00s)
+    --- PASS: TestAuthServiceRejectsTokensOutsideIssuerContract/expired (0.00s)
+    --- FAIL: TestAuthServiceRejectsTokensOutsideIssuerContract/future-issued-at (0.00s)
+    --- PASS: TestAuthServiceRejectsTokensOutsideIssuerContract/missing-subject (0.00s)
+    --- FAIL: TestAuthServiceRejectsTokensOutsideIssuerContract/blank-subject (0.00s)
+    --- FAIL: TestAuthServiceRejectsTokensOutsideIssuerContract/padded-subject (0.00s)
+    --- FAIL: TestAuthServiceRejectsTokensOutsideIssuerContract/HS384 (0.00s)
+    --- FAIL: TestAuthServiceRejectsTokensOutsideIssuerContract/HS512 (0.00s)
+FAIL
+FAIL	github.com/halfking/goacos/internal/core	0.412s
+FAIL

@@ -1,0 +1,47 @@
+{
+  "base": "ff28237270777a7f161e2b0b0a3b840bc42dd86e",
+  "product_unchanged": true,
+  "go": "go version go1.27.2 darwin/arm64",
+  "results": [
+    {
+      "name": "red-issuer-contract",
+      "argv": [
+        "/tmp/memora-w020-toolchain-20261011/go-cache/bin/go",
+        "test",
+        "-count=1",
+        "-run",
+        "TestAuthServiceRejectsTokensOutsideIssuerContract",
+        "-v",
+        "./internal/core"
+      ],
+      "exit_code": 1,
+      "started_utc": "2026-10-10T17:49:26.909493+00:00",
+      "log_sha256": "3adf43b37f46328a6a7b690dbd2684eacd051756c98730c0d1627993d655123b",
+      "env": {
+        "GOTOOLCHAIN": "local",
+        "GOACOS_TEST_PG_DSN": "explicit private loopback fixture; value excluded"
+      }
+    },
+    {
+      "name": "red-http-guards",
+      "argv": [
+        "/tmp/memora-w020-toolchain-20261011/go-cache/bin/go",
+        "test",
+        "-race",
+        "-count=1",
+        "-tags=integration",
+        "-run",
+        "TestW038.*(UserCannotMutate|LiveAccount|ReadListener)",
+        "-v",
+        "./internal/api"
+      ],
+      "exit_code": 1,
+      "started_utc": "2026-10-10T17:49:26.910048+00:00",
+      "log_sha256": "eb021acb2ba6b0675adb5a901f8328e189690e0bd69d12128556376a2c5ee5ec",
+      "env": {
+        "GOTOOLCHAIN": "local",
+        "GOACOS_TEST_PG_DSN": "explicit private loopback fixture; value excluded"
+      }
+    }
+  ]
+}
