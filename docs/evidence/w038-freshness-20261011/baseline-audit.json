@@ -1,0 +1,8 @@
+{
+  "argv": [
+    "/tmp/memora-w020-dependency-tools-patched-20261011/govulncheck",
+    "./..."
+  ],
+  "exit_code": 0,
+  "scope": "full native Go source with patched1.27.2 toolchain; no integration tag"
+}

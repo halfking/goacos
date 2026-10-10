@@ -1,0 +1,14 @@
+{
+  "container": "goacos-w038-pg-20261011",
+  "image_id": "sha256:9f6f5e8f6bf64903df0a7743c4580477c14139cdaac1c17056b21721cf34369e",
+  "image_repo_digests": [
+    "pgvector/pgvector@sha256:cf134a767f474095eeba57e0117be8e568e011a63f33fbf252f14c9b760f8e6f"
+  ],
+  "server_version": "17.11 (Debian 17.11-1.pgdg12+2)",
+  "host_bind": "127.0.0.1",
+  "host_port": 62229,
+  "database": "w038_freshness",
+  "role_flags_super_createrole_createdb_bypassrls": "f|f|f|f",
+  "setup_initial": "initial socket-ready init server race then bootstrap role deprivileging rejected; own empty container removed/recreated with separate non-superuser app, only synthetic credentials rotated; no failed setup counted as RED product reproduction",
+  "scope": "dedicated synthetic PostgreSQL; database/table owner, no RLS claim; no host mount; no existing service data"
+}

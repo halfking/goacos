@@ -1,0 +1,18 @@
+{
+  "argv": [
+    "go",
+    "test",
+    "-count=1",
+    "-tags=integration",
+    "-run",
+    "TestW038",
+    "-v",
+    "./internal/api"
+  ],
+  "exit_code": 1,
+  "utc": "2026-10-10T17:21:20.040915+00:00",
+  "go": "go version go1.27.2 darwin/arm64",
+  "baseline": "363bd2c32cf354c1eeba3db0e76776d623c661f8",
+  "credentials": "environment only; not recorded",
+  "scope": "real isolated PG + authenticated v1/v2 HTTP, no sweeper"
+}
