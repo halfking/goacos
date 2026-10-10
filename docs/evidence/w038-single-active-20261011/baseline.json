@@ -73,5 +73,6 @@
       "scope": "owned loopback disposable w038_single_active database"
     }
   ],
-  "authorization": "parent assigned sole writer of this branch; local additive product/tests/evidence/commits and isolated synthetic DB allowed; no push/production/DNS/credentials/external send"
+  "authorization": "parent assigned sole writer of this branch; local additive product/tests/evidence/commits and isolated synthetic DB allowed; no push/production/DNS/credentials/external send",
+  "module_toolchain_floor": "go1.27.2 after meaningful actual inherited Go1.27.1 source audit RED"
 }

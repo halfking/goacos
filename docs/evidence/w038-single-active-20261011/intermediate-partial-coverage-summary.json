@@ -1,0 +1,33 @@
+{
+  "raw_duplicate_identical_blocks": 4695,
+  "normalization": "one source-block location counted once; union of real cross-package executions, max counter; statement counts asserted identical",
+  "scope": "four complete primary files implementing new ownership/config facade, replacement hub, and HTTP admission; not repository/global/auth gate coverage",
+  "primary_files": [
+    {
+      "file": "internal/storage/config_owner.go",
+      "covered_statements": 88,
+      "statements": 122,
+      "percent": 72.13
+    },
+    {
+      "file": "internal/storage/config_facade.go",
+      "covered_statements": 37,
+      "statements": 60,
+      "percent": 61.67
+    },
+    {
+      "file": "internal/core/hub.go",
+      "covered_statements": 21,
+      "statements": 78,
+      "percent": 26.92
+    },
+    {
+      "file": "internal/api/config_admission.go",
+      "covered_statements": 0,
+      "statements": 43,
+      "percent": 0.0
+    }
+  ],
+  "primary_percent": 48.18,
+  "whole_repository_instrumented_percent": 18.79
+}

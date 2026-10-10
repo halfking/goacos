@@ -1,0 +1,12 @@
+{
+  "argv": [
+    "/opt/homebrew/bin/go",
+    "test",
+    "./internal/core"
+  ],
+  "environment": {
+    "GOTOOLCHAIN": "local"
+  },
+  "actual_exit_code": 1,
+  "expected": "fail closed below module minimum go1.27.2"
+}

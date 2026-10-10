@@ -1,0 +1,1189 @@
+{
+  "base": "418b4dfed7d0114535c9baf25dba9654aa6aed5c",
+  "method": "distinct instrumented source blocks intersecting added lines of git diff --unified=0, excluding tests/non-executable source naturally; union across real executions",
+  "covered_statements": 298,
+  "statements": 332,
+  "percent": 89.76,
+  "selected_blocks": [
+    {
+      "location": "github.com/halfking/goacos/internal/api/config_admission.go:20.49,20.67",
+      "statements": 1,
+      "covered": true
+    },
+    {
+      "location": "github.com/halfking/goacos/internal/api/config_admission.go:22.2,22.17",
+      "statements": 1,
+      "covered": true
+    },
+    {
+      "location": "github.com/halfking/goacos/internal/api/config_admission.go:23.3,24.1",
+      "statements": 1,
+      "covered": true
+    },
+    {
+      "location": "github.com/halfking/goacos/internal/api/config_admission.go:27.2,27.17",
+      "statements": 1,
+      "covered": true
+    },
+    {
+      "location": "github.com/halfking/goacos/internal/api/config_admission.go:28.3,29.1",
+      "statements": 1,
+      "covered": true
+    },
+    {
+      "location": "github.com/halfking/goacos/internal/api/config_admission.go:30.2,30.40",
+      "statements": 1,
+      "covered": true
+    },
+    {
+      "location": "github.com/halfking/goacos/internal/api/config_admission.go:31.3,33.1",
+      "statements": 2,
+      "covered": true
+    },
+    {
+      "location": "github.com/halfking/goacos/internal/api/config_admission.go:34.2,34.24",
+      "statements": 1,
+      "covered": true
+    },
+    {
+      "location": "github.com/halfking/goacos/internal/api/config_admission.go:37.2,37.33",
+      "statements": 1,
+      "covered": true
+    },
+    {
+      "location": "github.com/halfking/goacos/internal/api/config_admission.go:38.3,40.1",
+      "statements": 2,
+      "covered": true
+    },
+    {
+      "location": "github.com/halfking/goacos/internal/api/config_admission.go:41.2,41.48",
+      "statements": 1,
+      "covered": true
+    },
+    {
+      "location": "github.com/halfking/goacos/internal/api/config_admission.go:44.3,46.76",
+      "statements": 3,
+      "covered": true
+    },
+    {
+      "location": "github.com/halfking/goacos/internal/api/config_admission.go:47.4,47.18",
+      "statements": 1,
+      "covered": true
+    },
+    {
+      "location": "github.com/halfking/goacos/internal/api/config_admission.go:48.5,49.1",
+      "statements": 1,
+      "covered": false
+    },
+    {
+      "location": "github.com/halfking/goacos/internal/api/config_admission.go:50.4,50.14",
+      "statements": 1,
+      "covered": true
+    },
+    {
+      "location": "github.com/halfking/goacos/internal/api/config_admission.go:52.3,52.15",
+      "statements": 1,
+      "covered": true
+    },
+    {
+      "location": "github.com/halfking/goacos/internal/api/config_admission.go:53.4,55.1",
+      "statements": 2,
+      "covered": true
+    },
+    {
+      "location": "github.com/halfking/goacos/internal/api/config_admission.go:56.3,57.9",
+      "statements": 2,
+      "covered": true
+    },
+    {
+      "location": "github.com/halfking/goacos/internal/api/config_admission.go:59.2,60.79",
+      "statements": 2,
+      "covered": true
+    },
+    {
+      "location": "github.com/halfking/goacos/internal/api/config_admission.go:61.3,62.34",
+      "statements": 2,
+      "covered": true
+    },
+    {
+      "location": "github.com/halfking/goacos/internal/api/config_admission.go:63.4,64.1",
+      "statements": 1,
+      "covered": true
+    },
+    {
+      "location": "github.com/halfking/goacos/internal/api/config_admission.go:65.3,65.13",
+      "statements": 1,
+      "covered": true
+    },
+    {
+      "location": "github.com/halfking/goacos/internal/api/config_admission.go:67.2,67.14",
+      "statements": 1,
+      "covered": true
+    },
+    {
+      "location": "github.com/halfking/goacos/internal/api/config_admission.go:68.3,68.52",
+      "statements": 1,
+      "covered": true
+    },
+    {
+      "location": "github.com/halfking/goacos/internal/api/config_admission.go:69.4,70.1",
+      "statements": 1,
+      "covered": true
+    },
+    {
+      "location": "github.com/halfking/goacos/internal/api/config_admission.go:71.4,72.1",
+      "statements": 1,
+      "covered": true
+    },
+    {
+      "location": "github.com/halfking/goacos/internal/api/config_admission.go:73.3,73.9",
+      "statements": 1,
+      "covered": true
+    },
+    {
+      "location": "github.com/halfking/goacos/internal/api/config_admission.go:75.2,75.12",
+      "statements": 1,
+      "covered": true
+    },
+    {
+      "location": "github.com/halfking/goacos/internal/api/config_admission.go:78.2,78.30",
+      "statements": 1,
+      "covered": true
+    },
+    {
+      "location": "github.com/halfking/goacos/internal/api/config_admission.go:79.3,80.1",
+      "statements": 1,
+      "covered": true
+    },
+    {
+      "location": "github.com/halfking/goacos/internal/api/config_admission.go:81.2,82.15",
+      "statements": 2,
+      "covered": true
+    },
+    {
+      "location": "github.com/halfking/goacos/internal/api/config_admission.go:83.3,84.1",
+      "statements": 1,
+      "covered": false
+    },
+    {
+      "location": "github.com/halfking/goacos/internal/api/config_admission.go:85.2,86.32",
+      "statements": 2,
+      "covered": true
+    },
+    {
+      "location": "github.com/halfking/goacos/internal/api/config_v1.go:103.2,103.49",
+      "statements": 1,
+      "covered": true
+    },
+    {
+      "location": "github.com/halfking/goacos/internal/api/config_v1.go:103.51,103.144",
+      "statements": 1,
+      "covered": true
+    },
+    {
+      "location": "github.com/halfking/goacos/internal/api/config_v1.go:125.3,125.50",
+      "statements": 1,
+      "covered": true
+    },
+    {
+      "location": "github.com/halfking/goacos/internal/api/config_v1.go:125.52,125.132",
+      "statements": 1,
+      "covered": true
+    },
+    {
+      "location": "github.com/halfking/goacos/internal/api/config_v1.go:181.2,182.16",
+      "statements": 2,
+      "covered": true
+    },
+    {
+      "location": "github.com/halfking/goacos/internal/api/config_v1.go:183.3,185.1",
+      "statements": 2,
+      "covered": true
+    },
+    {
+      "location": "github.com/halfking/goacos/internal/api/config_v1.go:98.3,98.94",
+      "statements": 1,
+      "covered": true
+    },
+    {
+      "location": "github.com/halfking/goacos/internal/api/config_v1.go:99.4,101.1",
+      "statements": 2,
+      "covered": true
+    },
+    {
+      "location": "github.com/halfking/goacos/internal/api/config_v2.go:109.3,109.50",
+      "statements": 1,
+      "covered": true
+    },
+    {
+      "location": "github.com/halfking/goacos/internal/api/config_v2.go:109.52,109.132",
+      "statements": 1,
+      "covered": true
+    },
+    {
+      "location": "github.com/halfking/goacos/internal/api/config_v2.go:170.2,171.16",
+      "statements": 2,
+      "covered": true
+    },
+    {
+      "location": "github.com/halfking/goacos/internal/api/config_v2.go:172.3,174.1",
+      "statements": 2,
+      "covered": false
+    },
+    {
+      "location": "github.com/halfking/goacos/internal/api/config_v2.go:76.3,76.94",
+      "statements": 1,
+      "covered": true
+    },
+    {
+      "location": "github.com/halfking/goacos/internal/api/config_v2.go:77.4,79.1",
+      "statements": 2,
+      "covered": false
+    },
+    {
+      "location": "github.com/halfking/goacos/internal/api/config_v2.go:81.2,81.49",
+      "statements": 1,
+      "covered": true
+    },
+    {
+      "location": "github.com/halfking/goacos/internal/api/config_v2.go:82.3,83.1",
+      "statements": 1,
+      "covered": true
+    },
+    {
+      "location": "github.com/halfking/goacos/internal/api/naming_v1.go:317.2,318.16",
+      "statements": 2,
+      "covered": true
+    },
+    {
+      "location": "github.com/halfking/goacos/internal/api/naming_v1.go:319.3,321.1",
+      "statements": 2,
+      "covered": false
+    },
+    {
+      "location": "github.com/halfking/goacos/internal/api/router.go:157.3,157.264",
+      "statements": 1,
+      "covered": true
+    },
+    {
+      "location": "github.com/halfking/goacos/internal/api/router.go:158.4,159.1",
+      "statements": 1,
+      "covered": true
+    },
+    {
+      "location": "github.com/halfking/goacos/internal/api/router.go:160.4,161.1",
+      "statements": 1,
+      "covered": true
+    },
+    {
+      "location": "github.com/halfking/goacos/internal/core/hub.go:104.3,105.15",
+      "statements": 2,
+      "covered": true
+    },
+    {
+      "location": "github.com/halfking/goacos/internal/core/hub.go:113.3,115.26",
+      "statements": 3,
+      "covered": true
+    },
+    {
+      "location": "github.com/halfking/goacos/internal/core/hub.go:116.4,116.36",
+      "statements": 1,
+      "covered": true
+    },
+    {
+      "location": "github.com/halfking/goacos/internal/core/hub.go:126.2,126.57",
+      "statements": 1,
+      "covered": true
+    },
+    {
+      "location": "github.com/halfking/goacos/internal/core/hub.go:127.3,128.1",
+      "statements": 1,
+      "covered": false
+    },
+    {
+      "location": "github.com/halfking/goacos/internal/core/hub.go:129.2,133.6",
+      "statements": 5,
+      "covered": true
+    },
+    {
+      "location": "github.com/halfking/goacos/internal/core/hub.go:138.4,138.41",
+      "statements": 1,
+      "covered": false
+    },
+    {
+      "location": "github.com/halfking/goacos/internal/core/hub.go:140.4,140.18",
+      "statements": 1,
+      "covered": false
+    },
+    {
+      "location": "github.com/halfking/goacos/internal/core/hub.go:142.4,142.25",
+      "statements": 1,
+      "covered": false
+    },
+    {
+      "location": "github.com/halfking/goacos/internal/core/hub.go:144.3,144.58",
+      "statements": 1,
+      "covered": true
+    },
+    {
+      "location": "github.com/halfking/goacos/internal/core/hub.go:145.4,146.1",
+      "statements": 1,
+      "covered": true
+    },
+    {
+      "location": "github.com/halfking/goacos/internal/core/hub.go:24.2,24.15",
+      "statements": 1,
+      "covered": true
+    },
+    {
+      "location": "github.com/halfking/goacos/internal/core/hub.go:25.3,26.1",
+      "statements": 1,
+      "covered": true
+    },
+    {
+      "location": "github.com/halfking/goacos/internal/core/hub.go:27.2,27.51",
+      "statements": 1,
+      "covered": true
+    },
+    {
+      "location": "github.com/halfking/goacos/internal/core/hub.go:28.3,29.1",
+      "statements": 1,
+      "covered": true
+    },
+    {
+      "location": "github.com/halfking/goacos/internal/core/hub.go:30.2,32.14",
+      "statements": 3,
+      "covered": true
+    },
+    {
+      "location": "github.com/halfking/goacos/internal/core/hub.go:33.3,35.1",
+      "statements": 2,
+      "covered": false
+    },
+    {
+      "location": "github.com/halfking/goacos/internal/core/hub.go:36.2,36.28",
+      "statements": 1,
+      "covered": true
+    },
+    {
+      "location": "github.com/halfking/goacos/internal/core/hub.go:37.3,38.1",
+      "statements": 1,
+      "covered": true
+    },
+    {
+      "location": "github.com/halfking/goacos/internal/core/hub.go:39.2,40.15",
+      "statements": 2,
+      "covered": true
+    },
+    {
+      "location": "github.com/halfking/goacos/internal/core/hub.go:43.2,43.32",
+      "statements": 1,
+      "covered": true
+    },
+    {
+      "location": "github.com/halfking/goacos/internal/core/hub.go:44.3,45.1",
+      "statements": 1,
+      "covered": true
+    },
+    {
+      "location": "github.com/halfking/goacos/internal/core/hub.go:46.2,46.60",
+      "statements": 1,
+      "covered": true
+    },
+    {
+      "location": "github.com/halfking/goacos/internal/core/hub.go:49.2,54.1",
+      "statements": 5,
+      "covered": true
+    },
+    {
+      "location": "github.com/halfking/goacos/internal/core/hub.go:63.2,66.20",
+      "statements": 4,
+      "covered": true
+    },
+    {
+      "location": "github.com/halfking/goacos/internal/core/hub.go:67.3,68.1",
+      "statements": 1,
+      "covered": true
+    },
+    {
+      "location": "github.com/halfking/goacos/internal/core/hub.go:69.2,69.12",
+      "statements": 1,
+      "covered": true
+    },
+    {
+      "location": "github.com/halfking/goacos/internal/core/hub.go:80.2,80.32",
+      "statements": 1,
+      "covered": true
+    },
+    {
+      "location": "github.com/halfking/goacos/internal/core/hub.go:81.3,82.1",
+      "statements": 1,
+      "covered": true
+    },
+    {
+      "location": "github.com/halfking/goacos/internal/core/hub.go:83.2,83.49",
+      "statements": 1,
+      "covered": true
+    },
+    {
+      "location": "github.com/halfking/goacos/internal/core/hub.go:84.3,84.74",
+      "statements": 1,
+      "covered": true
+    },
+    {
+      "location": "github.com/halfking/goacos/internal/core/hub.go:85.4,85.27",
+      "statements": 1,
+      "covered": true
+    },
+    {
+      "location": "github.com/halfking/goacos/internal/core/hub.go:86.5,87.17",
+      "statements": 2,
+      "covered": true
+    },
+    {
+      "location": "github.com/halfking/goacos/internal/core/hub.go:88.6,89.1",
+      "statements": 1,
+      "covered": false
+    },
+    {
+      "location": "github.com/halfking/goacos/internal/core/hub.go:90.5,90.24",
+      "statements": 1,
+      "covered": true
+    },
+    {
+      "location": "github.com/halfking/goacos/internal/core/hub.go:91.6,92.1",
+      "statements": 1,
+      "covered": true
+    },
+    {
+      "location": "github.com/halfking/goacos/internal/core/hub.go:94.4,94.14",
+      "statements": 1,
+      "covered": true
+    },
+    {
+      "location": "github.com/halfking/goacos/internal/core/hub.go:96.3,96.9",
+      "statements": 1,
+      "covered": true
+    },
+    {
+      "location": "github.com/halfking/goacos/internal/core/hub.go:98.2,98.75",
+      "statements": 1,
+      "covered": true
+    },
+    {
+      "location": "github.com/halfking/goacos/internal/core/hub.go:99.3,100.1",
+      "statements": 1,
+      "covered": true
+    },
+    {
+      "location": "github.com/halfking/goacos/internal/storage/config_facade.go:10.2,10.8",
+      "statements": 1,
+      "covered": true
+    },
+    {
+      "location": "github.com/halfking/goacos/internal/storage/config_facade.go:13.2,13.67",
+      "statements": 1,
+      "covered": true
+    },
+    {
+      "location": "github.com/halfking/goacos/internal/storage/config_facade.go:13.69,13.121",
+      "statements": 2,
+      "covered": true
+    },
+    {
+      "location": "github.com/halfking/goacos/internal/storage/config_facade.go:14.2,14.8",
+      "statements": 1,
+      "covered": true
+    },
+    {
+      "location": "github.com/halfking/goacos/internal/storage/config_facade.go:17.2,17.67",
+      "statements": 1,
+      "covered": true
+    },
+    {
+      "location": "github.com/halfking/goacos/internal/storage/config_facade.go:17.69,17.129",
+      "statements": 2,
+      "covered": true
+    },
+    {
+      "location": "github.com/halfking/goacos/internal/storage/config_facade.go:18.2,18.8",
+      "statements": 1,
+      "covered": true
+    },
+    {
+      "location": "github.com/halfking/goacos/internal/storage/config_facade.go:21.2,21.67",
+      "statements": 1,
+      "covered": true
+    },
+    {
+      "location": "github.com/halfking/goacos/internal/storage/config_facade.go:21.69,21.119",
+      "statements": 2,
+      "covered": true
+    },
+    {
+      "location": "github.com/halfking/goacos/internal/storage/config_facade.go:22.2,22.8",
+      "statements": 1,
+      "covered": true
+    },
+    {
+      "location": "github.com/halfking/goacos/internal/storage/config_facade.go:25.2,25.67",
+      "statements": 1,
+      "covered": true
+    },
+    {
+      "location": "github.com/halfking/goacos/internal/storage/config_facade.go:25.69,25.119",
+      "statements": 2,
+      "covered": true
+    },
+    {
+      "location": "github.com/halfking/goacos/internal/storage/config_facade.go:26.2,26.8",
+      "statements": 1,
+      "covered": true
+    },
+    {
+      "location": "github.com/halfking/goacos/internal/storage/config_facade.go:29.2,29.67",
+      "statements": 1,
+      "covered": true
+    },
+    {
+      "location": "github.com/halfking/goacos/internal/storage/config_facade.go:29.69,29.111",
+      "statements": 2,
+      "covered": true
+    },
+    {
+      "location": "github.com/halfking/goacos/internal/storage/config_facade.go:30.2,30.8",
+      "statements": 1,
+      "covered": true
+    },
+    {
+      "location": "github.com/halfking/goacos/internal/storage/config_facade.go:33.2,33.67",
+      "statements": 1,
+      "covered": true
+    },
+    {
+      "location": "github.com/halfking/goacos/internal/storage/config_facade.go:33.69,33.128",
+      "statements": 2,
+      "covered": true
+    },
+    {
+      "location": "github.com/halfking/goacos/internal/storage/config_facade.go:34.2,34.8",
+      "statements": 1,
+      "covered": true
+    },
+    {
+      "location": "github.com/halfking/goacos/internal/storage/config_facade.go:37.2,37.70",
+      "statements": 1,
+      "covered": true
+    },
+    {
+      "location": "github.com/halfking/goacos/internal/storage/config_facade.go:37.72,37.124",
+      "statements": 1,
+      "covered": true
+    },
+    {
+      "location": "github.com/halfking/goacos/internal/storage/config_facade.go:40.2,40.67",
+      "statements": 1,
+      "covered": true
+    },
+    {
+      "location": "github.com/halfking/goacos/internal/storage/config_facade.go:40.69,40.107",
+      "statements": 2,
+      "covered": true
+    },
+    {
+      "location": "github.com/halfking/goacos/internal/storage/config_facade.go:41.2,41.8",
+      "statements": 1,
+      "covered": true
+    },
+    {
+      "location": "github.com/halfking/goacos/internal/storage/config_facade.go:47.2,47.67",
+      "statements": 1,
+      "covered": true
+    },
+    {
+      "location": "github.com/halfking/goacos/internal/storage/config_facade.go:48.3,49.15",
+      "statements": 2,
+      "covered": true
+    },
+    {
+      "location": "github.com/halfking/goacos/internal/storage/config_facade.go:50.4,51.1",
+      "statements": 1,
+      "covered": false
+    },
+    {
+      "location": "github.com/halfking/goacos/internal/storage/config_facade.go:52.3,53.19",
+      "statements": 2,
+      "covered": true
+    },
+    {
+      "location": "github.com/halfking/goacos/internal/storage/config_facade.go:54.4,55.71",
+      "statements": 2,
+      "covered": true
+    },
+    {
+      "location": "github.com/halfking/goacos/internal/storage/config_facade.go:56.5,57.1",
+      "statements": 1,
+      "covered": false
+    },
+    {
+      "location": "github.com/halfking/goacos/internal/storage/config_facade.go:58.4,58.24",
+      "statements": 1,
+      "covered": true
+    },
+    {
+      "location": "github.com/halfking/goacos/internal/storage/config_facade.go:60.3,60.20",
+      "statements": 1,
+      "covered": true
+    },
+    {
+      "location": "github.com/halfking/goacos/internal/storage/config_facade.go:62.2,62.8",
+      "statements": 1,
+      "covered": true
+    },
+    {
+      "location": "github.com/halfking/goacos/internal/storage/config_facade.go:65.2,65.67",
+      "statements": 1,
+      "covered": true
+    },
+    {
+      "location": "github.com/halfking/goacos/internal/storage/config_facade.go:66.3,67.25",
+      "statements": 2,
+      "covered": true
+    },
+    {
+      "location": "github.com/halfking/goacos/internal/storage/config_facade.go:68.4,69.1",
+      "statements": 1,
+      "covered": false
+    },
+    {
+      "location": "github.com/halfking/goacos/internal/storage/config_facade.go:70.3,70.11",
+      "statements": 1,
+      "covered": true
+    },
+    {
+      "location": "github.com/halfking/goacos/internal/storage/config_facade.go:72.2,72.8",
+      "statements": 1,
+      "covered": true
+    },
+    {
+      "location": "github.com/halfking/goacos/internal/storage/config_facade.go:77.2,77.67",
+      "statements": 1,
+      "covered": true
+    },
+    {
+      "location": "github.com/halfking/goacos/internal/storage/config_facade.go:77.69,77.111",
+      "statements": 2,
+      "covered": true
+    },
+    {
+      "location": "github.com/halfking/goacos/internal/storage/config_facade.go:78.2,78.8",
+      "statements": 1,
+      "covered": true
+    },
+    {
+      "location": "github.com/halfking/goacos/internal/storage/config_facade.go:81.2,81.67",
+      "statements": 1,
+      "covered": true
+    },
+    {
+      "location": "github.com/halfking/goacos/internal/storage/config_facade.go:81.69,81.128",
+      "statements": 2,
+      "covered": true
+    },
+    {
+      "location": "github.com/halfking/goacos/internal/storage/config_facade.go:82.2,82.8",
+      "statements": 1,
+      "covered": true
+    },
+    {
+      "location": "github.com/halfking/goacos/internal/storage/config_facade.go:9.2,9.67",
+      "statements": 1,
+      "covered": true
+    },
+    {
+      "location": "github.com/halfking/goacos/internal/storage/config_facade.go:9.69,9.115",
+      "statements": 2,
+      "covered": true
+    },
+    {
+      "location": "github.com/halfking/goacos/internal/storage/config_owner.go:102.2,103.12",
+      "statements": 2,
+      "covered": true
+    },
+    {
+      "location": "github.com/halfking/goacos/internal/storage/config_owner.go:106.2,106.31",
+      "statements": 1,
+      "covered": true
+    },
+    {
+      "location": "github.com/halfking/goacos/internal/storage/config_owner.go:107.3,108.1",
+      "statements": 1,
+      "covered": false
+    },
+    {
+      "location": "github.com/halfking/goacos/internal/storage/config_owner.go:109.2,111.34",
+      "statements": 3,
+      "covered": true
+    },
+    {
+      "location": "github.com/halfking/goacos/internal/storage/config_owner.go:112.3,113.16",
+      "statements": 2,
+      "covered": true
+    },
+    {
+      "location": "github.com/halfking/goacos/internal/storage/config_owner.go:114.4,115.1",
+      "statements": 1,
+      "covered": true
+    },
+    {
+      "location": "github.com/halfking/goacos/internal/storage/config_owner.go:116.4,117.1",
+      "statements": 1,
+      "covered": true
+    },
+    {
+      "location": "github.com/halfking/goacos/internal/storage/config_owner.go:118.9,118.38",
+      "statements": 1,
+      "covered": true
+    },
+    {
+      "location": "github.com/halfking/goacos/internal/storage/config_owner.go:119.3,120.16",
+      "statements": 2,
+      "covered": true
+    },
+    {
+      "location": "github.com/halfking/goacos/internal/storage/config_owner.go:121.4,122.1",
+      "statements": 1,
+      "covered": true
+    },
+    {
+      "location": "github.com/halfking/goacos/internal/storage/config_owner.go:123.4,124.1",
+      "statements": 1,
+      "covered": true
+    },
+    {
+      "location": "github.com/halfking/goacos/internal/storage/config_owner.go:126.3,127.1",
+      "statements": 1,
+      "covered": false
+    },
+    {
+      "location": "github.com/halfking/goacos/internal/storage/config_owner.go:128.2,128.23",
+      "statements": 1,
+      "covered": true
+    },
+    {
+      "location": "github.com/halfking/goacos/internal/storage/config_owner.go:129.3,131.1",
+      "statements": 2,
+      "covered": true
+    },
+    {
+      "location": "github.com/halfking/goacos/internal/storage/config_owner.go:132.2,132.12",
+      "statements": 1,
+      "covered": true
+    },
+    {
+      "location": "github.com/halfking/goacos/internal/storage/config_owner.go:135.2,135.41",
+      "statements": 1,
+      "covered": true
+    },
+    {
+      "location": "github.com/halfking/goacos/internal/storage/config_owner.go:136.3,137.1",
+      "statements": 1,
+      "covered": true
+    },
+    {
+      "location": "github.com/halfking/goacos/internal/storage/config_owner.go:138.2,140.11",
+      "statements": 3,
+      "covered": false
+    },
+    {
+      "location": "github.com/halfking/goacos/internal/storage/config_owner.go:143.2,143.45",
+      "statements": 1,
+      "covered": true
+    },
+    {
+      "location": "github.com/halfking/goacos/internal/storage/config_owner.go:144.3,145.1",
+      "statements": 1,
+      "covered": true
+    },
+    {
+      "location": "github.com/halfking/goacos/internal/storage/config_owner.go:146.2,146.30",
+      "statements": 1,
+      "covered": true
+    },
+    {
+      "location": "github.com/halfking/goacos/internal/storage/config_owner.go:147.3,148.1",
+      "statements": 1,
+      "covered": true
+    },
+    {
+      "location": "github.com/halfking/goacos/internal/storage/config_owner.go:149.2,150.31",
+      "statements": 2,
+      "covered": true
+    },
+    {
+      "location": "github.com/halfking/goacos/internal/storage/config_owner.go:151.3,152.1",
+      "statements": 1,
+      "covered": true
+    },
+    {
+      "location": "github.com/halfking/goacos/internal/storage/config_owner.go:153.2,153.9",
+      "statements": 1,
+      "covered": true
+    },
+    {
+      "location": "github.com/halfking/goacos/internal/storage/config_owner.go:155.3,155.19",
+      "statements": 1,
+      "covered": false
+    },
+    {
+      "location": "github.com/halfking/goacos/internal/storage/config_owner.go:157.3,157.27",
+      "statements": 1,
+      "covered": false
+    },
+    {
+      "location": "github.com/halfking/goacos/internal/storage/config_owner.go:158.15,158.15",
+      "statements": 0,
+      "covered": true
+    },
+    {
+      "location": "github.com/halfking/goacos/internal/storage/config_owner.go:160.2,160.15",
+      "statements": 1,
+      "covered": true
+    },
+    {
+      "location": "github.com/halfking/goacos/internal/storage/config_owner.go:161.3,162.20",
+      "statements": 2,
+      "covered": true
+    },
+    {
+      "location": "github.com/halfking/goacos/internal/storage/config_owner.go:163.4,164.1",
+      "statements": 1,
+      "covered": true
+    },
+    {
+      "location": "github.com/halfking/goacos/internal/storage/config_owner.go:166.2,166.53",
+      "statements": 1,
+      "covered": true
+    },
+    {
+      "location": "github.com/halfking/goacos/internal/storage/config_owner.go:167.3,168.1",
+      "statements": 1,
+      "covered": true
+    },
+    {
+      "location": "github.com/halfking/goacos/internal/storage/config_owner.go:169.2,170.14",
+      "statements": 2,
+      "covered": true
+    },
+    {
+      "location": "github.com/halfking/goacos/internal/storage/config_owner.go:171.3,173.1",
+      "statements": 2,
+      "covered": false
+    },
+    {
+      "location": "github.com/halfking/goacos/internal/storage/config_owner.go:174.2,177.29",
+      "statements": 4,
+      "covered": true
+    },
+    {
+      "location": "github.com/halfking/goacos/internal/storage/config_owner.go:178.3,179.1",
+      "statements": 1,
+      "covered": true
+    },
+    {
+      "location": "github.com/halfking/goacos/internal/storage/config_owner.go:183.2,183.51",
+      "statements": 1,
+      "covered": true
+    },
+    {
+      "location": "github.com/halfking/goacos/internal/storage/config_owner.go:184.3,185.1",
+      "statements": 1,
+      "covered": true
+    },
+    {
+      "location": "github.com/halfking/goacos/internal/storage/config_owner.go:186.2,186.31",
+      "statements": 1,
+      "covered": true
+    },
+    {
+      "location": "github.com/halfking/goacos/internal/storage/config_owner.go:187.3,189.1",
+      "statements": 2,
+      "covered": false
+    },
+    {
+      "location": "github.com/halfking/goacos/internal/storage/config_owner.go:190.2,190.39",
+      "statements": 1,
+      "covered": true
+    },
+    {
+      "location": "github.com/halfking/goacos/internal/storage/config_owner.go:191.3,192.1",
+      "statements": 1,
+      "covered": true
+    },
+    {
+      "location": "github.com/halfking/goacos/internal/storage/config_owner.go:193.2,193.12",
+      "statements": 1,
+      "covered": true
+    },
+    {
+      "location": "github.com/halfking/goacos/internal/storage/config_owner.go:196.2,196.66",
+      "statements": 1,
+      "covered": true
+    },
+    {
+      "location": "github.com/halfking/goacos/internal/storage/config_owner.go:196.68,196.80",
+      "statements": 1,
+      "covered": true
+    },
+    {
+      "location": "github.com/halfking/goacos/internal/storage/config_owner.go:199.2,200.14",
+      "statements": 2,
+      "covered": true
+    },
+    {
+      "location": "github.com/halfking/goacos/internal/storage/config_owner.go:201.3,202.1",
+      "statements": 1,
+      "covered": false
+    },
+    {
+      "location": "github.com/halfking/goacos/internal/storage/config_owner.go:203.2,204.12",
+      "statements": 2,
+      "covered": true
+    },
+    {
+      "location": "github.com/halfking/goacos/internal/storage/config_owner.go:207.2,208.14",
+      "statements": 2,
+      "covered": true
+    },
+    {
+      "location": "github.com/halfking/goacos/internal/storage/config_owner.go:209.3,210.1",
+      "statements": 1,
+      "covered": true
+    },
+    {
+      "location": "github.com/halfking/goacos/internal/storage/config_owner.go:211.2,212.1",
+      "statements": 1,
+      "covered": true
+    },
+    {
+      "location": "github.com/halfking/goacos/internal/storage/config_owner.go:215.2,215.9",
+      "statements": 1,
+      "covered": true
+    },
+    {
+      "location": "github.com/halfking/goacos/internal/storage/config_owner.go:217.18,217.39",
+      "statements": 1,
+      "covered": true
+    },
+    {
+      "location": "github.com/halfking/goacos/internal/storage/config_owner.go:217.3,217.16",
+      "statements": 1,
+      "covered": true
+    },
+    {
+      "location": "github.com/halfking/goacos/internal/storage/config_owner.go:219.3,219.27",
+      "statements": 1,
+      "covered": false
+    },
+    {
+      "location": "github.com/halfking/goacos/internal/storage/config_owner.go:221.2,222.12",
+      "statements": 2,
+      "covered": true
+    },
+    {
+      "location": "github.com/halfking/goacos/internal/storage/config_owner.go:40.2,41.30",
+      "statements": 2,
+      "covered": true
+    },
+    {
+      "location": "github.com/halfking/goacos/internal/storage/config_owner.go:42.3,43.1",
+      "statements": 1,
+      "covered": true
+    },
+    {
+      "location": "github.com/halfking/goacos/internal/storage/config_owner.go:44.2,44.12",
+      "statements": 1,
+      "covered": true
+    },
+    {
+      "location": "github.com/halfking/goacos/internal/storage/config_owner.go:46.32,46.69",
+      "statements": 2,
+      "covered": true
+    },
+    {
+      "location": "github.com/halfking/goacos/internal/storage/config_owner.go:46.71,46.86",
+      "statements": 1,
+      "covered": true
+    },
+    {
+      "location": "github.com/halfking/goacos/internal/storage/config_owner.go:48.2,49.33",
+      "statements": 2,
+      "covered": true
+    },
+    {
+      "location": "github.com/halfking/goacos/internal/storage/config_owner.go:49.35,49.61",
+      "statements": 1,
+      "covered": true
+    },
+    {
+      "location": "github.com/halfking/goacos/internal/storage/config_owner.go:50.2,50.20",
+      "statements": 1,
+      "covered": true
+    },
+    {
+      "location": "github.com/halfking/goacos/internal/storage/config_owner.go:53.2,55.41",
+      "statements": 3,
+      "covered": true
+    },
+    {
+      "location": "github.com/halfking/goacos/internal/storage/config_owner.go:56.3,56.20",
+      "statements": 1,
+      "covered": true
+    },
+    {
+      "location": "github.com/halfking/goacos/internal/storage/config_owner.go:57.4,58.1",
+      "statements": 1,
+      "covered": true
+    },
+    {
+      "location": "github.com/halfking/goacos/internal/storage/config_owner.go:59.3,59.37",
+      "statements": 1,
+      "covered": false
+    },
+    {
+      "location": "github.com/halfking/goacos/internal/storage/config_owner.go:63.2,63.42",
+      "statements": 1,
+      "covered": true
+    },
+    {
+      "location": "github.com/halfking/goacos/internal/storage/config_owner.go:64.3,65.1",
+      "statements": 1,
+      "covered": true
+    },
+    {
+      "location": "github.com/halfking/goacos/internal/storage/config_owner.go:66.2,67.14",
+      "statements": 2,
+      "covered": true
+    },
+    {
+      "location": "github.com/halfking/goacos/internal/storage/config_owner.go:68.3,69.1",
+      "statements": 1,
+      "covered": false
+    },
+    {
+      "location": "github.com/halfking/goacos/internal/storage/config_owner.go:70.2,73.34",
+      "statements": 4,
+      "covered": true
+    },
+    {
+      "location": "github.com/halfking/goacos/internal/storage/config_owner.go:74.3,75.1",
+      "statements": 1,
+      "covered": true
+    },
+    {
+      "location": "github.com/halfking/goacos/internal/storage/config_owner.go:75.9,75.38",
+      "statements": 1,
+      "covered": true
+    },
+    {
+      "location": "github.com/halfking/goacos/internal/storage/config_owner.go:76.3,78.15",
+      "statements": 3,
+      "covered": true
+    },
+    {
+      "location": "github.com/halfking/goacos/internal/storage/config_owner.go:79.4,84.1",
+      "statements": 5,
+      "covered": true
+    },
+    {
+      "location": "github.com/halfking/goacos/internal/storage/config_owner.go:86.3,87.1",
+      "statements": 1,
+      "covered": false
+    },
+    {
+      "location": "github.com/halfking/goacos/internal/storage/config_owner.go:88.2,88.27",
+      "statements": 1,
+      "covered": true
+    },
+    {
+      "location": "github.com/halfking/goacos/internal/storage/config_owner.go:89.3,91.1",
+      "statements": 2,
+      "covered": true
+    },
+    {
+      "location": "github.com/halfking/goacos/internal/storage/config_owner.go:92.2,92.31",
+      "statements": 1,
+      "covered": true
+    },
+    {
+      "location": "github.com/halfking/goacos/internal/storage/config_owner.go:95.3,97.37",
+      "statements": 3,
+      "covered": true
+    },
+    {
+      "location": "github.com/halfking/goacos/internal/storage/config_owner.go:98.4,100.1",
+      "statements": 2,
+      "covered": true
+    },
+    {
+      "location": "github.com/halfking/goacos/internal/storage/configstore.go:176.2,177.121",
+      "statements": 1,
+      "covered": true
+    },
+    {
+      "location": "github.com/halfking/goacos/internal/storage/configstore.go:178.3,179.1",
+      "statements": 1,
+      "covered": true
+    },
+    {
+      "location": "github.com/halfking/goacos/internal/storage/configstore.go:223.3,225.1",
+      "statements": 2,
+      "covered": true
+    },
+    {
+      "location": "github.com/halfking/goacos/internal/storage/configstore.go:226.2,228.107",
+      "statements": 3,
+      "covered": true
+    },
+    {
+      "location": "github.com/halfking/goacos/internal/storage/configstore.go:237.2,240.16",
+      "statements": 4,
+      "covered": true
+    },
+    {
+      "location": "github.com/halfking/goacos/internal/storage/store.go:228.33,228.86",
+      "statements": 2,
+      "covered": true
+    },
+    {
+      "location": "github.com/halfking/goacos/internal/storage/store.go:43.2,43.45",
+      "statements": 1,
+      "covered": true
+    },
+    {
+      "location": "github.com/halfking/goacos/internal/storage/store.go:44.3,45.1",
+      "statements": 1,
+      "covered": true
+    },
+    {
+      "location": "github.com/halfking/goacos/internal/storage/store.go:50.2,50.45",
+      "statements": 1,
+      "covered": true
+    },
+    {
+      "location": "github.com/halfking/goacos/internal/storage/store.go:51.3,52.1",
+      "statements": 1,
+      "covered": true
+    },
+    {
+      "location": "github.com/halfking/goacos/internal/storage/store.go:57.2,57.45",
+      "statements": 1,
+      "covered": true
+    },
+    {
+      "location": "github.com/halfking/goacos/internal/storage/store.go:58.3,59.1",
+      "statements": 1,
+      "covered": true
+    }
+  ]
+}

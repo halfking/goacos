@@ -7,7 +7,7 @@ GO='/tmp/memora-w020-toolchain-20261011/go-cache/bin/go'
 SCAN='/tmp/memora-w020-dependency-tools-patched-20261011/govulncheck'
 p=json.load(open('/tmp/goacos-w038-single-active-pg-20261011.json'))
 m=json.load(open('/tmp/goacos-w038-single-active-mysql-20261011.json'))
-env=dict(os.environ,GOTOOLCHAIN='local',GOCACHE='/tmp/goacos-single-active-gocache-20261011',GOACOS_TEST_PG_DSN=p['dsn'],GOACOS_TEST_MYSQL_DSN=m['dsn'])
+env=dict(os.environ,PATH=str(pathlib.Path(GO).parent)+os.pathsep+os.environ['PATH'],GOTOOLCHAIN='local',GOCACHE='/tmp/goacos-single-active-gocache-20261011',GOACOS_TEST_PG_DSN=p['dsn'],GOACOS_TEST_MYSQL_DSN=m['dsn'])
 results=[]
 def run(name,args,extra=None):
  start=time.time();r=subprocess.run(args,cwd=ROOT,env=dict(env,**(extra or {})),text=True,stdout=subprocess.PIPE,stderr=subprocess.STDOUT)
@@ -15,7 +15,7 @@ def run(name,args,extra=None):
   if secret in r.stdout:raise RuntimeError('private DSN appeared in output; report not saved')
  (E/(name+'.log')).write_text(r.stdout)
  results.append(dict(name=name,argv=args,environment_overrides=extra or {},exit_code=r.returncode,duration_seconds=round(time.time()-start,3)))
- (E/'verification.json').write_text(json.dumps({'results':results,'environment':{'GOTOOLCHAIN':'local','GOCACHE':env['GOCACHE'],'GOACOS_TEST_PG_DSN':'owned synthetic loopback PG17, parsed private file only in memory','GOACOS_TEST_MYSQL_DSN':'owned synthetic loopback MySQL8.4, parsed private file only in memory'}},indent=2)+'\n')
+ (E/'verification.json').write_text(json.dumps({'results':results,'environment':{'PATH_prefix':str(pathlib.Path(GO).parent),'GOTOOLCHAIN':'local','GOCACHE':env['GOCACHE'],'GOACOS_TEST_PG_DSN':'owned synthetic loopback PG17, parsed private file only in memory','GOACOS_TEST_MYSQL_DSN':'owned synthetic loopback MySQL8.4, parsed private file only in memory'}},indent=2)+'\n')
  print(name,'exit',r.returncode,flush=True)
  if r.returncode:print(r.stdout[-3000:]);sys.exit(r.returncode)
  return r.stdout

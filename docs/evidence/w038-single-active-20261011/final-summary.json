@@ -1,0 +1,76 @@
+{
+  "product_checkpoint": "9c3b5710368f9faeb53f7b98050f8576ef20d4e6",
+  "full_actual_race_replay": {
+    "top_level_passes": 49,
+    "subtest_passes": 154,
+    "failures": 0,
+    "skips": 0,
+    "databases": [
+      "PostgreSQL17.11",
+      "MySQL8.4.11"
+    ]
+  },
+  "verification_check_count": 12,
+  "all_verification_exits": 0,
+  "coverage": {
+    "raw_duplicate_identical_blocks": 6208,
+    "normalization": "one source-block location counted once; union of real cross-package executions, max counter; statement counts asserted identical",
+    "scope": "four complete primary files implementing new ownership/config facade, replacement hub, and HTTP admission; not repository/global/auth gate coverage",
+    "primary_files": [
+      {
+        "file": "internal/storage/config_owner.go",
+        "covered_statements": 106,
+        "statements": 122,
+        "percent": 86.89
+      },
+      {
+        "file": "internal/storage/config_facade.go",
+        "covered_statements": 57,
+        "statements": 60,
+        "percent": 95.0
+      },
+      {
+        "file": "internal/core/hub.go",
+        "covered_statements": 71,
+        "statements": 78,
+        "percent": 91.03
+      },
+      {
+        "file": "internal/api/config_admission.go",
+        "covered_statements": 41,
+        "statements": 43,
+        "percent": 95.35
+      }
+    ],
+    "primary_percent": 90.76,
+    "whole_repository_instrumented_percent": 51.59
+  },
+  "added_block_coverage_percent": 89.76,
+  "scan_results": {
+    "govuln-source": {
+      "finding_records": 1,
+      "module_only_records": 1,
+      "imported_package_records": 0,
+      "called_records": 0,
+      "retained_module_only": "GO-2026-5932"
+    },
+    "govuln-binary-host": {
+      "finding_records": 1,
+      "module_only_records": 1,
+      "imported_package_records": 0,
+      "called_records": 0,
+      "retained_module_only": "GO-2026-5932"
+    },
+    "govuln-binary-linux-arm64": {
+      "finding_records": 1,
+      "module_only_records": 1,
+      "imported_package_records": 0,
+      "called_records": 0,
+      "retained_module_only": "GO-2026-5932"
+    }
+  },
+  "dependency_change": "minimum go directive1.27.2; go.sum/module dependency versions unchanged",
+  "auth_dependency": "418b4df exactaccepted patches cb3492d/5bbc8a2 verified; no534acceptance claim",
+  "acceptance": "owner verified bounded candidate awaiting independent reviewer; no push",
+  "limitations": "single-active oneauthoritative DB only; no global/HA/production/platform/ACL/atomic-auth-revocation acceptance"
+}

@@ -1,0 +1,28 @@
+=== RUN   TestSingleActiveConcurrentActivation
+2026/10/11 02:47:36 [goacos] database-active config hub preloaded 3 entries
+    config_fencing_integration_test.go:76: actual simultaneous activation sessions=6 winner=1
+--- PASS: TestSingleActiveConcurrentActivation (0.75s)
+=== RUN   TestSingleActiveInFlightLossRollbackAndRestart
+2026/10/11 02:47:36 [goacos] database-active config hub preloaded 3 entries
+2026/10/11 02:47:36 [goacos] database-active config hub preloaded 4 entries
+    config_fencing_integration_test.go:144: actual PG backend loss aborted config+history before new owner admission; old owner permanently refused
+--- PASS: TestSingleActiveInFlightLossRollbackAndRestart (0.28s)
+=== RUN   TestSingleActiveListenersReleaseWriteConnectionAndLoseClosed
+2026/10/11 02:47:36 [goacos] database-active config hub preloaded 4 entries
+--- PASS: TestSingleActiveListenersReleaseWriteConnectionAndLoseClosed (1.19s)
+=== RUN   TestSingleActiveMountedRouteFencesAndAtomicHistory
+2026/10/11 02:47:38 [goacos] database-active config hub preloaded 5 entries
+2026/10/11 02:47:38 [goacos] POST /nacos/v1/cs/configs 7ms
+2026/10/11 02:47:38 [goacos] POST /nacos/v2/cs/configs 2ms
+    config_fencing_integration_test.go:202: publishv2 405 Method Not Allowed
+--- FAIL: TestSingleActiveMountedRouteFencesAndAtomicHistory (0.25s)
+=== RUN   TestSingleActiveResponseRollbackAndBounds
+2026/10/11 02:47:38 [goacos] database-active config hub preloaded 6 entries
+--- PASS: TestSingleActiveResponseRollbackAndBounds (0.14s)
+=== RUN   TestSingleActiveRejectsStaleSecondHub
+2026/10/11 02:47:38 [goacos] database-active config hub preloaded 6 entries
+    config_single_active_integration_test.go:28: database refused second active hub
+--- PASS: TestSingleActiveRejectsStaleSecondHub (0.26s)
+FAIL
+FAIL	github.com/halfking/goacos/internal/api	3.306s
+FAIL
