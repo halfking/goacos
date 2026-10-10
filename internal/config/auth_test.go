@@ -19,6 +19,7 @@ func TestEnabledAuthConfigurationBoundaries(t *testing.T) {
 		{"password-under-minimum", func(c *Config) { c.AdminPassword = strings.Repeat("p", 11) }, true},
 		{"bcrypt-byte-limit", func(c *Config) { c.AdminPassword = strings.Repeat("p", 73) }, true},
 		{"unicode-bcrypt-byte-limit", func(c *Config) { c.AdminPassword = strings.Repeat("字", 25) }, true},
+		{"invalid-utf8-password", func(c *Config) { c.AdminPassword = strings.Repeat("\xff", 12) }, true},
 		{"password-padding", func(c *Config) { c.AdminPassword = " " + c.AdminPassword }, true},
 		{"username-padding", func(c *Config) { c.AdminUsername = " " + c.AdminUsername }, true},
 		{"negative-ttl", func(c *Config) { c.TokenTTLSeconds = -1 }, true},

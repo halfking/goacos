@@ -143,13 +143,20 @@ func (c *Config) ValidateAuth() error {
 	if c.AdminUsername == "" || strings.TrimSpace(c.AdminUsername) != c.AdminUsername {
 		return fmt.Errorf("auth configuration: a nonblank admin seed username is required")
 	}
-	if utf8.RuneCountInString(c.AdminPassword) < 12 || len(c.AdminPassword) > 72 || strings.TrimSpace(c.AdminPassword) != c.AdminPassword {
+	if !ValidAuthPassword(c.AdminPassword) {
 		return fmt.Errorf("auth configuration: a private admin seed password of at least 12 characters and at most 72 bytes is required")
 	}
 	if c.TokenTTLSeconds <= 0 || c.TokenTTLSeconds > 86400 {
 		return fmt.Errorf("auth configuration: JWT TTL must be positive and at most 86400 seconds")
 	}
 	return nil
+}
+
+// ValidAuthPassword applies the same contract at bootstrap, login and account
+// changes. Existing weak hashes are never upgraded silently from an env value.
+func ValidAuthPassword(password string) bool {
+	return utf8.ValidString(password) && utf8.RuneCountInString(password) >= 12 &&
+		len(password) <= 72 && strings.TrimSpace(password) == password
 }
 
 // Addr returns the HTTP listen address.

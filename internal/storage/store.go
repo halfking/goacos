@@ -198,6 +198,9 @@ func (s *Store) Seed(ctx context.Context) error {
 		}
 		log.Printf("[goacos] seeded admin user %q (initial password from ADMIN_PASSWORD)", s.cfg.AdminUsername)
 	}
+	if err := s.ValidateAuthState(ctx); err != nil {
+		return err
+	}
 	// public namespace row so console tooling sees it (idempotent under races)
 	var m int
 	if err := s.QueryRow(ctx,

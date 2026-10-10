@@ -1,5 +1,5 @@
 {
-  "README.md": "d13b1544f858b83b52de6dbb08c93e4aad4fe6b35dbbf45fdb879ef7a261469e",
+  "README.md": "5d7076fc07eaebc6b14b86056fddeae32aacf49b6ee905fd672db46dd9196cd5",
   "candidate-build.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
   "candidate-coverage-functions.txt": "f76b3c44467374da2b2e2d711132831497b42883d02715b4c34a5583523af9cc",
   "candidate-coverage.out": "0dc00c9b9098e03d6f9ace6ce4f901dc6d4be7790796ae56e2481cd57ab78700",
@@ -22,6 +22,8 @@
   "green.json": "56ddc42720880db9f8a07ef8436cc44b7b12b841aefe0486a8853e99782b2221",
   "red-http-guards.log": "eb021acb2ba6b0675adb5a901f8328e189690e0bd69d12128556376a2c5ee5ec",
   "red-issuer-contract.log": "3adf43b37f46328a6a7b690dbd2684eacd051756c98730c0d1627993d655123b",
+  "red-legacy-upgrade.json": "a3266bc0223dd6ff25b5abc079a39ea513dd663516b12b65027edf8bfa91f1c8",
+  "red-legacy-upgrade.log": "aeace1a96736beda74d6b59f8306eb304f88b5a9a23e0de77c5247b28a03dd99",
   "red-open-paths.json": "85e0b39d26e0b7c07fccf7b66519027782f3d2607323b865cc88931ec2f92ee6",
   "red-open-paths.log": "c2a3202d6376750fde7fbf4081f1302b9f254183c4f6472403555f0457986e94",
   "red-unsafe-auth-http.log": "c620f7ca35be611b3f6c6fdb185c3159bb6ef54cf957d69be9475849b5b6c219",
@@ -40,5 +42,15 @@
   "release-source-symbol.log": "aa3c3fa14aed5d54af13b8383f7aacaea1616a7092686d70f4941020b138be9d",
   "release-unit.log": "f979d0b8016ecf589c190069700d01b21b63e026d664fb52f51b1f70234791af",
   "release-verification.json": "867d20fa39159d8fa2ec60f278797c4f1e4f22d4c1f1e22335b6990bba61537a",
-  "release-vet.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  "release-vet.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+  "upgrade-binary-symbol.log": "b5ae54ddcfa4cb39e85f84ad2d9e43556bd817c480eaab2a71bab63bfc29353b",
+  "upgrade-build-linux-arm64.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+  "upgrade-coverage-functions.txt": "d5b7e589ff10081cf740e8fc632f9d623033cff2a0ca0c8f8acf8ee594944581",
+  "upgrade-coverage.out": "5d57df08dd5554dd7ea788648c806e75f40ad8944a2e0622cc54735c5b980e16",
+  "upgrade-covered-race.log": "dd6dc5321f06ea61e5bf4262f911b8c2679b33d38cd867f70a2981c705d423e9",
+  "upgrade-module-verify.log": "b4537ed75f533f993f371954de47e42a793b8e5b0587577de7e27fb3e50696bd",
+  "upgrade-source-symbol.log": "b5ae54ddcfa4cb39e85f84ad2d9e43556bd817c480eaab2a71bab63bfc29353b",
+  "upgrade-unit.log": "ec4f250489a8d6a4e38fd1e610b40500c6be85d5f4a44ceea627d415d132c281",
+  "upgrade-verification.json": "bc35ae6f30b53d888482e9722d7c7d3b94d0eebeb71e9d02eb4c26d4cc026fc8",
+  "upgrade-vet.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
 }
