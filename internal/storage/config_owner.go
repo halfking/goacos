@@ -84,6 +84,16 @@ func (s *Store) AcquireConfigOwnership(ctx context.Context) error {
 		o.discard()
 		return ErrConfigInactive
 	}
+	if s.dialect == DialectMySQL {
+		// Existing CREATE TABLE IF NOT EXISTS cannot repair a legacy MyISAM
+		// history table. Refuse instead of claiming atomic rollback on it.
+		var transactional int
+		e = conn.QueryRowContext(ctx, `SELECT COUNT(*) FROM information_schema.tables WHERE table_schema=DATABASE() AND table_name IN ('config_info','his_config_info','config_tags_relation','tenant_info') AND ENGINE='InnoDB'`).Scan(&transactional)
+		if e != nil || transactional != 4 {
+			o.discard()
+			return ErrConfigInactive
+		}
+	}
 	s.configOwner.Store(o)
 	return nil
 }
@@ -127,6 +137,9 @@ func (s *Store) ConfigOwnershipDone() <-chan struct{} {
 func (s *Store) WithConfigTransaction(ctx context.Context, fn func(context.Context) error) error {
 	if v := s.configTransaction(ctx); v != nil {
 		return fn(ctx)
+	}
+	if e := ctx.Err(); e != nil {
+		return e
 	}
 	o := s.configOwner.Load()
 	if o == nil || o.lost.Load() {

@@ -364,3 +364,11 @@ func TestSingleActiveNamespaceConfigCountsFailClosed(t *testing.T) {
 		t.Fatal(e)
 	}
 }
+
+func TestSingleActiveListenerMethodCompatibility(t *testing.T) {
+	s, _, _ := freshnessServer(t)
+	activateConfig(t, s)
+	if code, _ := configHTTP(t, s, "GET", "/nacos/v1/cs/configs/listener", ""); code != 405 {
+		t.Fatalf("active listener method rejection changed to HTTP %d", code)
+	}
+}

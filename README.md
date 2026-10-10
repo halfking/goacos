@@ -21,7 +21,7 @@ Numbers measured locally: goacos RSS 10.9 MB after running the full e2e suite (c
 
 ## Features
 
-- **Config center** — publish/get/delete, namespaces, groups, tags, change history + revert, **long-polling listeners** (v1 `\x02/\x01` protocol and v2 JSON), MD5 change detection with in-process hub (no DB polling storm).
+- **Config center** — publish/get/delete, namespaces, groups, tags, change history + revert, **long-polling listeners** (v1 `\x02/\x01` protocol and v2 JSON), MD5 change detection from owned database transactions with local notifications and periodic listener checks.
 - **Service discovery** — register/deregister ephemeral & persistent instances, clusters, weights, metadata, heartbeats with the Nacos 15 s-unhealthy / 30 s-removed lifecycle, instance & service queries (v1 `ServiceInfo` shape + v2 envelope).
 - **Auth** — JWT access tokens (HS256, required goacos issuer/expiry), live enabled-user/role admission and admin-gated writes when `GOACOS_AUTH_ENABLED=true`. Fine-grained resource permission enforcement remains unimplemented.
 - **Console** — embedded single-page UI at `/nacos/index.html`: services/instances, config editor, namespaces, users.
@@ -87,7 +87,9 @@ Works out of the box with: curl/scripts, [nacos-sdk-go](https://github.com/nacos
 
 ## Running multiple replicas
 
-The database persists configuration, but `ConfigHub` loads its notification index once and updates it in process. Its 1s tick only rereads that in-memory index; cross-node writes do not reach another replica's listeners. Route all configuration reads/writes/listeners to one active instance until a real cross-replica consistency mechanism and failure tests are implemented. This routing fence is not yet enforced by the server; multiple replicas and HA are not accepted.
+Configuration serving requires one database-active instance. Startup acquires a PostgreSQL session advisory lock or a MySQL database-scoped named lock on a dedicated connection; a second instance refuses startup. Configuration reads, writes, tags, history, namespace config counts and deletion checks use transactions on that actual connection, with ownership checked before commit. Successful HTTP responses and local notifications follow commit. MySQL requires the existing config/history/tag/namespace tables to use InnoDB; legacy nontransactional tables fail closed without conversion.
+
+Long listeners release the connection between short database checks, use local notifications to wake quickly, and recheck ownership before returning. Connection or ownership loss permanently disables configuration serving in that process (HTTP 503); it never retries a write through another pooled connection. Restart a fresh process to compete for ownership and preload committed state. Auth and naming retain their existing pool and authority. This is a single-active constraint on one authoritative database, with no request forwarding, automatic failover or cross-replica HA claim. See [the bounded PG/MySQL evidence](docs/evidence/w038-single-active-20261011/README.md).
 
 ## Development
 
