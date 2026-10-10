@@ -1,0 +1,19 @@
+{
+  "source_head": "534de422b3a91d1af3e0fab0b29514cb89eb18a2",
+  "product_unchanged": true,
+  "argv": [
+    "/tmp/memora-w020-toolchain-20261011/go-cache/bin/go",
+    "test",
+    "-race",
+    "-count=1",
+    "-tags=integration",
+    "-run",
+    "TestW038(PrivateBootstrap|EnabledLogin)",
+    "-v",
+    "./internal/api"
+  ],
+  "exit_code": 1,
+  "started_utc": "2026-10-10T18:33:23.299678+00:00",
+  "log_sha256": "aeace1a96736beda74d6b59f8306eb304f88b5a9a23e0de77c5247b28a03dd99",
+  "scope": "real synthetic PG persisted public admin hash and below-contract password login/create/update; fixture credential restored only inside isolated test after observed invalid update"
+}
