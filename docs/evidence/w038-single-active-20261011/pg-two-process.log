@@ -1,0 +1,5 @@
+=== RUN   TestSingleActiveTwoProcessesCrashAndRestart
+    config_process_integration_test.go:121: actual separate OS processes: second activation refused; SIGKILL released DB session; restart reloaded committed config and single history row
+--- PASS: TestSingleActiveTwoProcessesCrashAndRestart (0.72s)
+PASS
+ok  	github.com/halfking/goacos/internal/api	1.156s

@@ -173,8 +173,10 @@ func (s *Store) deleteConfig(ctx context.Context, dataId, group, tenant, srcUser
 	if err := s.insertHistory(ctx, h); err != nil {
 		return true, err
 	}
-	_, _ = s.Exec(ctx,
-		"DELETE FROM config_tags_relation WHERE data_id=? AND group_id=? AND tenant_id=?", dataId, group, tenant)
+	if _, err := s.Exec(ctx,
+		"DELETE FROM config_tags_relation WHERE data_id=? AND group_id=? AND tenant_id=?", dataId, group, tenant); err != nil {
+		return false, err
+	}
 	return true, nil
 }
 
@@ -217,14 +219,13 @@ func (s *Store) listConfigs(ctx context.Context, q ListQuery) ([]ConfigInfo, int
 		where = append(where, "app_name=?")
 		args = append(args, q.AppName)
 	}
-	join := ""
 	if q.Tag != "" {
-		join = " JOIN config_tags_relation t ON t.data_id=config_info.data_id AND t.group_id=config_info.group_id AND t.tenant_id=config_info.tenant_id AND t.tag_name=?"
+		where = append(where, "EXISTS (SELECT 1 FROM config_tags_relation t WHERE t.data_id=config_info.data_id AND t.group_id=config_info.group_id AND t.tenant_id=config_info.tenant_id AND t.tag_name=?)")
 		args = append(args, q.Tag)
 	}
 	w := strings.Join(where, " AND ")
 	var total int64
-	if err := s.QueryRow(ctx, "SELECT COUNT(*) FROM config_info"+join+" WHERE "+w, args...).Scan(&total); err != nil {
+	if err := s.QueryRow(ctx, "SELECT COUNT(*) FROM config_info WHERE "+w, args...).Scan(&total); err != nil {
 		return nil, 0, err
 	}
 	if q.PageNo < 1 {
@@ -235,7 +236,7 @@ func (s *Store) listConfigs(ctx context.Context, q ListQuery) ([]ConfigInfo, int
 	}
 	order := " ORDER BY id DESC LIMIT ? OFFSET ?"
 	args = append(args, q.PageSize, (q.PageNo-1)*q.PageSize)
-	rows, err := s.Query(ctx, "SELECT "+configCols+" FROM config_info"+join+" WHERE "+w+order, args...)
+	rows, err := s.Query(ctx, "SELECT "+configCols+" FROM config_info WHERE "+w+order, args...)
 	if err != nil {
 		return nil, 0, err
 	}
