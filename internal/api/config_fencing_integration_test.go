@@ -339,3 +339,28 @@ func TestSingleActiveDeleteTagFailureRollsBackWithoutLosingOwner(t *testing.T) {
 		t.Fatalf("delete failure history=%d err=%v", n, e)
 	}
 }
+
+func TestSingleActiveNamespaceConfigCountsFailClosed(t *testing.T) {
+	s, ns, _ := freshnessServer(t)
+	if _, e := s.ST.ListNamespaces(t.Context()); !errors.Is(e, storage.ErrConfigInactive) {
+		t.Fatalf("namespace config counts bypass active DB fence: %v", e)
+	}
+	if _, _, e := s.ST.DeleteNamespace(t.Context(), ns); !errors.Is(e, storage.ErrConfigInactive) {
+		t.Fatalf("namespace delete config precondition bypasses active DB fence: %v", e)
+	}
+	for _, path := range []string{"/nacos/v1/console/namespaces", "/nacos/v2/console/namespace/list"} {
+		if code, _ := configHTTP(t, s, "GET", path, ""); code != 503 {
+			t.Fatalf("inactive namespace count route=%d", code)
+		}
+	}
+	activateConfig(t, s)
+	if ok, e := s.ST.CreateNamespace(t.Context(), ns, "owned", "synthetic"); e != nil || !ok {
+		t.Fatal(e)
+	}
+	if _, e := s.ST.ListNamespaces(t.Context()); e != nil {
+		t.Fatal(e)
+	}
+	if ok, _, e := s.ST.DeleteNamespace(t.Context(), ns); e != nil || !ok {
+		t.Fatal(e)
+	}
+}
