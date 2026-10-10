@@ -1,0 +1,6 @@
+=== RUN   TestSingleActiveMySQLNonTransactionalHistoryRefused
+    config_owner_integration_test.go:147: Error 1071 (42000): Specified key was too long; max key length is 1000 bytes
+--- FAIL: TestSingleActiveMySQLNonTransactionalHistoryRefused (0.08s)
+FAIL
+FAIL	github.com/halfking/goacos/internal/storage	0.503s
+FAIL

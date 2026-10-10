@@ -71,3 +71,13 @@ func (s *Store) ConfigMD5(ctx context.Context, d, g, t string) (out string, e er
 	})
 	return
 }
+
+// These namespace operations read configuration counts and share its fence.
+func (s *Store) ListNamespaces(ctx context.Context) (out []Namespace, e error) {
+	e = s.WithConfigTransaction(ctx, func(ctx context.Context) error { out, e = s.listNamespaces(ctx); return e })
+	return
+}
+func (s *Store) DeleteNamespace(ctx context.Context, id string) (deleted bool, reason string, e error) {
+	e = s.WithConfigTransaction(ctx, func(ctx context.Context) error { deleted, reason, e = s.deleteNamespace(ctx, id); return e })
+	return
+}

@@ -130,3 +130,25 @@ func TestSingleActiveMySQLActualDialect(t *testing.T) {
 	}
 	t.Log("actual MySQL8.4 GET_LOCK same-connection transactions, KILL rollback, takeover and physical session release verified")
 }
+
+func TestSingleActiveMySQLNonTransactionalHistoryRefused(t *testing.T) {
+	dsn := os.Getenv("GOACOS_TEST_MYSQL_DSN")
+	d, e := mysql.ParseDSN(dsn)
+	if e != nil || d == nil || !strings.HasPrefix(d.DBName, "w038_") || !strings.HasPrefix(d.Addr, "127.0.0.1:") {
+		t.Fatal("owned MySQL fixture required")
+	}
+	cfg := &config.Config{DBType: "mysql", DBDSN: dsn, MaxOpenConns: 4, MaxIdleConns: 2, AuthEnabled: true, AdminUsername: "w038-test-admin", AdminPassword: d.Passwd}
+	s, e := storage.Open(t.Context(), cfg)
+	if e != nil {
+		t.Fatal(e)
+	}
+	defer s.Close()
+	if _, e = s.DB.ExecContext(t.Context(), "ALTER TABLE his_config_info ENGINE=MyISAM"); e != nil {
+		t.Fatal(e)
+	}
+	defer s.DB.ExecContext(context.Background(), "ALTER TABLE his_config_info ENGINE=InnoDB")
+	if _, e = core.NewConfigHub(t.Context(), s); !errors.Is(e, storage.ErrConfigInactive) {
+		t.Fatalf("nontransactional history admitted active ownership: %v", e)
+	}
+	t.Log("legacy MyISAM history must fail closed instead of pretending rollback is atomic")
+}

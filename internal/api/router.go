@@ -154,7 +154,7 @@ func (s *Server) middleware(next http.Handler) http.Handler {
 			}
 			r = r.WithContext(withClaims(r.Context(), claims))
 		}
-		if strings.HasPrefix(r.URL.Path, "/nacos/v1/cs/") || strings.HasPrefix(r.URL.Path, "/nacos/v2/cs/") || r.URL.Path == "/nacos/v1/ns/operator/metrics" {
+		if strings.HasPrefix(r.URL.Path, "/nacos/v1/cs/") || strings.HasPrefix(r.URL.Path, "/nacos/v2/cs/") || r.URL.Path == "/nacos/v1/ns/operator/metrics" || r.URL.Path == "/nacos/v1/console/namespaces" || strings.HasPrefix(r.URL.Path, "/nacos/v2/console/namespace") {
 			s.serveConfig(w, r, next)
 		} else {
 			next.ServeHTTP(w, r)

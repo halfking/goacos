@@ -13,7 +13,7 @@ type Namespace struct {
 }
 
 // ListNamespaces returns all namespaces with config counts.
-func (s *Store) ListNamespaces(ctx context.Context) ([]Namespace, error) {
+func (s *Store) listNamespaces(ctx context.Context) ([]Namespace, error) {
 	rows, err := s.Query(ctx,
 		`SELECT t.tenant_id, COALESCE(t.namespace_name,''), COALESCE(t.namespace_desc,''),
 		        (SELECT COUNT(*) FROM config_info c WHERE c.tenant_id=t.tenant_id)
@@ -56,7 +56,7 @@ func (s *Store) UpdateNamespace(ctx context.Context, id, name, desc string) erro
 }
 
 // DeleteNamespace removes the namespace row; refuses when configs exist.
-func (s *Store) DeleteNamespace(ctx context.Context, id string) (bool, string, error) {
+func (s *Store) deleteNamespace(ctx context.Context, id string) (bool, string, error) {
 	var n int64
 	if err := s.QueryRow(ctx, "SELECT COUNT(*) FROM config_info WHERE tenant_id=?", id).Scan(&n); err != nil {
 		return false, "", err
