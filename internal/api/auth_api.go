@@ -4,6 +4,7 @@ import (
 	"net/http"
 	"strconv"
 
+	"github.com/halfking/goacos/internal/config"
 	"github.com/halfking/goacos/internal/core"
 	"golang.org/x/crypto/bcrypt"
 )
@@ -91,6 +92,10 @@ func (s *Server) authCreateUser(w http.ResponseWriter, r *http.Request) {
 		v1Fail(w, http.StatusBadRequest, 400, "username/password required")
 		return
 	}
+	if s.Cfg.AuthEnabled && !config.ValidAuthPassword(password) {
+		v1Fail(w, http.StatusBadRequest, 400, "password must contain 12+ characters, at most 72 bytes and no padding")
+		return
+	}
 	hash, err := core.HashPassword(password)
 	if err != nil {
 		v1Fail(w, http.StatusInternalServerError, 500, err.Error())
@@ -112,6 +117,10 @@ func (s *Server) authUpdateUser(w http.ResponseWriter, r *http.Request) {
 	newPassword := firstNonEmpty(p["newPassword"], p["newPass"])
 	if username == "" || newPassword == "" {
 		v1Fail(w, http.StatusBadRequest, 400, "username/newPassword required")
+		return
+	}
+	if s.Cfg.AuthEnabled && !config.ValidAuthPassword(newPassword) {
+		v1Fail(w, http.StatusBadRequest, 400, "password must contain 12+ characters, at most 72 bytes and no padding")
 		return
 	}
 	// non-admin callers may only change their own password with the old one

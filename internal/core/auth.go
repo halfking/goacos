@@ -32,6 +32,9 @@ func (a *AuthService) Login(ctx context.Context, username, password string) (str
 	if err := a.cfg.ValidateAuth(); err != nil {
 		return "", 0, false, err
 	}
+	if a.cfg.AuthEnabled && !config.ValidAuthPassword(password) {
+		return "", 0, false, ErrBadCredentials
+	}
 	u, err := a.st.GetUser(ctx, username)
 	if err != nil {
 		return "", 0, false, err

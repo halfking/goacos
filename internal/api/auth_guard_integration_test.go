@@ -441,6 +441,13 @@ func TestW038PrivateBootstrapRejectsLegacyPublicCredentialState(t *testing.T) {
 			t.Fatal("malformed active admin hash accepted on startup")
 		}
 	})
+	t.Run("database-check-cancellation-fails-closed", func(t *testing.T) {
+		cancelled, cancel := context.WithCancel(ctx)
+		cancel()
+		if err := s.ST.ValidateAuthState(cancelled); err == nil {
+			t.Fatal("failed credential-state query admitted startup")
+		}
+	})
 }
 
 func TestW038EnabledLoginAndUserChangesRejectWeakPasswords(t *testing.T) {
@@ -450,8 +457,9 @@ func TestW038EnabledLoginAndUserChangesRejectWeakPasswords(t *testing.T) {
 	if err != nil || !admin {
 		t.Fatal("private synthetic admin login failed")
 	}
-	for _, password := range []string{"nacos", "elevenchars", " synthetic-private-password"} {
-		t.Run("legacy-login-"+storage.NewID()[:8], func(t *testing.T) {
+	for _, tc := range []struct{ name, password string }{{"public-default", "nacos"}, {"short-password", "elevenchars"}, {"padded-password", " synthetic-private-password"}} {
+		t.Run(tc.name, func(t *testing.T) {
+			password := tc.password
 			username := "w038-weak-" + storage.NewID()
 			hash, err := core.HashPassword(password)
 			if err != nil {
@@ -491,4 +499,27 @@ func TestW038EnabledLoginAndUserChangesRejectWeakPasswords(t *testing.T) {
 			}
 		})
 	}
+	t.Run("private-password-account-create-update", func(t *testing.T) {
+		username := "w038-private-" + storage.NewID()
+		defer s.ST.DeleteUser(context.Background(), username)
+		password := "synthetic-private-account-password"
+		body := url.Values{"username": {username}, "password": {password}}.Encode()
+		if got := request("POST", "/nacos/v1/auth/users", body, adminToken); got != 200 {
+			t.Fatalf("private account create returned HTTP %d", got)
+		}
+		if _, _, _, err := s.Auth.Login(ctx, username, password); err != nil {
+			t.Fatal("private created account login rejected")
+		}
+		updated := "synthetic-private-updated-password"
+		body = url.Values{"username": {username}, "newPassword": {updated}}.Encode()
+		if got := request("PUT", "/nacos/v1/auth/users", body, adminToken); got != 200 {
+			t.Fatalf("private password update returned HTTP %d", got)
+		}
+		if _, _, _, err := s.Auth.Login(ctx, username, password); err == nil {
+			t.Error("superseded private password still issues token")
+		}
+		if _, _, _, err := s.Auth.Login(ctx, username, updated); err != nil {
+			t.Error("updated private password login rejected")
+		}
+	})
 }

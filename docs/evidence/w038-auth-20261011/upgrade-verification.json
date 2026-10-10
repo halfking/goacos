@@ -1,0 +1,164 @@
+{
+  "base": "ff28237270777a7f161e2b0b0a3b840bc42dd86e",
+  "started_source_head": "7989cbec1d46de36c8f7b6415c5815cbff66b498",
+  "product_hashes": {
+    "internal/api/router.go": "f2cfcfcae2496eceb5c7902252241d68fb26fcd1990fdf3cbdfa296a9d874610",
+    "internal/api/auth_api.go": "97743548ab42a878515340eebf219fcfff98845f1ad54c8f66bcd914454b0b95",
+    "internal/core/auth.go": "281dc5820ed3706d966cef2bd28a1def482eb26240ccd1c585653b4f988db0f6",
+    "internal/storage/authstore.go": "c1fc368b033cb5dceffa7bc07d9837a475d3f7d96b450fe9fdb7a0105fd2230d",
+    "internal/storage/store.go": "fba87d5d9f4445ee16b4962f1f188e7db086797e039dcf59993fa3cd982fafb1",
+    "internal/api/auth_guard_integration_test.go": "9e86220b692e64a90f086f78d39b08154db776f304dc4f43ed79c3ece7979711",
+    "internal/core/auth_test.go": "8a368310b38ff34b9e745da12dc8fe772c29516ac6c5d136cf4bf97a895d505d",
+    "internal/api/api_test.go": "e62430975ea5508bbe56f24656229fe36de43fc702a6b1de041eefe37d1e3628",
+    "internal/config/config.go": "e656baaf9a2f51c3caf6efe9074e2bd40dbea98518f1ffa0936a0af46f8f0860",
+    "internal/config/auth_test.go": "2c128a2f3c6b5407878bf9ebb9b8afffa98c11fa51c17c5d1fec7cc643e22e13",
+    "internal/app/app.go": "063fa625b8622899b756ca30f63c3b7a5187d3cd7e0d33ef7696b8b38934bd93",
+    "internal/app/auth_configuration_test.go": "fad13e074dc2c4b795393933a6296db8798cc0a1adce5784dfc5260921514c2c",
+    "main.go": "d1bb0cfb95b558450780a5fe1e014d44bc5491749e037794f247bbb751654515",
+    "internal/core/hub.go": "41faf2dd467f3925355f6e97f487308803c1e0f6bbb286597b72dd887c5b1381"
+  },
+  "go": "go version go1.27.2 darwin/arm64",
+  "results": [
+    {
+      "name": "upgrade-covered-race",
+      "argv": [
+        "/tmp/memora-w020-toolchain-20261011/go-cache/bin/go",
+        "test",
+        "-race",
+        "-count=1",
+        "-tags=integration",
+        "-coverpkg=./internal/api,./internal/core,./internal/storage,./internal/config,./internal/app",
+        "-coverprofile=/Users/xutaohuang/.codex/worktrees/enterprise-goal-20261011/goacos/docs/evidence/w038-auth-20261011/upgrade-coverage.out",
+        "-v",
+        "./internal/api",
+        "./internal/core",
+        "./internal/storage",
+        "./internal/config",
+        "./internal/app"
+      ],
+      "exit_code": 0,
+      "started_utc": "2026-10-10T18:37:01.582772+00:00",
+      "log_sha256": "dd6dc5321f06ea61e5bf4262f911b8c2679b33d38cd867f70a2981c705d423e9",
+      "env": {
+        "GOTOOLCHAIN": "local",
+        "GOCACHE": "/tmp/goacos-auth-gocache-20261011",
+        "GOACOS_TEST_PG_DSN": "private synthetic loopback fixture; omitted"
+      }
+    },
+    {
+      "name": "upgrade-unit",
+      "argv": [
+        "/tmp/memora-w020-toolchain-20261011/go-cache/bin/go",
+        "test",
+        "-count=1",
+        "./..."
+      ],
+      "exit_code": 0,
+      "started_utc": "2026-10-10T18:37:01.584354+00:00",
+      "log_sha256": "ec4f250489a8d6a4e38fd1e610b40500c6be85d5f4a44ceea627d415d132c281",
+      "env": {
+        "GOTOOLCHAIN": "local",
+        "GOCACHE": "/tmp/goacos-auth-gocache-20261011",
+        "GOACOS_TEST_PG_DSN": "private synthetic loopback fixture; omitted"
+      }
+    },
+    {
+      "name": "upgrade-vet",
+      "argv": [
+        "/tmp/memora-w020-toolchain-20261011/go-cache/bin/go",
+        "vet",
+        "./..."
+      ],
+      "exit_code": 0,
+      "started_utc": "2026-10-10T18:37:01.584679+00:00",
+      "log_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "env": {
+        "GOTOOLCHAIN": "local",
+        "GOCACHE": "/tmp/goacos-auth-gocache-20261011",
+        "GOACOS_TEST_PG_DSN": "private synthetic loopback fixture; omitted"
+      }
+    },
+    {
+      "name": "upgrade-build-linux-arm64",
+      "argv": [
+        "/tmp/memora-w020-toolchain-20261011/go-cache/bin/go",
+        "build",
+        "-trimpath",
+        "-o",
+        "/tmp/goacos-w038-auth-upgrade-linux-arm64-20261011",
+        "."
+      ],
+      "exit_code": 0,
+      "started_utc": "2026-10-10T18:37:02.360389+00:00",
+      "log_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "env": {
+        "GOTOOLCHAIN": "local",
+        "GOCACHE": "/tmp/goacos-auth-gocache-20261011",
+        "GOACOS_TEST_PG_DSN": "private synthetic loopback fixture; omitted",
+        "CGO_ENABLED": "0",
+        "GOOS": "linux",
+        "GOARCH": "arm64"
+      }
+    },
+    {
+      "name": "upgrade-source-symbol",
+      "argv": [
+        "/tmp/memora-w020-dependency-tools-patched-20261011/govulncheck",
+        "./..."
+      ],
+      "exit_code": 0,
+      "started_utc": "2026-10-10T18:37:03.300546+00:00",
+      "log_sha256": "b5ae54ddcfa4cb39e85f84ad2d9e43556bd817c480eaab2a71bab63bfc29353b",
+      "env": {
+        "GOTOOLCHAIN": "local",
+        "GOCACHE": "/tmp/goacos-auth-gocache-20261011",
+        "GOACOS_TEST_PG_DSN": "private synthetic loopback fixture; omitted"
+      }
+    },
+    {
+      "name": "upgrade-module-verify",
+      "argv": [
+        "/tmp/memora-w020-toolchain-20261011/go-cache/bin/go",
+        "mod",
+        "verify"
+      ],
+      "exit_code": 0,
+      "started_utc": "2026-10-10T18:37:05.775248+00:00",
+      "log_sha256": "b4537ed75f533f993f371954de47e42a793b8e5b0587577de7e27fb3e50696bd",
+      "env": {
+        "GOTOOLCHAIN": "local",
+        "GOCACHE": "/tmp/goacos-auth-gocache-20261011",
+        "GOACOS_TEST_PG_DSN": "private synthetic loopback fixture; omitted"
+      }
+    },
+    {
+      "name": "upgrade-binary-symbol",
+      "argv": [
+        "/tmp/memora-w020-dependency-tools-patched-20261011/govulncheck",
+        "-mode=binary",
+        "/tmp/goacos-w038-auth-upgrade-linux-arm64-20261011"
+      ],
+      "exit_code": 0,
+      "started_utc": "2026-10-10T18:37:44.830465+00:00",
+      "log_sha256": "b5ae54ddcfa4cb39e85f84ad2d9e43556bd817c480eaab2a71bab63bfc29353b",
+      "env": {
+        "GOTOOLCHAIN": "local",
+        "GOCACHE": "/tmp/goacos-auth-gocache-20261011",
+        "GOACOS_TEST_PG_DSN": "private synthetic loopback fixture; omitted"
+      }
+    }
+  ],
+  "covered_replay_counts": {
+    "top_level_passes": 35,
+    "nested_passes": 139,
+    "skips": 0,
+    "api_top_level_passes": 9
+  },
+  "production_deployment": false,
+  "scope": "auth-enabled request-time admission, private bootstrap and persisted public admin state; no ACL/commit-atomic revocation/MySQL/HA/deployment",
+  "binary": {
+    "path": "/tmp/goacos-w038-auth-upgrade-linux-arm64-20261011",
+    "target": "linux/arm64",
+    "sha256": "4c62091546bb275e375aa7a9d610683aa2c6434660bb3d1c06a6c683fdac6e95"
+  }
+}
