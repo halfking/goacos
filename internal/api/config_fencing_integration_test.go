@@ -365,11 +365,11 @@ func TestSingleActiveNamespaceConfigCountsFailClosed(t *testing.T) {
 	}
 }
 
-func TestSingleActiveListenerMethodCompatibility(t *testing.T) {
+func TestSingleActiveListenerFallbackCompatibility(t *testing.T) {
 	s, _, _ := freshnessServer(t)
 	activateConfig(t, s)
-	if code, _ := configHTTP(t, s, "GET", "/nacos/v1/cs/configs/listener", ""); code != 405 {
-		t.Fatalf("active listener method rejection changed to HTTP %d", code)
+	if code, _ := configHTTP(t, s, "GET", "/nacos/v1/cs/configs/listener", ""); code != 404 {
+		t.Fatalf("active existing SPA listener fallback changed to HTTP %d", code)
 	}
 }
 
