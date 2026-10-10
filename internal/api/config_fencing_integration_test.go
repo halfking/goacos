@@ -372,3 +372,18 @@ func TestSingleActiveListenerMethodCompatibility(t *testing.T) {
 		t.Fatalf("active listener method rejection changed to HTTP %d", code)
 	}
 }
+
+func TestSingleActivePoolCannotStarveAuth(t *testing.T) {
+	s, _, _ := freshnessServer(t)
+	cfg := *s.Cfg
+	cfg.MaxOpenConns = 1
+	cfg.MaxIdleConns = 1
+	st, e := storage.Open(t.Context(), &cfg)
+	if e != nil {
+		t.Fatal(e)
+	}
+	defer st.Close()
+	if _, e = core.NewConfigHub(t.Context(), st); !errors.Is(e, storage.ErrConfigInactive) {
+		t.Fatalf("reserved config session consumes sole auth/naming connection: %v", e)
+	}
+}
