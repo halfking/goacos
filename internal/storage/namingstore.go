@@ -397,7 +397,7 @@ func (s *Store) CountNaming(ctx context.Context) (services, instances int64, err
 }
 
 // CountConfigs returns config totals for metrics.
-func (s *Store) CountConfigs(ctx context.Context) (n int64, err error) {
+func (s *Store) countConfigs(ctx context.Context) (n int64, err error) {
 	err = s.QueryRow(ctx, "SELECT COUNT(*) FROM config_info").Scan(&n)
 	return
 }

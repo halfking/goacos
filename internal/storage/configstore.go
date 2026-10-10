@@ -65,7 +65,7 @@ func scanConfig(row interface{ Scan(...any) error }) (*ConfigInfo, error) {
 }
 
 // GetConfig returns the config or nil when not found.
-func (s *Store) GetConfig(ctx context.Context, dataId, group, tenant string) (*ConfigInfo, error) {
+func (s *Store) getConfig(ctx context.Context, dataId, group, tenant string) (*ConfigInfo, error) {
 	row := s.QueryRow(ctx,
 		"SELECT "+configCols+" FROM config_info WHERE data_id=? AND group_id=? AND tenant_id=?", dataId, group, tenant)
 	c, err := scanConfig(row)
@@ -93,7 +93,7 @@ type ConfigUpsert struct {
 }
 
 // UpsertConfig publishes a config; returns (config id, created).
-func (s *Store) UpsertConfig(ctx context.Context, u ConfigUpsert) (int64, bool, error) {
+func (s *Store) upsertConfig(ctx context.Context, u ConfigUpsert) (int64, bool, error) {
 	md5v := u.ConfigMD5
 	if md5v == "" {
 		md5v = md5hex(u.Content)
@@ -155,7 +155,7 @@ func (s *Store) UpsertConfig(ctx context.Context, u ConfigUpsert) (int64, bool, 
 }
 
 // DeleteConfig removes a config; returns true when a row was deleted.
-func (s *Store) DeleteConfig(ctx context.Context, dataId, group, tenant, srcUser, srcIp string) (bool, error) {
+func (s *Store) deleteConfig(ctx context.Context, dataId, group, tenant, srcUser, srcIp string) (bool, error) {
 	c, err := s.GetConfig(ctx, dataId, group, tenant)
 	if err != nil {
 		return false, err
@@ -192,7 +192,7 @@ type ListQuery struct {
 }
 
 // ListConfigs returns one page plus total count.
-func (s *Store) ListConfigs(ctx context.Context, q ListQuery) ([]ConfigInfo, int64, error) {
+func (s *Store) listConfigs(ctx context.Context, q ListQuery) ([]ConfigInfo, int64, error) {
 	where := []string{"tenant_id=?"}
 	args := []any{q.TenantId}
 	if q.DataId != "" {
@@ -284,7 +284,7 @@ type HistoryListQuery struct {
 }
 
 // ListHistory returns one page of history plus total.
-func (s *Store) ListHistory(ctx context.Context, q HistoryListQuery) ([]HistoryInfo, int64, error) {
+func (s *Store) listHistory(ctx context.Context, q HistoryListQuery) ([]HistoryInfo, int64, error) {
 	where := []string{"tenant_id=?"}
 	args := []any{q.TenantId}
 	if q.DataId != "" {
@@ -333,7 +333,7 @@ func (s *Store) ListHistory(ctx context.Context, q HistoryListQuery) ([]HistoryI
 }
 
 // GetHistory returns one history entry by nid.
-func (s *Store) GetHistory(ctx context.Context, nid int64) (*HistoryInfo, error) {
+func (s *Store) getHistory(ctx context.Context, nid int64) (*HistoryInfo, error) {
 	h, err := scanHistory(s.QueryRow(ctx,
 		"SELECT "+historyCols+" FROM his_config_info WHERE nid=?", nid))
 	if err == sql.ErrNoRows {
@@ -343,7 +343,7 @@ func (s *Store) GetHistory(ctx context.Context, nid int64) (*HistoryInfo, error)
 }
 
 // GetPreviousHistory returns the newest history entry older than nid for a config.
-func (s *Store) GetPreviousHistory(ctx context.Context, dataId, group, tenant string, nid int64) (*HistoryInfo, error) {
+func (s *Store) getPreviousHistory(ctx context.Context, dataId, group, tenant string, nid int64) (*HistoryInfo, error) {
 	h, err := scanHistory(s.QueryRow(ctx,
 		"SELECT "+historyCols+" FROM his_config_info WHERE data_id=? AND group_id=? AND tenant_id=? AND nid<? ORDER BY nid DESC LIMIT 1",
 		dataId, group, tenant, nid))
@@ -354,7 +354,7 @@ func (s *Store) GetPreviousHistory(ctx context.Context, dataId, group, tenant st
 }
 
 // ReplaceConfigTags rewrites the tag relations of one config.
-func (s *Store) ReplaceConfigTags(ctx context.Context, id int64, dataId, group, tenant string, tags []string) error {
+func (s *Store) replaceConfigTags(ctx context.Context, id int64, dataId, group, tenant string, tags []string) error {
 	if _, err := s.Exec(ctx,
 		"DELETE FROM config_tags_relation WHERE id=? AND tag_type=?", id, "text"); err != nil {
 		return err

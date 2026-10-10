@@ -95,9 +95,12 @@ func (s *Server) configV1Publish(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if len(tags) > 0 {
-		_ = s.ST.ReplaceConfigTags(r.Context(), id, dataId, group, tenant, tags)
+		if err := s.ST.ReplaceConfigTags(r.Context(), id, dataId, group, tenant, tags); err != nil {
+			writeText(w, 500, "config tag update failed")
+			return
+		}
 	}
-	s.Hub.Publish(core.ConfigKey{Tenant: tenant, Group: group, DataId: dataId}, md5Of(content))
+	_ = s.ST.AfterConfigCommit(r.Context(), func() { s.Hub.Publish(core.ConfigKey{Tenant: tenant, Group: group, DataId: dataId}, md5Of(content)) })
 	writeText(w, http.StatusOK, "true")
 }
 
@@ -119,7 +122,7 @@ func (s *Server) configV1Delete(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if ok {
-		s.Hub.Invalidate(core.ConfigKey{Tenant: tenant, Group: group, DataId: dataId})
+		_ = s.ST.AfterConfigCommit(r.Context(), func() { s.Hub.Invalidate(core.ConfigKey{Tenant: tenant, Group: group, DataId: dataId}) })
 	}
 	writeText(w, http.StatusOK, "true")
 }
@@ -175,7 +178,11 @@ func (s *Server) configV1Listener(w http.ResponseWriter, r *http.Request) {
 		known[k.Key] = k.Md5
 		ckeys = append(ckeys, k.Key)
 	}
-	changed := s.Hub.WaitChanged(r.Context(), ckeys, known, timeout)
+	changed, err := s.Hub.WaitChanged(r.Context(), ckeys, known, timeout)
+	if err != nil {
+		writeText(w, http.StatusServiceUnavailable, "configuration instance unavailable")
+		return
+	}
 	var sb strings.Builder
 	for _, k := range changed {
 		sb.WriteString(k.DataId)

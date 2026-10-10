@@ -154,7 +154,11 @@ func (s *Server) middleware(next http.Handler) http.Handler {
 			}
 			r = r.WithContext(withClaims(r.Context(), claims))
 		}
-		next.ServeHTTP(w, r)
+		if strings.HasPrefix(r.URL.Path, "/nacos/v1/cs/") || strings.HasPrefix(r.URL.Path, "/nacos/v2/cs/") {
+			s.serveConfig(w, r, next)
+		} else {
+			next.ServeHTTP(w, r)
+		}
 		log.Printf("[goacos] %s %s %s", r.Method, r.URL.Path, time.Since(start).Round(time.Millisecond))
 	})
 }

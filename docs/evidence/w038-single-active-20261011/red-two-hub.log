@@ -1,0 +1,10 @@
+=== RUN   TestSingleActiveRejectsStaleSecondHub
+2026/10/11 02:39:12 [goacos] seeded admin user "w038-test-admin" (initial password from ADMIN_PASSWORD)
+2026/10/11 02:39:12 [goacos] config hub loaded 1 md5 entries
+2026/10/11 02:39:12 [goacos] config hub loaded 1 md5 entries
+    config_single_active_integration_test.go:14: actual second-hub stale listener changed=[] while database content=after
+    config_single_active_integration_test.go:15: two independently preloaded hubs both activated; stale second listener must be refused by database ownership
+--- FAIL: TestSingleActiveRejectsStaleSecondHub (1.43s)
+FAIL
+FAIL	github.com/halfking/goacos/internal/api	1.865s
+FAIL
