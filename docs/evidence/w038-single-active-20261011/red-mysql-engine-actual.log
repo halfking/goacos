@@ -1,0 +1,7 @@
+=== RUN   TestSingleActiveMySQLNonTransactionalHistoryRefused
+2026/10/11 02:54:30 [goacos] database-active config hub preloaded 0 entries
+    config_owner_integration_test.go:151: nontransactional history admitted active ownership: <nil>
+--- FAIL: TestSingleActiveMySQLNonTransactionalHistoryRefused (0.11s)
+FAIL
+FAIL	github.com/halfking/goacos/internal/storage	0.553s
+FAIL

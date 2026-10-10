@@ -143,10 +143,10 @@ func TestSingleActiveMySQLNonTransactionalHistoryRefused(t *testing.T) {
 		t.Fatal(e)
 	}
 	defer s.Close()
-	if _, e = s.DB.ExecContext(t.Context(), "ALTER TABLE his_config_info ENGINE=MyISAM"); e != nil {
+	if _, e = s.DB.ExecContext(t.Context(), "ALTER TABLE his_config_info DROP INDEX idx_did, ENGINE=MyISAM"); e != nil {
 		t.Fatal(e)
 	}
-	defer s.DB.ExecContext(context.Background(), "ALTER TABLE his_config_info ENGINE=InnoDB")
+	defer s.DB.ExecContext(context.Background(), "ALTER TABLE his_config_info ENGINE=InnoDB, ADD INDEX idx_did (data_id,group_id,tenant_id)")
 	if _, e = core.NewConfigHub(t.Context(), s); !errors.Is(e, storage.ErrConfigInactive) {
 		t.Fatalf("nontransactional history admitted active ownership: %v", e)
 	}
