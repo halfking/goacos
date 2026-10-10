@@ -1,0 +1,26 @@
+=== RUN   TestEffectiveInstanceHealthDeadlineAndConfiguration
+=== RUN   TestEffectiveInstanceHealthDeadlineAndConfiguration/just-before-deadline
+=== RUN   TestEffectiveInstanceHealthDeadlineAndConfiguration/at-deadline
+=== RUN   TestEffectiveInstanceHealthDeadlineAndConfiguration/past-deadline
+=== RUN   TestEffectiveInstanceHealthDeadlineAndConfiguration/future-heartbeat
+=== RUN   TestEffectiveInstanceHealthDeadlineAndConfiguration/zero-heartbeat
+=== RUN   TestEffectiveInstanceHealthDeadlineAndConfiguration/missing-configuration
+=== RUN   TestEffectiveInstanceHealthDeadlineAndConfiguration/zero-timeout
+=== RUN   TestEffectiveInstanceHealthDeadlineAndConfiguration/negative-timeout
+=== RUN   TestEffectiveInstanceHealthDeadlineAndConfiguration/explicit-unhealthy
+=== RUN   TestEffectiveInstanceHealthDeadlineAndConfiguration/persistent-healthy
+=== RUN   TestEffectiveInstanceHealthDeadlineAndConfiguration/persistent-unhealthy
+--- PASS: TestEffectiveInstanceHealthDeadlineAndConfiguration (0.00s)
+    --- PASS: TestEffectiveInstanceHealthDeadlineAndConfiguration/just-before-deadline (0.00s)
+    --- PASS: TestEffectiveInstanceHealthDeadlineAndConfiguration/at-deadline (0.00s)
+    --- PASS: TestEffectiveInstanceHealthDeadlineAndConfiguration/past-deadline (0.00s)
+    --- PASS: TestEffectiveInstanceHealthDeadlineAndConfiguration/future-heartbeat (0.00s)
+    --- PASS: TestEffectiveInstanceHealthDeadlineAndConfiguration/zero-heartbeat (0.00s)
+    --- PASS: TestEffectiveInstanceHealthDeadlineAndConfiguration/missing-configuration (0.00s)
+    --- PASS: TestEffectiveInstanceHealthDeadlineAndConfiguration/zero-timeout (0.00s)
+    --- PASS: TestEffectiveInstanceHealthDeadlineAndConfiguration/negative-timeout (0.00s)
+    --- PASS: TestEffectiveInstanceHealthDeadlineAndConfiguration/explicit-unhealthy (0.00s)
+    --- PASS: TestEffectiveInstanceHealthDeadlineAndConfiguration/persistent-healthy (0.00s)
+    --- PASS: TestEffectiveInstanceHealthDeadlineAndConfiguration/persistent-unhealthy (0.00s)
+PASS
+ok  	github.com/halfking/goacos/internal/storage	1.408s

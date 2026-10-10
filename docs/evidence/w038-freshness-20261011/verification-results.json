@@ -1,0 +1,68 @@
+{
+  "checks": [
+    {
+      "name": "pg-race",
+      "argv": [
+        "go",
+        "test",
+        "-race",
+        "-count=1",
+        "-tags=integration",
+        "-run",
+        "TestW038",
+        "-v",
+        "./internal/api"
+      ],
+      "exit_code": 0,
+      "started_utc": "2026-10-10T17:23:08.663194+00:00"
+    },
+    {
+      "name": "unit",
+      "argv": [
+        "go",
+        "test",
+        "-count=1",
+        "./..."
+      ],
+      "exit_code": 0,
+      "started_utc": "2026-10-10T17:23:08.664907+00:00"
+    },
+    {
+      "name": "vet",
+      "argv": [
+        "go",
+        "vet",
+        "./..."
+      ],
+      "exit_code": 0,
+      "started_utc": "2026-10-10T17:23:08.665098+00:00"
+    },
+    {
+      "name": "build",
+      "argv": [
+        "go",
+        "build",
+        "./..."
+      ],
+      "exit_code": 0,
+      "started_utc": "2026-10-10T17:23:09.357338+00:00"
+    },
+    {
+      "name": "audit",
+      "argv": [
+        "/tmp/memora-w020-dependency-tools-patched-20261011/govulncheck",
+        "./..."
+      ],
+      "exit_code": 0,
+      "started_utc": "2026-10-10T17:23:09.752303+00:00"
+    }
+  ],
+  "go": "go version go1.27.2 darwin/arm64",
+  "host": "macOS-26.6.2-arm64-arm-64bit-Mach-O",
+  "source_head": "0a7df5ec25ef894b330153a760b513466fb94afd",
+  "product_dirty_files": [
+    "internal/storage/namingstore.go"
+  ],
+  "credentials": "test environment only; not recorded",
+  "scope": "isolated PG and real authenticated HTTP v1/v2; app role non-superuser and table/database owner; no RLS, actual center deployment or live registry acceptance"
+}

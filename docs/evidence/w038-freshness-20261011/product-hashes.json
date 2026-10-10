@@ -1,0 +1,5 @@
+{
+  "internal/storage/namingstore.go": "e0e3b4e5ea81235ea0a7f4c7b1f2ae944dabd017bed9ef37a54adbe8a5178983",
+  "internal/storage/naming_freshness_test.go": "31325b22615f071c2644ac1188f1ba49febb6b5404854e4c8c7482a968214580",
+  "internal/api/naming_freshness_integration_test.go": "cde6cf7eb8a5974436dbaf3f4008f1dc896274f1edb46f1972e0c56fcc4a7fa9"
+}
