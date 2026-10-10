@@ -1,0 +1,48 @@
+=== RUN   TestW038PrivateBootstrapRejectsLegacyPublicCredentialState
+2026/10/11 02:33:25 [goacos] config hub loaded 0 md5 entries
+=== RUN   TestW038PrivateBootstrapRejectsLegacyPublicCredentialState/private-environment-does-not-replace-stored-credential
+    auth_guard_integration_test.go:390: legacy public password still issued a token with private configuration
+    auth_guard_integration_test.go:393: auth-enabled startup admitted an active administrator with public stored password
+    auth_guard_integration_test.go:398: storage startup did not fail closed on legacy public admin state
+=== RUN   TestW038PrivateBootstrapRejectsLegacyPublicCredentialState/disabled-legacy-account
+=== RUN   TestW038PrivateBootstrapRejectsLegacyPublicCredentialState/explicit-isolated-test-rotation-restores-admission
+=== RUN   TestW038PrivateBootstrapRejectsLegacyPublicCredentialState/malformed-admin-hash-fails-closed
+    auth_guard_integration_test.go:441: malformed active admin hash accepted on startup
+--- FAIL: TestW038PrivateBootstrapRejectsLegacyPublicCredentialState (4.00s)
+    --- FAIL: TestW038PrivateBootstrapRejectsLegacyPublicCredentialState/private-environment-does-not-replace-stored-credential (0.58s)
+    --- PASS: TestW038PrivateBootstrapRejectsLegacyPublicCredentialState/disabled-legacy-account (0.00s)
+    --- PASS: TestW038PrivateBootstrapRejectsLegacyPublicCredentialState/explicit-isolated-test-rotation-restores-admission (1.13s)
+    --- FAIL: TestW038PrivateBootstrapRejectsLegacyPublicCredentialState/malformed-admin-hash-fails-closed (0.00s)
+=== RUN   TestW038EnabledLoginAndUserChangesRejectWeakPasswords
+2026/10/11 02:33:29 [goacos] config hub loaded 0 md5 entries
+=== RUN   TestW038EnabledLoginAndUserChangesRejectWeakPasswords/legacy-login-5c93280c
+    auth_guard_integration_test.go:465: below-contract persisted password issued token
+2026/10/11 02:33:32 [goacos] POST /nacos/v1/auth/users 558ms
+    auth_guard_integration_test.go:471: weak create password returned HTTP 200
+    auth_guard_integration_test.go:475: rejected create persisted an account
+2026/10/11 02:33:33 [goacos] PUT /nacos/v1/auth/users 558ms
+    auth_guard_integration_test.go:479: weak update password returned HTTP 200
+    auth_guard_integration_test.go:482: rejected password change altered stored credential
+=== RUN   TestW038EnabledLoginAndUserChangesRejectWeakPasswords/legacy-login-319d955f
+    auth_guard_integration_test.go:465: below-contract persisted password issued token
+2026/10/11 02:33:36 [goacos] POST /nacos/v1/auth/users 562ms
+    auth_guard_integration_test.go:471: weak create password returned HTTP 200
+    auth_guard_integration_test.go:475: rejected create persisted an account
+2026/10/11 02:33:36 [goacos] PUT /nacos/v1/auth/users 560ms
+    auth_guard_integration_test.go:479: weak update password returned HTTP 200
+    auth_guard_integration_test.go:482: rejected password change altered stored credential
+=== RUN   TestW038EnabledLoginAndUserChangesRejectWeakPasswords/legacy-login-8082efeb
+    auth_guard_integration_test.go:465: below-contract persisted password issued token
+2026/10/11 02:33:39 [goacos] POST /nacos/v1/auth/users 552ms
+    auth_guard_integration_test.go:471: weak create password returned HTTP 200
+    auth_guard_integration_test.go:475: rejected create persisted an account
+2026/10/11 02:33:40 [goacos] PUT /nacos/v1/auth/users 550ms
+    auth_guard_integration_test.go:479: weak update password returned HTTP 200
+    auth_guard_integration_test.go:482: rejected password change altered stored credential
+--- FAIL: TestW038EnabledLoginAndUserChangesRejectWeakPasswords (12.58s)
+    --- FAIL: TestW038EnabledLoginAndUserChangesRejectWeakPasswords/legacy-login-5c93280c (3.35s)
+    --- FAIL: TestW038EnabledLoginAndUserChangesRejectWeakPasswords/legacy-login-319d955f (3.37s)
+    --- FAIL: TestW038EnabledLoginAndUserChangesRejectWeakPasswords/legacy-login-8082efeb (3.60s)
+FAIL
+FAIL	github.com/halfking/goacos/internal/api	17.035s
+FAIL

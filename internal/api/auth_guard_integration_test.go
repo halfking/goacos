@@ -367,3 +367,128 @@ func TestW038ReadListenerAndLiveAdminCompatibility(t *testing.T) {
 		}
 	})
 }
+
+func TestW038PrivateBootstrapRejectsLegacyPublicCredentialState(t *testing.T) {
+	s, _, _, _ := authGuardFixture(t)
+	ctx := context.Background()
+	username := "w038-legacy-" + storage.NewID()
+	hash, err := core.HashPassword("nacos") // former public repository seed
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := s.ST.CreateUser(ctx, username, hash); err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() { _ = s.ST.DeleteUser(context.Background(), username) })
+	if err := s.ST.AddRole(ctx, username, "ROLE_ADMIN"); err != nil {
+		t.Fatal(err)
+	}
+	t.Run("private-environment-does-not-replace-stored-credential", func(t *testing.T) {
+		cfg := *s.Cfg
+		cfg.AdminUsername, cfg.AdminPassword = username, "synthetic-private-replacement"
+		if _, _, _, err := core.NewAuthService(&cfg, s.ST).Login(ctx, username, "nacos"); err == nil {
+			t.Error("legacy public password still issued a token with private configuration")
+		}
+		if err := s.ST.Seed(ctx); err == nil {
+			t.Error("auth-enabled startup admitted an active administrator with public stored password")
+		}
+		opened, err := storage.Open(ctx, &cfg)
+		if err == nil {
+			_ = opened.Close()
+			t.Error("storage startup did not fail closed on legacy public admin state")
+		}
+		stored, err := s.ST.GetUser(ctx, username)
+		if err != nil || stored == nil || stored.Password != hash {
+			t.Fatal("startup silently replaced existing credentials")
+		}
+	})
+	t.Run("disabled-legacy-account", func(t *testing.T) {
+		if _, err := s.ST.Exec(ctx, "UPDATE users SET enabled=0 WHERE username=?", username); err != nil {
+			t.Fatal(err)
+		}
+		if err := s.ST.Seed(ctx); err != nil {
+			t.Fatal("disabled legacy account blocked valid enabled administrators")
+		}
+		if _, _, _, err := s.Auth.Login(ctx, username, "nacos"); err == nil {
+			t.Fatal("disabled legacy account issued a token")
+		}
+	})
+	t.Run("explicit-isolated-test-rotation-restores-admission", func(t *testing.T) {
+		privatePassword := "synthetic-rotated-private-password"
+		privateHash, err := core.HashPassword(privatePassword)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if err := s.ST.UpdatePassword(ctx, username, privateHash); err != nil {
+			t.Fatal(err)
+		}
+		if _, err := s.ST.Exec(ctx, "UPDATE users SET enabled=1 WHERE username=?", username); err != nil {
+			t.Fatal(err)
+		}
+		if err := s.ST.Seed(ctx); err != nil {
+			t.Fatal("valid private persisted state rejected")
+		}
+		token, _, admin, err := s.Auth.Login(ctx, username, privatePassword)
+		if err != nil || token == "" || !admin {
+			t.Fatal("private rotated synthetic account could not log in")
+		}
+	})
+	t.Run("malformed-admin-hash-fails-closed", func(t *testing.T) {
+		if err := s.ST.UpdatePassword(ctx, username, "malformed-bcrypt"); err != nil {
+			t.Fatal(err)
+		}
+		if err := s.ST.Seed(ctx); err == nil {
+			t.Fatal("malformed active admin hash accepted on startup")
+		}
+	})
+}
+
+func TestW038EnabledLoginAndUserChangesRejectWeakPasswords(t *testing.T) {
+	s, _, _, request := authGuardFixture(t)
+	ctx := context.Background()
+	adminToken, _, admin, err := s.Auth.Login(ctx, s.Cfg.AdminUsername, s.Cfg.AdminPassword)
+	if err != nil || !admin {
+		t.Fatal("private synthetic admin login failed")
+	}
+	for _, password := range []string{"nacos", "elevenchars", " synthetic-private-password"} {
+		t.Run("legacy-login-"+storage.NewID()[:8], func(t *testing.T) {
+			username := "w038-weak-" + storage.NewID()
+			hash, err := core.HashPassword(password)
+			if err != nil {
+				t.Fatal(err)
+			}
+			if err := s.ST.CreateUser(ctx, username, hash); err != nil {
+				t.Fatal(err)
+			}
+			defer s.ST.DeleteUser(context.Background(), username)
+			if _, _, _, err := s.Auth.Login(ctx, username, password); err == nil {
+				t.Error("below-contract persisted password issued token")
+			}
+			newUsername := "w038-create-" + storage.NewID()
+			defer s.ST.DeleteUser(context.Background(), newUsername)
+			body := url.Values{"username": {newUsername}, "password": {password}}.Encode()
+			if got := request("POST", "/nacos/v1/auth/users", body, adminToken); got != 400 {
+				t.Errorf("weak create password returned HTTP %d", got)
+			}
+			stored, err := s.ST.GetUser(ctx, newUsername)
+			if err != nil || stored != nil {
+				t.Error("rejected create persisted an account")
+			}
+			body = url.Values{"username": {s.Cfg.AdminUsername}, "newPassword": {password}}.Encode()
+			if got := request("PUT", "/nacos/v1/auth/users", body, adminToken); got != 400 {
+				t.Errorf("weak update password returned HTTP %d", got)
+			}
+			if _, _, _, err := s.Auth.Login(ctx, s.Cfg.AdminUsername, s.Cfg.AdminPassword); err != nil {
+				t.Error("rejected password change altered stored credential")
+				// Restore only the synthetic fixture so later assertions remain meaningful.
+				h, hashErr := core.HashPassword(s.Cfg.AdminPassword)
+				if hashErr != nil {
+					t.Fatal(hashErr)
+				}
+				if err := s.ST.UpdatePassword(ctx, s.Cfg.AdminUsername, h); err != nil {
+					t.Fatal(err)
+				}
+			}
+		})
+	}
+}
