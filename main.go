@@ -1,5 +1,5 @@
 // goacos — a lightweight, Nacos-compatible configuration center and service
-// discovery server in Go, backed by MySQL.
+// discovery server in Go, backed by MySQL or PostgreSQL.
 package main
 
 import (
@@ -66,7 +66,7 @@ func main() {
 
 Usage:
   goacos serve                 run the server (default)
-  goacos db discover|verify|init   database discovery & initialization
+  goacos db discover|verify|init   MySQL/PostgreSQL discovery & initialization
   goacos healthcheck [addr]    container health probe
   goacos version               print version
 
