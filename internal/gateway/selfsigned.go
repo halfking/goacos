@@ -28,6 +28,7 @@ import (
 	"crypto/x509/pkix"
 	"encoding/pem"
 	"fmt"
+	"log"
 	"math/big"
 	"net"
 	"os"
@@ -53,6 +54,7 @@ const selfSignedRenewBefore = 30 * 24 * time.Hour
 // important state, and mixing them makes it far too easy to point
 // GOACOS_SELFSIGNED_DIR at a path that gets wiped.
 func generateSelfSigned(domain, dir string) (certPEM, keyPEM string, notAfter time.Time, err error) {
+	dir = writableDir(dir, "selftest")
 	if dir != "" {
 		certPath := filepath.Join(dir, sanitizeFilename(domain)+".crt")
 		keyPath := filepath.Join(dir, sanitizeFilename(domain)+".key")
@@ -66,11 +68,6 @@ func generateSelfSigned(domain, dir string) (certPEM, keyPEM string, notAfter ti
 		return "", "", time.Time{}, err
 	}
 	if dir == "" {
-		return certPEM, keyPEM, notAfter, nil
-	}
-	if err := os.MkdirAll(dir, 0o700); err != nil {
-		// A cache that cannot be written is a performance problem, not a
-		// correctness one: the certificate is still valid for this process.
 		return certPEM, keyPEM, notAfter, nil
 	}
 	_ = os.WriteFile(filepath.Join(dir, sanitizeFilename(domain)+".crt"), []byte(certPEM), 0o600)
@@ -184,4 +181,35 @@ func sanitizeFilename(domain string) string {
 		return "unnamed"
 	}
 	return name
+}
+
+// writableDir resolves a configured data directory to one this process can
+// actually use, falling back to the system temp directory when it cannot.
+//
+// This exists because of how the container runs. The image's unprivileged user
+// (uid 10001) cannot create "./data/acme" relative to the working directory,
+// and the failure mode it used to have was the worst kind: ACME silently
+// disabled itself, the gateway served self-signed certificates forever, and
+// the only evidence was one line in the log at boot.
+//
+// Falling back to a temp directory degrades to "the account key and the cache
+// do not survive a restart" — which is recoverable and visible — instead of
+// "automatic certificate issuance is off and nobody notices". The fallback is
+// announced rather than performed silently.
+func writableDir(dir, name string) string {
+	if dir == "" {
+		return dir
+	}
+	if err := os.MkdirAll(dir, 0o700); err == nil {
+		return dir
+	} else {
+		log.Printf("[gateway] %s directory %s is not writable (%v); falling back to a temporary path. "+
+			"Set GOACOS_GATEWAY_CERT_DIR or the matching data-dir variable to a mounted volume to keep state across restarts.",
+			name, dir, err)
+	}
+	fallback := filepath.Join(os.TempDir(), "goacos-"+name)
+	if err := os.MkdirAll(fallback, 0o700); err != nil {
+		return ""
+	}
+	return fallback
 }

@@ -85,6 +85,7 @@ func accountKeyPath(dir string) string { return filepath.Join(dir, "account.key"
 
 // loadOrCreateAccountKey reads the ACME account key, minting one on first use.
 func loadOrCreateAccountKey(dir string) (*ecdsa.PrivateKey, error) {
+	dir = writableDir(dir, "acme")
 	if dir != "" {
 		if raw, err := os.ReadFile(accountKeyPath(dir)); err == nil {
 			if key, err := parseECKey(raw); err == nil {
@@ -98,9 +99,6 @@ func loadOrCreateAccountKey(dir string) (*ecdsa.PrivateKey, error) {
 	}
 	if dir == "" {
 		return key, nil
-	}
-	if err := os.MkdirAll(dir, 0o700); err != nil {
-		return nil, fmt.Errorf("create %s: %w", dir, err)
 	}
 	der, err := x509.MarshalECPrivateKey(key)
 	if err != nil {
