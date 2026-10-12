@@ -44,6 +44,41 @@ Everything is **nil-safe**: a nil or disabled `*Client` returns `ErrNilClient` o
 `ErrDisabled` instead of panicking, so an unconfigured registry can never take
 the host process down at boot.
 
+## Cross-SDK differences worth knowing
+
+The three bindings ship one contract (`sdk/conformance/CONTRACT.md`) but they do
+**not** share every default. Two differences have bitten real integrations:
+
+| | Go | Python | Node |
+|---|---|---|---|
+| `group` / `cluster` empty | normalised to `DEFAULT_GROUP` / `DEFAULT` | same | same |
+| `cluster` / `group` whitespace-only | treated as unset | same | same |
+| **enabled by default** | **`false`** | `true` | `true` |
+
+The Go default is the safe one — a client that is not configured stays inert
+rather than registering itself somewhere unexpected.
+
+The trap: porting code from the Python or Node examples into Go and **omitting
+`Enabled: true`** leaves you with a client that registers nothing. It is not
+silent, though — `Register` returns
+
+```
+nacos: client is disabled or not configured (Enabled=false)
+```
+
+and `errors.Is(err, registry.ErrDisabled)` is true. The message names the exact
+field to set.
+
+```go
+client := registry.NewClient(registry.Config{
+    Enabled:     true, // ← required in Go; implied in Python/Node
+    ServiceName: "llm-router",
+    Port:        8080,
+    IP:          "100.106.177.3",
+    ServerAddr:  "http://goacos:8848",
+}, logger)
+```
+
 ## Typical use
 
 The minimal register → heartbeat → deregister program. This compiles as-is:
