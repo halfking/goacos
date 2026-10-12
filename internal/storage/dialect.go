@@ -86,6 +86,39 @@ func (d Dialect) UpsertNoop(table, keyCol, valCol string) string {
 	return fmt.Sprintf("INSERT INTO %s (%s,%s) VALUES (?,?) ON DUPLICATE KEY UPDATE %s=%s", table, keyCol, valCol, valCol, valCol)
 }
 
+// Upsert builds an insert-or-update for a unique key. insertCols are written on
+// insert, setCols are refreshed when the row already exists, and keyCols names
+// the unique key both engines match on. Callers pass one value per insertCols
+// entry, in that order.
+//
+// The two engines spell conflict handling differently and neither accepts the
+// other's syntax, so this cannot be hidden behind Rebind: PostgreSQL needs
+// ON CONFLICT (...) DO UPDATE SET with `excluded.`, MySQL needs ON DUPLICATE
+// KEY UPDATE. Goacos runs on both (252 on MySQL, 211 on PostgreSQL), which is
+// exactly why this helper exists instead of a hardcoded clause.
+func (d Dialect) Upsert(table string, keyCols, insertCols, setCols []string) string {
+	cols := strings.Join(insertCols, ", ")
+	ph := strings.TrimSuffix(strings.Repeat("?,", len(insertCols)), ",")
+	head := fmt.Sprintf("INSERT INTO %s (%s) VALUES (%s)", table, cols, ph)
+	if len(setCols) == 0 {
+		return head
+	}
+	if d == DialectPostgres {
+		assignments := make([]string, 0, len(setCols))
+		for _, c := range setCols {
+			assignments = append(assignments, c+"=excluded."+c)
+		}
+		return fmt.Sprintf("%s ON CONFLICT (%s) DO UPDATE SET %s, gmt_modified=CURRENT_TIMESTAMP",
+			head, strings.Join(keyCols, ", "), strings.Join(assignments, ", "))
+	}
+	assignments := make([]string, 0, len(setCols)+1)
+	for _, c := range setCols {
+		assignments = append(assignments, c+"=VALUES("+c+")")
+	}
+	assignments = append(assignments, "gmt_modified=CURRENT_TIMESTAMP")
+	return head + " ON DUPLICATE KEY UPDATE " + strings.Join(assignments, ", ")
+}
+
 // ServerDB returns the database to connect to when no target database exists
 // yet: MySQL allows connecting without a database, PostgreSQL needs "postgres".
 func (d Dialect) ServerDB() string {

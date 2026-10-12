@@ -10,6 +10,12 @@ import (
 	"time"
 )
 
+// LetsEncryptDirectory is the production ACME directory endpoint. It is the
+// default rather than a hardcoded value at the call site so that pointing at
+// the staging endpoint is one environment variable, which is the only safe way
+// to exercise issuance end to end without spending production rate limits.
+const LetsEncryptDirectory = "https://acme-v02.api.letsencrypt.org/directory"
+
 type Config struct {
 	Host string
 	Port int
@@ -47,6 +53,100 @@ type Config struct {
 	ConnMaxLifetime time.Duration
 
 	LogLevel string
+
+	// ---- gateway (data plane) ----
+	//
+	// The gateway is the same binary serving a second, separate surface: the
+	// Nacos-compatible API above stays on Port for stock clients, while these
+	// listeners carry real inbound traffic for the declared domains. It is off
+	// by default so adding goacos to an existing environment does not silently
+	// start competing for :80/:443.
+	GatewayEnabled bool
+	// GatewayNamespace is which namespace's routes this instance serves. An
+	// empty value means "public", matching the rest of the system.
+	GatewayNamespace string
+	// GatewayHTTPAddr and GatewayHTTPSAddr default to the standard web ports
+	// because a gateway that cannot answer on 80 cannot complete an ACME
+	// HTTP-01 challenge, which is the default certificate path.
+	GatewayHTTPAddr  string
+	GatewayHTTPSAddr string
+	// GatewayForceHTTPS redirects plain HTTP instead of proxying it. True by
+	// default: a domain that has a certificate and still answers on 80 with
+	// the same content is the shape of a downgrade attack.
+	GatewayForceHTTPS bool
+	// GatewayHSTSMaxAge is emitted per-domain; this is the default for domains
+	// with no explicit policy row.
+	GatewayHSTSMaxAge int
+	// GatewayClientMaxBodyBytes caps request bodies. 0 means unlimited, which
+	// is the pre-gateway default and is only safe behind an upstream that
+	// enforces its own limit.
+	GatewayClientMaxBodyBytes int64
+	// Timeouts applied to every upstream unless a domain overrides them.
+	GatewayConnectTimeoutMS int
+	GatewayReadTimeoutMS    int
+	GatewaySendTimeoutMS    int
+	// GatewayWebsocket allows connection upgrades. On by default because
+	// disabling it silently breaks chat/streaming services that otherwise look
+	// healthy in every other check.
+	GatewayWebsocket bool
+	// GatewayTrustForwardedFor honours X-Forwarded-For for client-IP decisions.
+	// Off by default: trusting it while the gateway is directly exposed lets a
+	// client forge its own source address and defeat the IP rules.
+	GatewayTrustForwardedFor bool
+	// GatewayStaticRoot serves local files for components declared with
+	// protocol=static. Empty disables local static serving entirely.
+	GatewayStaticRoot string
+	// GatewayStaticFallback serves index.html for unmatched paths under a
+	// static root, which is what a single-page application needs to deep-link
+	// its own routes.
+	GatewayStaticFallback bool
+	// GatewayCertRefreshSeconds is how often cached routes and certificates are
+	// re-read from the database. This is the upper bound on "a new instance
+	// registered now starts receiving traffic within".
+	GatewayCertRefreshSeconds int
+	// GatewayCertDir is a shared directory of certificates, mounted into the
+	// container, whose contents are loaded into the same in-memory cache the
+	// database feeds. It exists so that certificates produced by an external
+	// tool (certbot, cert-manager, an internal PKI agent) can be served without
+	// being copied into the database by hand.
+	//
+	// It is read on a timer, never on the handshake path.
+	GatewayCertDir string
+	// GatewayCertWriteBack mirrors certificates this gateway issues into that
+	// directory. Defaults to true, which means a directory mount must be
+	// writable by the container user — see the Dockerfile note. Set it to
+	// false for a read-only mount when only the external side writes.
+	GatewayCertWriteBack bool
+	// GatewayCertScanSeconds is the directory rescan interval. It is separate
+	// from the routing refresh because scanning costs disk I/O and the answer
+	// does not need to be fresher than the certificate's own renewal schedule.
+	GatewayCertScanSeconds int
+
+	// ---- ACME (automatic certificate issuance) ----
+	//
+	// Enabled by default: a gateway that cannot obtain a certificate for a
+	// public domain is the thing that forces operators back to hand-managed
+	// nginx configs in the first place. Issuance only ever runs for declared
+	// domains with no certificate, and never for names a public CA cannot
+	// serve — see gateway/acme.go for the eligibility precheck, which exists to
+	// avoid burning Let's Encrypt's failure rate limit on internal hostnames.
+	ACMEEnabled bool
+	ACMEEmail   string
+	// ACMEDirectoryURL is the ACME directory endpoint. The default is
+	// Let's Encrypt production; point it at a staging URL to test the whole
+	// issuance path without consuming production rate limits.
+	ACMEDirectoryURL string
+	// ACMEDataDir holds the ACME account key. It is deliberately NOT in the
+	// database: losing it loses the account and every rate limit attached to
+	// it, so it is treated like any other secret file.
+	ACMEDataDir string
+	ACMETimeout int
+
+	// SelfSignedDir caches generated self-signed certificates. It is a
+	// directory rather than a database column because these are throwaway
+	// material: a cache that can be deleted and regenerated must never be the
+	// place a real certificate is trusted from.
+	SelfSignedDir string
 }
 
 func getenv(name, def string) string {
@@ -121,6 +221,35 @@ func FromEnv() *Config {
 		MaxIdleConns:           getenvInt("MYSQL_MAX_IDLE_CONNS", 20),
 		ConnMaxLifetime:        time.Duration(getenvInt64("MYSQL_CONN_MAX_LIFETIME_SECONDS", 1800)) * time.Second,
 		LogLevel:               getenv("LOG_LEVEL", "info"),
+
+		// ---- gateway data plane ----
+		GatewayEnabled:            getenvBool("GATEWAY_ENABLED", false),
+		GatewayNamespace:          getenv("GATEWAY_NAMESPACE", "public"),
+		GatewayHTTPAddr:           getenv("GATEWAY_HTTP_ADDR", ":80"),
+		GatewayHTTPSAddr:          getenv("GATEWAY_HTTPS_ADDR", ":443"),
+		GatewayForceHTTPS:         getenvBool("GATEWAY_FORCE_HTTPS", true),
+		GatewayHSTSMaxAge:         getenvInt("GATEWAY_HSTS_MAX_AGE", 0),
+		GatewayClientMaxBodyBytes: int64(getenvInt64("GATEWAY_MAX_BODY_BYTES", 0)),
+		GatewayConnectTimeoutMS:   getenvInt("GATEWAY_CONNECT_TIMEOUT_MS", 3000),
+		GatewayReadTimeoutMS:      getenvInt("GATEWAY_READ_TIMEOUT_MS", 60000),
+		GatewaySendTimeoutMS:      getenvInt("GATEWAY_SEND_TIMEOUT_MS", 60000),
+		GatewayWebsocket:          getenvBool("GATEWAY_WEBSOCKET", true),
+		GatewayTrustForwardedFor:  getenvBool("GATEWAY_TRUST_FORWARDED_FOR", false),
+		GatewayStaticRoot:         getenv("GATEWAY_STATIC_ROOT", ""),
+		GatewayStaticFallback:     getenvBool("GATEWAY_STATIC_FALLBACK", true),
+		GatewayCertRefreshSeconds: getenvInt("GATEWAY_REFRESH_SECONDS", 10),
+		GatewayCertDir:            getenv("GATEWAY_CERT_DIR", ""),
+		GatewayCertWriteBack:      getenvBool("GATEWAY_CERT_WRITE_BACK", true),
+		GatewayCertScanSeconds:    getenvInt("GATEWAY_CERT_SCAN_SECONDS", 30),
+
+		// ---- ACME (automatic certificate issuance) ----
+		ACMEEnabled:      getenvBool("GATEWAY_ACME_ENABLED", true),
+		ACMEEmail:        getenv("GATEWAY_ACME_EMAIL", ""),
+		ACMEDirectoryURL: getenv("GATEWAY_ACME_DIRECTORY_URL", LetsEncryptDirectory),
+		ACMEDataDir:      getenv("GATEWAY_ACME_DATA_DIR", "./data/acme"),
+		ACMETimeout:      getenvInt("GATEWAY_ACME_TIMEOUT_SECONDS", 120),
+
+		SelfSignedDir: getenv("GATEWAY_SELFSIGNED_DIR", "./data/selftest"),
 	}
 }
 

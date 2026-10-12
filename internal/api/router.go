@@ -87,6 +87,38 @@ func (s *Server) Handler() http.Handler {
 	mux.HandleFunc("GET /nacos/actuator/health", s.actuatorHealth)
 
 	// ---- console static (embedded single page) ----
+	// ---- application model (goacos-specific, not Nacos-compatible) ----
+	// These live under /goacos/ rather than /nacos/ on purpose: everything in
+	// /nacos/ is a compatibility promise to stock Nacos clients, and the
+	// application model has no upstream equivalent to stay compatible with.
+	mux.HandleFunc("GET /goacos/v1/apps", s.appList)
+	mux.HandleFunc("POST /goacos/v1/apps", s.appWrite)
+	mux.HandleFunc("GET /goacos/v1/apps/{app}", s.appGet)
+	mux.HandleFunc("DELETE /goacos/v1/apps/{app}", s.appDelete)
+	mux.HandleFunc("GET /goacos/v1/apps/{app}/components", s.componentList)
+	mux.HandleFunc("POST /goacos/v1/apps/{app}/components", s.componentWrite)
+	mux.HandleFunc("PUT /goacos/v1/apps/{app}/components/{component}", s.componentWrite)
+	mux.HandleFunc("DELETE /goacos/v1/apps/{app}/components/{component}", s.componentDelete)
+	mux.HandleFunc("GET /goacos/v1/routes", s.routeList)
+	mux.HandleFunc("POST /goacos/v1/routes", s.routeWrite)
+	mux.HandleFunc("DELETE /goacos/v1/routes/{domain}", s.routeDelete)
+	mux.HandleFunc("GET /goacos/v1/route/resolve", s.routeResolve)
+
+	// ---- gateway control plane ----
+	// Same reasoning as the application model above: these are goacos's own
+	// surfaces. They manage the data plane rather than being served by it, so
+	// they stay on the API port even though the gateway itself listens on 80
+	// and 443.
+	mux.HandleFunc("GET /goacos/v1/gateway/status", s.gatewayStatus)
+	mux.HandleFunc("POST /goacos/v1/gateway/refresh", s.gatewayRefresh)
+	mux.HandleFunc("GET /goacos/v1/certs", s.certList)
+	mux.HandleFunc("POST /goacos/v1/certs", s.certWrite)
+	mux.HandleFunc("DELETE /goacos/v1/certs/{domain}", s.certDelete)
+	mux.HandleFunc("GET /goacos/v1/vhosts", s.vhostList)
+	mux.HandleFunc("POST /goacos/v1/vhosts", s.vhostWrite)
+	mux.HandleFunc("PUT /goacos/v1/vhosts/{domain}", s.vhostWrite)
+	mux.HandleFunc("DELETE /goacos/v1/vhosts/{domain}", s.vhostDelete)
+
 	mux.HandleFunc("GET /{$}", func(w http.ResponseWriter, r *http.Request) {
 		http.Redirect(w, r, "/nacos/index.html", http.StatusFound)
 	})

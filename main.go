@@ -62,18 +62,18 @@ func main() {
 		}
 		fmt.Println("healthy")
 	default:
-		fmt.Fprintf(os.Stderr, `goacos — lightweight Nacos-compatible server (Go + MySQL)
+		fmt.Fprintf(os.Stderr, `goacos — lightweight Nacos-compatible server (Go + MySQL/PostgreSQL)
 
 Usage:
   goacos serve                 run the server (default)
-  goacos db discover|verify|init   MySQL discovery & initialization
+  goacos db discover|verify|init   database discovery & initialization
   goacos healthcheck [addr]    container health probe
   goacos version               print version
 
 Server configuration is environment-driven (GOACOS_* or NACOS_* prefix):
   GOACOS_DB_TYPE=mysql|postgres           database engine (default mysql)
   GOACOS_DB_DSN=postgres://...            full DSN override (optional)
-  GOACOS_PORT=8848                        HTTP listen port
+  GOACOS_PORT=8848                        HTTP listen port (Nacos API)
   GOACOS_MYSQL_HOST=127.0.0.1             database host (database auto-created)
   GOACOS_MYSQL_PORT=3306                  database port (mysql 3306 / pg 5432)
   GOACOS_MYSQL_DB=goacos                  database name
@@ -83,6 +83,35 @@ Server configuration is environment-driven (GOACOS_* or NACOS_* prefix):
   GOACOS_AUTH_TOKEN_SECRET=...            JWT signing secret (set in HA setups)
   GOACOS_ADMIN_USERNAME=nacos             seeded admin username
   GOACOS_ADMIN_PASSWORD=nacos             seeded admin password
+
+Gateway data plane (off by default; declared domain+path routes are served
+by registered healthy instances, with TLS terminated here):
+  GOACOS_GATEWAY_ENABLED=false            turn on the gateway listeners
+  GOACOS_GATEWAY_NAMESPACE=public         namespace whose routes to serve
+  GOACOS_GATEWAY_HTTP_ADDR=:80            ACME challenges + HTTP->HTTPS redirect
+  GOACOS_GATEWAY_HTTPS_ADDR=:443          real traffic
+  GOACOS_GATEWAY_FORCE_HTTPS=true         redirect plain HTTP instead of proxying
+  GOACOS_GATEWAY_HSTS_MAX_AGE=0           per-domain default (0 = off)
+  GOACOS_GATEWAY_MAX_BODY_BYTES=0         request body cap (0 = unlimited)
+  GOACOS_GATEWAY_CONNECT_TIMEOUT_MS=3000  upstream dial timeout
+  GOACOS_GATEWAY_READ_TIMEOUT_MS=60000    upstream response timeout
+  GOACOS_GATEWAY_WEBSOCKET=true           allow connection upgrades
+  GOACOS_GATEWAY_TRUST_FORWARDED_FOR=false  honour X-Forwarded-For for IP rules
+  GOACOS_GATEWAY_STATIC_ROOT=             document root for protocol=static
+  GOACOS_GATEWAY_REFRESH_SECONDS=10       routing/certificate refresh interval
+
+Certificates (a declared domain always answers on 443; see docs/GATEWAY.md):
+  GOACOS_GATEWAY_ACME_ENABLED=true        HTTP-01 auto-issue from the ACME CA
+  GOACOS_GATEWAY_ACME_EMAIL=              contact address for the ACME account
+  GOACOS_GATEWAY_ACME_DIRECTORY_URL=...   point at staging to test issuance
+  GOACOS_GATEWAY_ACME_DATA_DIR=./data/acme     ACME account key (back this up)
+  GOACOS_GATEWAY_SELFSIGNED_DIR=./data/selftest self-signed fallback cache
+  GOACOS_GATEWAY_CERT_DIR=               shared certificate directory to load
+  GOACOS_GATEWAY_CERT_WRITE_BACK=true     mirror issued certificates into it
+  GOACOS_GATEWAY_CERT_SCAN_SECONDS=30     directory rescan interval
+
+Declare applications, components and domain routes under /goacos/v1/, and
+inspect the running gateway at GET /goacos/v1/gateway/status.
 `)
 		os.Exit(2)
 	}

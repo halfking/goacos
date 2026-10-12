@@ -6,3 +6,7 @@
 
 # codegraph 知识图谱本地缓存
 .codegraph/
+
+# macOS 资源叉垃圾文件：曾出现在 sdk/ 里，会被提交进公开仓库。
+# wheel 打包不受影响（setuptools 默认只收 .py），但仓库不该留。
+.DS_Store

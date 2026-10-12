@@ -1,0 +1,33 @@
+{
+  "name": "goacos-registry",
+  "version": "1.2.0",
+  "description": "Node client for the goacos / Nacos-API service registry",
+  "main": "index.js",
+  "types": "index.d.ts",
+  "files": [
+    "index.js",
+    "index.d.ts",
+    "README.md"
+  ],
+  "scripts": {
+    "test": "node test.js"
+  },
+  "keywords": [
+    "goacos",
+    "nacos",
+    "service-registry",
+    "service-discovery"
+  ],
+  "license": "Apache-2.0",
+  "type": "commonjs",
+  "engines": {
+    "node": ">=18"
+  },
+  "dependencies": {},
+  "devDependencies": {},
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/halfking/goacos.git",
+    "directory": "sdk/registry-node"
+  }
+}

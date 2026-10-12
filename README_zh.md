@@ -84,6 +84,130 @@ make build && GOACOS_MYSQL_HOST=127.0.0.1 GOACOS_MYSQL_USER=root GOACOS_MYSQL_PA
 
 开箱即用:curl/脚本、[nacos-sdk-go](https://github.com/nacos-group/nacos-sdk-go) HTTP 客户端、各类通过 REST API 访问 Nacos 的工具链。**尚未实现:** Java/Go SDK 2.x 使用的 gRPC 双向流通道(9848 端口)——这类客户端可通过 HTTP API 轮询工作;gRPC 在路线图中。
 
+## 网关
+
+一个二进制,两个面。开启 `GOACOS_GATEWAY_ENABLED=true` 后,同一进程还会对外提供 HTTP/HTTPS 入站流量:每条声明过的 `domain` + `pathPrefix` 路由,由该组件对应命名服务里已注册的健康实例承接。不需要 nginx,也不需要手工维护 `域名 → host:port` 表——策略是数据,地址是实时实例状态。
+
+**默认关闭。** `GOACOS_GATEWAY_ENABLED` 默认 `false`,这样把 goacos 放进已有环境时,不会悄悄开始和现有服务抢占 `:80` / `:443`。请显式开启。
+
+### 最小可运行示例
+
+按 应用 → 组件 → 路由 的顺序声明,再注册实例:
+
+```bash
+export GOACOS_GATEWAY_ENABLED=true
+
+# 1. 应用
+curl -sX POST localhost:8848/goacos/v1/apps -d name=shop -d displayName=Shop
+
+# 2. 组件 —— 路由将要指向的命名服务
+curl -sX POST localhost:8848/goacos/v1/apps/shop/components \
+  -d name=api -d kind=api -d protocol=http -d serviceName=shop-api
+
+# 3. 路由 —— 域名 + 路径前缀 -> 应用 + 组件
+curl -sX POST localhost:8848/goacos/v1/routes \
+  -d domain=app.example.com -d pathPrefix=/api -d appName=shop -d componentName=api
+
+# 4. 实例(就是标准的 Nacos v1 注册接口,无需改动)
+curl -sX POST localhost:8848/nacos/v1/ns/instance \
+  -d ip=10.0.0.7 -d port=8080 -d serviceName=shop-api -d ephemeral=true
+
+# 5. 立即生效,而不必等完刷新间隔
+curl -sX POST localhost:8848/goacos/v1/gateway/refresh
+```
+
+此后 `https://app.example.com/api` 会被反向代理到 `http://10.0.0.7:8080`。
+
+### 网关环境变量
+
+| 变量 | 默认值 | 说明 |
+|---|---|---|
+| `GOACOS_GATEWAY_ENABLED` | `false` | 是否启动网关数据面 |
+| `GOACOS_GATEWAY_NAMESPACE` | `public` | 本实例服务哪个命名空间的路由 |
+| `GOACOS_GATEWAY_HTTP_ADDR` | `:80` | 明文 HTTP 监听地址(ACME 质询 + 跳转) |
+| `GOACOS_GATEWAY_HTTPS_ADDR` | `:443` | 承载真实流量的 TLS 监听地址 |
+| `GOACOS_GATEWAY_FORCE_HTTPS` | `true` | `:80` 上做跳转而不是代理明文 |
+| `GOACOS_GATEWAY_HSTS_MAX_AGE` | `0` | 默认 `Strict-Transport-Security` max-age(`0` 表示不下发) |
+| `GOACOS_GATEWAY_MAX_BODY_BYTES` | `0` | 请求体上限(`0` 表示不限制) |
+| `GOACOS_GATEWAY_CONNECT_TIMEOUT_MS` | `3000` | 上游连接超时 |
+| `GOACOS_GATEWAY_READ_TIMEOUT_MS` | `60000` | 上游读超时 |
+| `GOACOS_GATEWAY_SEND_TIMEOUT_MS` | `60000` | 上游写超时 |
+| `GOACOS_GATEWAY_WEBSOCKET` | `true` | 是否允许连接升级 |
+| `GOACOS_GATEWAY_TRUST_FORWARDED_FOR` | `false` | 是否采信 `X-Forwarded-For` 判定客户端 IP |
+| `GOACOS_GATEWAY_STATIC_ROOT` | — | `protocol=static` 组件的根目录(为空则关闭静态托管) |
+| `GOACOS_GATEWAY_STATIC_FALLBACK` | `true` | 无扩展名且未命中的路径回落到 `index.html` |
+| `GOACOS_GATEWAY_REFRESH_SECONDS` | `10` | 路由与证书从数据库重新读取的间隔 |
+| `GOACOS_GATEWAY_ACME_ENABLED` | `true` | 自动签发证书 |
+| `GOACOS_GATEWAY_ACME_EMAIL` | — | ACME 账户邮箱 |
+| `GOACOS_GATEWAY_ACME_DIRECTORY_URL` | `https://acme-v02.api.letsencrypt.org/directory` | ACME directory;指向 staging 可在不消耗生产额度的情况下跑通签发 |
+| `GOACOS_GATEWAY_ACME_DATA_DIR` | `./data/acme` | ACME 账户私钥——请备份;丢失即丢失账户及其全部速率额度 |
+| `GOACOS_GATEWAY_ACME_TIMEOUT_SECONDS` | `120` | ACME 请求超时 |
+| `GOACOS_GATEWAY_SELFSIGNED_DIR` | `./data/selftest` | 自签证书兜底缓存目录 |
+| `GOACOS_GATEWAY_CERT_DIR` | *(空)* | 共享证书目录，挂载后自动加载 |
+| `GOACOS_GATEWAY_CERT_WRITE_BACK` | `true` | 把签发结果回写到该目录 |
+| `GOACOS_GATEWAY_CERT_SCAN_SECONDS` | `30` | 目录重扫间隔 |
+
+### 从共享目录加载证书
+
+设置 `GOACOS_GATEWAY_CERT_DIR` 指向一个挂载目录，goacos 就会直接对外提供其中的证书，
+无需把它们复制进数据库。三种目录结构都能识别，因为现实中三种都存在：
+
+```
+certs/example.com/fullchain.pem + privkey.pem   # certbot live 结构
+certs/example.com.crt          + example.com.key # 平铺成对
+certs/example.com.pem                           # 单文件合并
+```
+
+通配符同样支持：`certs/*.example.com.crt` 会服务 `api.example.com`，但不会服务
+`a.b.example.com` —— 这与 CA 实际签发的范围一致。
+
+该目录**不会在 TLS 握手时被读取**。它按定时器扫描、解析一次，然后与数据库来源共用
+同一份内存缓存 —— 所以宿主机繁忙或挂载卷变慢，不会演变成一场握手失败风暴。
+
+当同一域名存在多份证书时，由两条规则决定用哪一份：
+
+- 外部 CA 签发的证书优先于自签占位证书。目录里如果本身是自签的，会被识别为占位证书，
+  不会顶掉一张真实证书。
+- 手动上传的证书不被任何来源覆盖。
+
+goacos 签发的证书会**回写**到同一目录（`GOACOS_GATEWAY_CERT_WRITE_BACK`），
+便于 nginx、其他网关或脚本复用。写入是原子的（临时文件 + rename），
+并发扫描的读取方不会读到被截断的证书。只读挂载时把该开关设为 `false`。
+
+Docker 中：
+
+```bash
+docker run \
+  -v /etc/goacos/certs:/etc/goacos/certs \
+  -e GOACOS_GATEWAY_CERT_DIR=/etc/goacos/certs \
+  ...
+```
+
+容器以 **uid 10001** 运行。宿主机目录必须对该 uid 可读（开启回写时还需可写）——
+root 属主的 `0700` 目录会导致一张证书都加载不出来，且没有任何明显提示。
+
+### 证书
+
+- **默认走 ACME HTTP-01。** 已声明但尚无证书的域名会被自动签发。HTTP-01 不需要 DNS 服务商凭据,只要求网关能在 80 端口应答——这正是保留 `:80` 监听的意义所在。
+- **自签兜底保证已声明的域名始终能应答。** 域名一旦被声明,就会立刻用本地生成的证书对外服务,该记录标记为 `self_signed`,并由 `/goacos/v1/gateway/status` 如实上报;CA 签发成功后即被真实证书替换。握手被拒在运维看来就是一个"站点挂了",而真正的故障(证书还没签下来)在那一层是完全不可见的。
+- **手工上传** —— `POST /goacos/v1/certs`,提交 `domain`、`certPem`、`keyPem`,适用于隔离网络部署与内部 CA。**手工证书永不自动续期**:进程内没有任何东西知道该拿什么去续,所以必须在到期前上传替换件。
+
+### 前端静态托管
+
+把组件声明为 `protocol=static`,并设置 `GOACOS_GATEWAY_STATIC_ROOT`。每个组件的文件放在 `<static-root>/<app>-<component>/` 目录下。
+
+- 无扩展名且磁盘上不存在的路径返回 `index.html`(`GOACOS_GATEWAY_STATIC_FALLBACK=true`),因此单页应用可以直接深链自己的前端路由
+- 带内容指纹的构建产物(`app.4f3a2b1c.js`、`main-C1x9zPq2.css`)按 `immutable` 缓存一年;`index.html` 则永不缓存
+- 目录不存在时该路由自动回落到反向代理——因此组件可以在"静态托管"与"注册实例"之间切换,无需重新声明路由
+
+### 两个监听端口
+
+`:80` 负责应答 ACME HTTP-01 质询,并在 `GOACOS_GATEWAY_FORCE_HTTPS=true` 时把其余请求跳转到 HTTPS;`:443` 承载真实流量。两个监听地址都可配置。
+
+上述全部配置项的控制面(状态、证书、按域策略、应用、组件、路由)详见 [docs/API.md](docs/API.md)。
+
+为什么网关放在本项目、以及**刻意不做**什么(限流、服务间 mTLS、WAF、CDN),见 [docs/GATEWAY.md](docs/GATEWAY.md)。
+
 ## 多副本
 
 所配数据库(MySQL 或 PostgreSQL,`GOACOS_DB_TYPE`)即事实源,副本无状态:多个节点指向同一数据库、挂在同一 LB 后、设置相同的 `GOACOS_AUTH_TOKEN_SECRET` 即可。配置长轮询 ~1 秒内感知跨节点变更;实例生命周期清扫幂等,多节点并发执行安全。

@@ -129,7 +129,10 @@ func (s *Store) ensureSchema(ctx context.Context) error {
 		"schema_version", "1"); err != nil {
 		return fmt.Errorf("record schema version: %w", err)
 	}
-	return nil
+	// The base script above is idempotent and covers empty databases. Anything
+	// that changes an already-populated schema lives in the versioned ledger,
+	// because "CREATE TABLE IF NOT EXISTS" cannot express a change.
+	return s.runMigrations(ctx)
 }
 
 // splitSQLStatements splits a script on semicolon-terminated statements.

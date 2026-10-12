@@ -14,11 +14,13 @@ import (
 	"github.com/halfking/goacos/internal/api"
 	"github.com/halfking/goacos/internal/config"
 	"github.com/halfking/goacos/internal/core"
+	"github.com/halfking/goacos/internal/gateway"
 	"github.com/halfking/goacos/internal/storage"
 )
 
-// RunServer opens MySQL (auto-create database + schema + seed), then serves
-// the Nacos-compatible HTTP API until interrupted.
+// RunServer opens the database (auto-create + schema + seed + migrations), then
+// serves two surfaces until interrupted: the Nacos-compatible API and, when
+// enabled, the gateway data plane.
 func RunServer(cfg *config.Config) error {
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer stop()
@@ -37,8 +39,32 @@ func RunServer(cfg *config.Config) error {
 		return err
 	}
 	auth := core.NewAuthService(cfg, st)
+
+	// The gateway is built before the API server so a routing or certificate
+	// problem is reported at startup rather than discovered by the first
+	// visitor. It is a separate surface on separate ports: the Nacos API keeps
+	// answering on its own port for stock clients either way.
+	var gw *gateway.Gateway
+	if cfg.GatewayEnabled {
+		gw, err = gateway.New(openCtx, cfg, st)
+		if err != nil {
+			return err
+		}
+	}
+
 	srv := &api.Server{Cfg: cfg, ST: st, Hub: hub, Auth: auth, Started: time.Now()}
+	if gw != nil {
+		srv.Gateway = gw
+	}
 	core.StartNamingSweeper(ctx, st, cfg)
+
+	if gw != nil {
+		go func() {
+			if err := gw.Run(ctx); err != nil {
+				log.Printf("[gateway] stopped: %v", err)
+			}
+		}()
+	}
 
 	httpSrv := &http.Server{
 		Addr:              cfg.Addr(),

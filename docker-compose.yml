@@ -28,8 +28,28 @@ services:
       MYSQL_PASSWORD: goacos_root        # change me
       # GOACOS_AUTH_ENABLED: "true"
       # GOACOS_AUTH_TOKEN_SECRET: "change-me-in-production"
+
+      # Gateway data plane — off by default. Uncomment together with the
+      # certificate volume below to serve declared domains.
+      # GOACOS_GATEWAY_ENABLED: "true"
+      # GOACOS_GATEWAY_HTTP_ADDR: ":80"
+      # GOACOS_GATEWAY_HTTPS_ADDR: ":443"
+      # GOACOS_GATEWAY_CERT_DIR: /etc/goacos/certs
+      # GOACOS_GATEWAY_CERT_WRITE_BACK: "true"   # needs a writable mount
+      # GOACOS_GATEWAY_ACME_EMAIL: ops@example.com
+    volumes:
+      # Shared certificate directory. Certificates already produced by certbot
+      # or another CA tool can be dropped straight in:
+      #   ./certs/example.com/fullchain.pem + privkey.pem   (certbot live layout)
+      #   ./certs/example.com.crt          + example.com.key (flat pair)
+      #   ./certs/example.com.pem                           (combined)
+      # The container runs as uid 10001 — chown this directory to 10001, or the
+      # gateway will load nothing from it.
+      # - ./certs:/etc/goacos/certs
     ports:
       - "8848:8848"
+      # - "80:80"     # gateway HTTP  (ACME challenges + redirect)
+      # - "443:443"   # gateway HTTPS (real traffic)
 
 volumes:
   mysql-data:

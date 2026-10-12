@@ -1,0 +1,41 @@
+[build-system]
+# 下限必须是 77，不是 61。
+#
+# 下面用的 `license = "Apache-2.0"`（SPDX 表达式）和 `license-files` 属于
+# **PEP 639**，setuptools 从 77 才开始支持。写 61 会让 61–76 之间的构建器
+# 把这个字符串当成旧式自由文本、把 license-files 当成未知键——
+# 实测在过旧的环境里不是报错，而是**静默构建出 `UNKNOWN-0.0.0`**：
+# 包名、版本、许可全部丢失，装上去才发现。
+# 声明一个和实际用法不匹配的下限，比不声明更糟。
+requires = ["setuptools>=77"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "goacos-registry"
+version = "1.2.0"
+description = "Python client for the goacos / Nacos-API service registry"
+readme = "README.md"
+requires-python = ">=3.8"
+license = "Apache-2.0"
+license-files = ["LICENSE"]
+keywords = ["goacos", "nacos", "service-registry", "service-discovery"]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Developers",
+    "Programming Language :: Python :: 3",
+    "Topic :: System :: Networking",
+]
+
+# 刻意为空：本绑定只用标准库（urllib / threading / json）。
+# 平台的镜像依赖经常被锁死，一个需要拉第三方包的注册客户端
+# 会直接让接入方无法部署 —— 所以这里的零依赖是功能要求，不是巧合。
+dependencies = []
+
+[project.urls]
+Homepage = "https://github.com/halfking/goacos"
+
+[tool.setuptools]
+packages = ["goacos_registry"]
+
+[tool.setuptools.package-data]
+goacos_registry = ["py.typed"]

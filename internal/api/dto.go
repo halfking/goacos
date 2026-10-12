@@ -12,15 +12,21 @@ import (
 
 	"github.com/halfking/goacos/internal/config"
 	"github.com/halfking/goacos/internal/core"
+	"github.com/halfking/goacos/internal/gateway"
 	"github.com/halfking/goacos/internal/storage"
 )
 
 // Server wires configuration, storage and core services into the HTTP API.
 type Server struct {
-	Cfg     *config.Config
-	ST      *storage.Store
-	Hub     *core.ConfigHub
-	Auth    *core.AuthService
+	Cfg  *config.Config
+	ST   *storage.Store
+	Hub  *core.ConfigHub
+	Auth *core.AuthService
+	// Gateway is nil when the data plane is disabled. Every gateway route
+	// checks it rather than assuming a running gateway, so the management API
+	// still works on a registry-only instance and can stage configuration
+	// ahead of enabling the listeners.
+	Gateway *gateway.Gateway
 	Started time.Time
 }
 

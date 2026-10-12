@@ -17,8 +17,20 @@ FROM alpine:3.22
 RUN apk add --no-cache ca-certificates tzdata && \
     addgroup -g 10001 goacos && adduser -D -u 10001 -G goacos goacos
 COPY --from=build /out/goacos /usr/local/bin/goacos
+# Certificate directory. Mount it rather than baking it in:
+#
+#   docker run -v /etc/goacos/certs:/etc/goacos/certs \
+#              -e GOACOS_GATEWAY_CERT_DIR=/etc/goacos/certs ...
+#
+# Two things bite here. The process runs as uid 10001, so the host directory
+# must be readable (and, with GOACOS_GATEWAY_CERT_WRITE_BACK on, writable) by
+# that uid — a root-owned 0700 directory yields "certificate not loaded" with
+# no obvious cause. And the write-back path is atomic (temp file plus rename),
+# so the mount must be on a real filesystem, not an overlay that ignores
+# cross-device renames.
+VOLUME ["/etc/goacos/certs"]
 USER goacos
-EXPOSE 8848
+EXPOSE 8848 80 443
 HEALTHCHECK --interval=10s --timeout=3s --start-period=5s --retries=3 \
   CMD goacos healthcheck 127.0.0.1:8848 || exit 1
 ENTRYPOINT ["goacos"]
