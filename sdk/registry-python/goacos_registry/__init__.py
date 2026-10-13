@@ -173,7 +173,7 @@ class Config:
         self._normalize_optional_names()
 
     def _normalize_optional_names(self) -> None:
-        """把 None 归一成「用默认值」，而不是把它发到线上。
+        """把 None 与「空白的名字」归一成「用默认值」，而不是把它们发到线上。
 
         这是实测踩出来的坑，不是防御性编程。调用方常见写法是
         ``cluster_name=env("GOACOS_CLUSTER") or None``——本意是
@@ -192,6 +192,18 @@ class Config:
 
         归一放在 SDK 而不是只修调用方，是因为**每一个** Python 调用方
         都会踩这个 ``or None``，而不是只有第一个写它的人。
+
+        ``strip()`` 那一支是后来补的：``None`` 之外的「看起来没设置」还有两种，
+        而且都比想象中常见——``os.environ.get(k, "")`` 给出的空串，以及 compose /
+        .env 里带游离空格的 ``"   "``。它们不是空的名字，是**另一个不可达的名字**：
+        实例落进没人查询的分桶，每一层却都报成功。Go 用
+        ``strings.TrimSpace(v) == ""``、Node 用 ``trim() || 默认值``，
+        只有这里不归一，于是同一份配置下三语言的服务落进不同分桶。
+        判据在 ``sdk/conformance/run.py`` 第 [5] 节，变异验证过。
+
+        namespace 刻意不 strip：它不参与「数据面按默认名取实例」这条路径，
+        Go 侧是原样透传的（Node 会 trim，见 CONTRACT.md 记下的已知差异）。
+        这里跟着 Go，而不是让三边各行其是。
         """
         for attr, default in (("namespace_id", DEFAULT_NAMESPACE_ID),
                               ("group_name", DEFAULT_GROUP_NAME),
@@ -203,6 +215,8 @@ class Config:
                 raise TypeError(
                     "config: %s must be a str or None, got %r"
                     % (attr, type(value).__name__))
+            elif attr != "namespace_id" and not value.strip():
+                setattr(self, attr, default)
 
 
 class RegistryClient:

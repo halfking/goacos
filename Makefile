@@ -7,7 +7,7 @@ BUILD_NUMBER ?= $(shell git rev-list --count HEAD 2>/dev/null || echo 0)
 IMAGE_TAG    ?= $(shell echo "$(VERSION)" | sed 's/^v//' )-$(BUILD_NUMBER)
 LDFLAGS := -s -w -X main.version=$(VERSION) -X main.buildNumber=$(BUILD_NUMBER)
 
-.PHONY: build test vet e2e image image-multi deploy clean version
+.PHONY: build test vet e2e conformance test-all image image-multi deploy clean version
 
 build:
 	$(GO) build -trimpath -ldflags "$(LDFLAGS)" -o goacos .
@@ -17,6 +17,15 @@ version:
 
 test:
 	$(GO) test ./...
+
+# Cross-language contract check across the Go, Python and Node registry SDKs.
+# Kept out of `test` on purpose: it needs python3 and node, and a target that
+# silently cannot run is worse than one that says it cannot. CI runs this;
+# `make test-all` runs it locally alongside everything else.
+conformance:
+	python3 sdk/conformance/run.py
+
+test-all: test conformance
 
 vet:
 	$(GO) vet ./...

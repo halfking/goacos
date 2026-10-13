@@ -319,6 +319,136 @@ const fakeFetch = async (url, init) => {
 # ------------------------------------------------------------------ checks
 
 
+def go_unset_normalisation() -> Dict[str, Any]:
+    """读 client.go，判断 Go 对「空串 / 纯空白」的 group 与 cluster 归一与否。
+
+    这是**静态**读源码，不是运行验证 —— 套件的设计前提是没有 Go 工具链也能跑。
+    它的能力边界写在返回值里：只能回答「orString 的判空条件是否带 TrimSpace」，
+    回答不了运行时的其余一切（短路顺序、其他调用点、并发下的行为）。
+
+    即便如此仍值得做：这里是四节之外最容易漂、且失效形态最隐蔽的一处。把
+    `strings.TrimSpace(v) == ""` 退回 `v == ""`，其余四节**全部照常通过**——
+    实测过，套件当时报的是「三语言契约一致」。
+    """
+    path = os.path.join(os.path.dirname(PY_PKG), "registry", "client.go")
+    with open(path, "r", encoding="utf-8") as handle:
+        source = handle.read()
+
+    match = re.search(r"func orString\(v, fallback string\) string \{(.*?)\n\}", source, re.S)
+    if match is None:
+        return {"readable": False, "trims": None}
+    body = match.group(1)
+    return {
+        "readable": True,
+        # 只认带 TrimSpace 的判空。`v == ""` 意味着纯空白被当成有效名字发出去。
+        "trims": "strings.TrimSpace(v)" in body,
+    }
+
+
+def unset_wire(lang: str, group: str, cluster: str) -> Dict[str, Any]:
+    """用「未设置」的 group/cluster 跑一次注册，返回真正上线的取值。
+
+    与 python_wire/node_wire 的区别只有一处，但正是关键：那两个场景传的是
+    已经等于默认值的名字，于是无论绑定怎么归一，线上报文都长得一样 ——
+    **归一语义的分歧在它们那里天然不可见**。
+    """
+    if lang == "python":
+        script = r"""
+import json, sys
+sys.path.insert(0, %s)
+import goacos_registry as gr
+
+calls = []
+def opener(method, url, payload, headers, timeout):
+    if payload:
+        calls.append(json.loads(payload))
+    return 200, json.dumps({"code": 0, "data": {}})
+
+client = gr.RegistryClient(
+    gr.Config(service_name="llm-router", port=8080, ip="100.106.177.3",
+              namespace_id="", group_name=%s, cluster_name=%s,
+              server_addr="http://goacos:8848"),
+    opener=opener, sleep=lambda _s: False,
+)
+client.register()
+print(json.dumps(calls[0] if calls else {}))
+""" % (json.dumps(PY_PKG), json.dumps(group), json.dumps(cluster))
+        output = subprocess.run(
+            [sys.executable, "-B", "-c", script], capture_output=True, text=True, check=True
+        ).stdout
+    elif lang == "node":
+        script = r"""
+const { RegistryClient } = require(%s);
+const calls = [];
+const fakeFetch = async (url, init) => {
+  if (init.body) calls.push(JSON.parse(init.body));
+  return { ok: true, status: 200, text: async () => JSON.stringify({ code: 0, data: {} }) };
+};
+(async () => {
+  const client = new RegistryClient({
+    serviceName: 'llm-router', port: 8080, ip: '100.106.177.3',
+    namespaceId: '', groupName: %s, clusterName: %s,
+    serverAddr: 'http://goacos:8848',
+  }, { fetch: fakeFetch, sleep: async () => false });
+  await client.register();
+  console.log(JSON.stringify(calls[0] || {}));
+})();
+""" % (json.dumps(os.path.join(NODE_DIR, "index.js")), json.dumps(group), json.dumps(cluster))
+        output = subprocess.run(
+            ["node", "-e", script], capture_output=True, text=True, check=True
+        ).stdout
+    else:
+        raise ValueError("unknown language %r" % lang)
+    return json.loads(output)
+
+
+def check_unset_normalisation(default_group: str, default_cluster: str) -> None:
+    """[5] 未设置值的归一语义必须三语言一致。
+
+    契约规定：group/cluster 只在**真的没设置**时取默认值。空串与纯空白都算
+    没设置 —— 因为「   」不是一个空的名字，而是**另一个不可达的名字**：
+    实例落进没人查询的分桶，而每一层都报成功。
+
+    这不是洁癖。compose 与 .env 里带游离空格是常事，于是同一份配置，
+    Go/Node 的服务落进 DEFAULT_GROUP，Python 的服务落进 group="   "；
+    网关同步脚本按 DEFAULT_GROUP 取实例时看不到后者 —— 服务在注册中心里
+    存在，数据面却当它不存在。
+    """
+    before = FAILURES
+
+    go_norm = go_unset_normalisation()
+    if not go_norm.get("readable"):
+        fail("读不到 client.go 的 orString，Go 侧归一语义无法判定（不静默跳过）")
+    elif not go_norm.get("trims"):
+        fail("Go 的 orString 判空没有 TrimSpace：纯空白的 group/cluster 会被当成有效名字发出去")
+
+    cases = [
+        ("空串", "", ""),
+        ("纯空白", "   ", "\t "),
+    ]
+    for label, group, cluster in cases:
+        observed = {}
+        for lang in ("python", "node"):
+            try:
+                body = unset_wire(lang, group, cluster)
+            except (subprocess.CalledProcessError, OSError, ValueError) as exc:
+                fail("无法在 %s 上跑未设置值场景：%s" % (lang, exc))
+                return
+            observed[lang] = (body.get("groupName"), body.get("clusterName"))
+
+        expected = (default_group, default_cluster)
+        for lang, got in observed.items():
+            if got != expected:
+                fail("%s 输入 %s 时 %s 上线的是 group=%r cluster=%r，应为 %r/%r —— "
+                     "它落进了另一个分桶，数据面按默认名取实例时看不到它"
+                     % (label, lang, lang, got[0], got[1], default_group, default_cluster))
+
+    # 只有在真的没有新增失败时才报成功。一条与失败并排出现的 ✅ 比没有更糟：
+    # 它让整屏输出在有问题时依然看起来是绿的。
+    if FAILURES == before:
+        ok("空串与纯空白在三语言都归一成默认分组（Go 侧静态核对，其余两者实跑）")
+
+
 def canonical(value: Any) -> Any:
     """Canonicalise a JSON value for comparison across languages.
 
@@ -427,6 +557,10 @@ def main() -> int:
              "客户端改用自己的默认值，登记心跳节奏就由客户端而非服务端说了算" % (py_ms, nd_ms))
     else:
         ok("两侧都采纳服务端下发的 2000ms（未使用各自默认值）")
+
+    # 5. unset values must normalise identically across languages
+    print("\n[5] 未设置值的归一语义")
+    check_unset_normalisation(go["group"], go["cluster"])
 
     print("\n" + "=" * 62)
     if FAILURES:

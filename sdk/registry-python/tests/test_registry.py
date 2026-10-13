@@ -142,6 +142,62 @@ class TestConfigValidation(unittest.TestCase):
         self.assertEqual(cfg.cluster_name, DEFAULT_CLUSTER_NAME)
         self.assertEqual(cfg.namespace_id, DEFAULT_NAMESPACE_ID)
 
+    def test_blank_and_whitespace_mean_the_default_not_another_bucket(self):
+        """空串与纯空白都要归一成默认值，和 Go / Node 一致。
+
+        「看起来没设置」不止 ``None``：``os.environ.get(k, "")`` 给空串，
+        compose 与 .env 里的游离空格给 ``"   "``。它们不是空的名字，是
+        **另一个不可达的名字**——实例落进没人查询的分桶，每一层却都报成功。
+
+        实测过的后果：同一份配置下，Go/Node 的服务落进 DEFAULT_GROUP，
+        Python 的服务落进 group="   "；网关同步脚本按 DEFAULT_GROUP 取实例
+        时看不到后者——服务在注册中心里存在，数据面却当它不存在。
+        """
+        cases = [
+            ("空串", "", ""),
+            ("空格", "   ", "   "),
+            ("制表符与空格", "\t ", "\n"),
+        ]
+        for label, group, cluster in cases:
+            with self.subTest(label):
+                cfg = Config(service_name="svc", port=80,
+                             group_name=group, cluster_name=cluster)
+                self.assertEqual(cfg.group_name, DEFAULT_GROUP_NAME,
+                                 "%s 的 group 竟被原样保留" % label)
+                self.assertEqual(cfg.cluster_name, DEFAULT_CLUSTER_NAME,
+                                 "%s 的 cluster 竟被原样保留" % label)
+
+    def test_blank_group_never_reaches_the_wire(self):
+        """归一必须发生在**发出去之前**。字段对了不代表报文对了。
+
+        断言的是 FakeRegistry 记下的真实 body —— 出问题的就是上线的那份数据，
+        中间隔了多少层都不算数。
+        """
+        fake = FakeRegistry()
+        cfg = Config(service_name="llm-router", port=8080, ip="100.106.177.3",
+                     server_addr="http://goacos:8848",
+                     group_name="   ", cluster_name="")
+        client = RegistryClient(cfg, opener=fake, sleep=lambda _s: True)
+        client.register()
+
+        raw = [c["payload"] for c in fake.calls
+               if c["path"].endswith(PATH_INSTANCE) and c["method"] == "POST"]
+        self.assertTrue(raw, "没有记录到注册请求，用例本身失效")
+        for blob in raw:
+            payload = json.loads(blob.decode() if isinstance(blob, bytes) else blob)
+            self.assertEqual(payload.get("groupName"), DEFAULT_GROUP_NAME)
+            self.assertEqual(payload.get("clusterName"), DEFAULT_CLUSTER_NAME)
+
+    def test_namespace_is_not_stripped(self):
+        """namespace 刻意不归一空白：它不参与「数据面按默认名取实例」那条路径。
+
+        这里跟着 Go（原样透传）。Node 那边会 trim，记在 CONTRACT.md 的已知
+        差异里。把这条钉住，是为了让「为什么只有这一个不归一」有答案，
+        而不是留给下一个读代码的人去猜是不是漏了。
+        """
+        cfg = Config(service_name="svc", port=80, namespace_id="  ")
+        self.assertEqual(cfg.namespace_id, "  ")
+
     def test_none_never_reaches_the_wire(self):
         """归一必须在**发出去之前**生效，而不是只在字段上看一眼。
 
