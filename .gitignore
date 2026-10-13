@@ -17,3 +17,4 @@ __pycache__/
 
 # 交叉编译到宿主的产物（本机验证用，不入库）
 goacos-registrar-darwin
+goacos-bin-*
