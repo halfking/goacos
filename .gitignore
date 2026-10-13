@@ -10,3 +10,7 @@
 # macOS 资源叉垃圾文件：曾出现在 sdk/ 里，会被提交进公开仓库。
 # wheel 打包不受影响（setuptools 默认只收 .py），但仓库不该留。
 .DS_Store
+
+# Python 字节码：SDK 的绑定测试会生成，不该进版本库
+__pycache__/
+*.pyc
