@@ -5,6 +5,8 @@ import (
 	"os"
 	"strconv"
 	"time"
+
+	"github.com/halfking/goacos/internal/envbool"
 )
 
 // newFlagSet wires the flags and the environment fallbacks.
@@ -39,8 +41,9 @@ func newFlagSet(o *options) *flag.FlagSet {
 	fs.StringVar(&o.password, "password", os.Getenv("GOACOS_PASSWORD"),
 		"registry password (env only)")
 
-	fs.BoolVar(&o.allowLoopback, "allow-loopback", envBool(allowLoopbackEnv),
-		"permit advertising 127.0.0.0/8 or 0.0.0.0; single-host deployments only")
+	fs.BoolVar(&o.allowLoopback, "allow-loopback", envbool.MustParse(os.Getenv, allowLoopbackEnv, false),
+		"permit advertising 127.0.0.0/8 or 0.0.0.0; single-host deployments only"+
+			" (env GOACOS_ALLOW_LOOPBACK: 1/true/yes/on)")
 	fs.BoolVar(&o.verifyDial, "verify-dial", true,
 		"wait for the advertised address to accept a connection before registering")
 	fs.DurationVar(&o.dialTimeout, "dial-timeout", 30*time.Second,
@@ -74,15 +77,4 @@ func envInt(key string, fallback int) int {
 		}
 	}
 	return fallback
-}
-
-func envBool(key string) bool {
-	v := os.Getenv(key)
-	switch v {
-	case "", "0", "false", "False":
-		return false
-	default:
-		n, err := strconv.Atoi(v)
-		return err == nil && n != 0
-	}
 }

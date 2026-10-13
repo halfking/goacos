@@ -8,6 +8,8 @@ import (
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/halfking/goacos/internal/envbool"
 )
 
 // LetsEncryptDirectory is the production ACME directory endpoint. It is the
@@ -184,16 +186,19 @@ func getenvInt64(name string, def int64) int64 {
 	return def
 }
 
+// getenvBool now defers to internal/envbool so that the spellings accepted
+// here, in the SDK and in goacos-registrar are one list.
+//
+// It previously used strconv.ParseBool directly, which accepts 1/t/T/TRUE/true/
+// True but NOT yes/on/y. That is fine on its own — the two lists only drifted
+// into a problem once goacos-registrar shipped a third one that accepted
+// almost nothing while its own error message told operators to write "true".
 func getenvBool(name string, def bool) bool {
-	defStr := "false"
-	if def {
-		defStr = "true"
-	}
-	b, err := strconv.ParseBool(getenv(name, defStr))
-	if err != nil {
-		return def
-	}
-	return b
+	// getenv here takes a default as well, so it does not match envbool's
+	// single-argument getter. Passing "" yields "" for an unset key, which
+	// envbool treats as "unset" and answers with the fallback — the same
+	// answer the old strconv version gave.
+	return envbool.MustParse(func(key string) string { return getenv(key, "") }, name, def)
 }
 
 // FromEnv builds a Config from the process environment with sane defaults.
