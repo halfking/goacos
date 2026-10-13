@@ -14,3 +14,6 @@
 # Python 字节码：SDK 的绑定测试会生成，不该进版本库
 __pycache__/
 *.pyc
+
+# 交叉编译到宿主的产物（本机验证用，不入库）
+goacos-registrar-darwin
