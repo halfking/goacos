@@ -39,6 +39,23 @@ type Gateway struct {
 	redirects  atomic.Int64
 	rejected   atomic.Int64
 	noRoute    atomic.Int64
+	// upstreamFailed counts instances the data plane could not reach, as
+	// opposed to requests that went nowhere.
+	//
+	// It exists because "healthy" in the status payload is the REGISTRY's
+	// view — an instance is healthy when its registrar heartbeats — not the
+	// data plane's. Those two disagree in the most expensive way possible:
+	// a registrar in a container that advertises an address only that
+	// container can reach keeps its instance marked healthy forever, every
+	// request routed to it pays a failed dial first, and the request still
+	// succeeds via retry. Measured on 2026-10-14: three instances all shown
+	// healthy, two of them unreachable from the gateway, 100% of traffic
+	// silently concentrating on the third with no error surfaced anywhere
+	// except this log line.
+	//
+	// Without a counter, the status API actively misleads: it reports three
+	// healthy instances while the data plane can only use one.
+	upstreamFailed atomic.Int64
 
 	wg sync.WaitGroup
 }
@@ -380,12 +397,18 @@ func (g *Gateway) TargetsFor(domain string) []*Target { return g.table.allTarget
 // Counters returns the traffic counters for the status endpoint.
 func (g *Gateway) Counters() map[string]any {
 	return map[string]any{
-		"requests":        g.requests.Load(),
-		"proxied":         g.proxied.Load(),
-		"static":          g.staticHits.Load(),
-		"redirects":       g.redirects.Load(),
-		"rejected":        g.rejected.Load(),
-		"noRoute":         g.noRoute.Load(),
+		"requests":  g.requests.Load(),
+		"proxied":   g.proxied.Load(),
+		"static":    g.staticHits.Load(),
+		"redirects": g.redirects.Load(),
+		"rejected":  g.rejected.Load(),
+		"noRoute":   g.noRoute.Load(),
+		// Instances the data plane could not reach. Non-zero here with a
+		// non-zero instance count means the registry and the data plane
+		// disagree: some instances are heartbeating an address only their own
+		// network namespace can reach. Requests still succeed via retry, so
+		// nothing else surfaces it.
+		"upstreamFailed":  g.upstreamFailed.Load(),
 		"pooledUpstreams": g.pool.size(),
 	}
 }

@@ -1053,3 +1053,67 @@ func writeFile(path, content string) error {
 	}
 	return os.WriteFile(path, []byte(content), 0o644)
 }
+
+// A failed dial is invisible in every other signal the status API exposes.
+//
+// `domains[].healthy` comes from the registry: an instance counts as healthy
+// when its registrar heartbeats. That says nothing about whether this process
+// can dial it. Measured on 2026-10-14 against a gateway with three registered
+// instances, two of them unreachable from the gateway's network namespace:
+// the status API reported three healthy instances and "proxied" kept rising,
+// while 100% of traffic silently concentrated on the reachable one. The only
+// trace was a log line nobody reads.
+//
+// So the counter is the point of this test, not the failover — the failover
+// itself is already covered by TestDispatchFailsOverToHealthyInstance.
+//
+// Note this deliberately fires several requests instead of one. Lookup
+// sorts instances by weight, then IP, then port (selectInstances), and both
+// test instances live on 127.0.0.1 — so the tiebreak is whichever ephemeral
+// port the OS happened to hand out. A single request would fail this half the
+// time depending on whether the dead instance sorted first. Round robin over
+// six requests reaches both instances regardless of the ordering.
+func TestUpstreamFailureIsCountedSeparatelyFromSuccess(t *testing.T) {
+	dead := deadServer(t)
+	good := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		w.WriteHeader(http.StatusOK)
+		_, _ = w.Write([]byte("served-by-healthy"))
+	}))
+	defer good.Close()
+
+	deadHost, deadPort := splitHostPort(t, dead)
+	goodHost, goodPort := splitHostPort(t, good.URL)
+	tbl := buildTable(testRoute{
+		domain: "acc.example.com", component: "api", service: "acc-api",
+		instances: []Instance{
+			instanceOf(deadHost, deadPort, 1, nil),
+			instanceOf(goodHost, goodPort, 1, nil),
+		},
+	})
+	g := testGateway(tbl, nil)
+
+	for i := 0; i < 6; i++ {
+		rec := httptest.NewRecorder()
+		req := httptest.NewRequest(http.MethodGet, "http://acc.example.com/", nil)
+		g.dispatch(rec, req, false)
+		if rec.Code != http.StatusOK {
+			t.Fatalf("request %d: failover failed: status=%d body=%s",
+				i, rec.Code, rec.Body.String())
+		}
+	}
+
+	counters := g.Counters()
+	failed, ok := counters["upstreamFailed"].(int64)
+	if !ok {
+		t.Fatalf("counters[upstreamFailed] missing or wrong type: %#v",
+			counters["upstreamFailed"])
+	}
+	if failed < 1 {
+		t.Errorf("upstreamFailed=%d, want >=1: an instance the data plane could "+
+			"not reach must be visible in the status payload, not only in the log", failed)
+	}
+	if got := counters["proxied"].(int64); got < 1 {
+		t.Errorf("proxied=%d, want >=1: the requests still succeeded, which is "+
+			"exactly why the failures needed their own counter", got)
+	}
+}

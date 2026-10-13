@@ -65,7 +65,15 @@ func (s *Server) gatewayStatus(w http.ResponseWriter, r *http.Request) {
 				"group":     t.GroupName,
 				"lb":        t.LBAlgorithm,
 				"instances": sortedAddresses(t.Instances),
-				"healthy":   len(t.Instances),
+				// Registry health, not data-plane reachability: an instance is
+				// counted here when its registrar heartbeats, which says
+				// nothing about whether THIS process can dial it. A registrar
+				// advertising an address only its own network namespace
+				// reaches keeps this count at full while every request
+				// routed to it pays a failed dial first. Cross-check the
+				// top-level counters.upstreamFailed against this number.
+				"healthy":       len(t.Instances),
+				"healthyIsFrom": "registry (registrar heartbeat), not a data-plane probe",
 			}
 		}
 		if info, ok := g.Certs().Info(domain); ok {

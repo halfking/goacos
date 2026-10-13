@@ -306,6 +306,7 @@ func (g *Gateway) Forward(w http.ResponseWriter, r *http.Request, t *Target, pol
 			// Bytes already reached the client; there is nothing to retry.
 			return
 		}
+		g.upstreamFailed.Add(1)
 		log.Printf("[gateway] upstream %s failed, trying another instance: %v", upstream, rec.failed)
 	}
 
