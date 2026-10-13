@@ -31,6 +31,7 @@ import (
 	"context"
 	"embed"
 	"fmt"
+	"log"
 	"path"
 	"sort"
 	"strings"
@@ -132,13 +133,25 @@ func (s *Store) runMigrations(ctx context.Context) error {
 	ordered := append([]migration(nil), migrations...)
 	sort.Slice(ordered, func(i, j int) bool { return ordered[i].Version < ordered[j].Version })
 
+	// Work out what is pending before touching anything, so the boot log can
+	// say which version the database is coming *from*.
+	pending := make([]migration, 0, len(ordered))
 	for _, m := range ordered {
 		if m.Version <= baselineSchemaVersion {
 			return fmt.Errorf("migration %03d collides with the pre-ledger baseline version %d", m.Version, baselineSchemaVersion)
 		}
-		if applied[m.Version] {
-			continue
+		if !applied[m.Version] {
+			pending = append(pending, m)
 		}
+	}
+	if len(pending) == 0 {
+		log.Printf("[goacos] schema at version %d (no migration applied)", highest(applied))
+	} else {
+		log.Printf("[goacos] schema at version %d, applying %d migration(s): %s",
+			highest(applied), len(pending), describe(pending))
+	}
+
+	for _, m := range pending {
 		p, err := migrationPath(m, s.dialect)
 		if err != nil {
 			return err
@@ -159,8 +172,31 @@ func (s *Store) runMigrations(ctx context.Context) error {
 			"INSERT INTO goacos_schema_version (version, name) VALUES (?, ?)", m.Version, m.Name); err != nil {
 			return fmt.Errorf("record migration %03d: %w", m.Version, err)
 		}
+		log.Printf("[goacos] applied schema migration %03d_%s", m.Version, m.Name)
 	}
 	return nil
+}
+
+// highest reports the newest applied version, counting the pre-ledger
+// baseline as version 1.
+func highest(applied map[int]bool) int {
+	version := baselineSchemaVersion
+	for v := range applied {
+		if v > version {
+			version = v
+		}
+	}
+	return version
+}
+
+// describe renders pending migrations for the boot log: "002_application,
+// 003_gateway".
+func describe(pending []migration) string {
+	names := make([]string, 0, len(pending))
+	for _, m := range pending {
+		names = append(names, fmt.Sprintf("%03d_%s", m.Version, m.Name))
+	}
+	return strings.Join(names, ", ")
 }
 
 // CurrentSchemaVersion reports the highest applied version, counting the
