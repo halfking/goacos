@@ -305,6 +305,11 @@ type Client struct {
 	// so a caller (or a test) can retune one client without global state.
 	registerBackoffInitial time.Duration
 	registerBackoffMax     time.Duration
+
+	// bridgeWarnOnce makes the container-bridge warning fire at most once per
+	// client. AdvertiseIP is called on every registration and every beat, and
+	// a warning that repeats forever stops being read.
+	bridgeWarnOnce sync.Once
 }
 
 // NewClient builds a Client. It never returns nil and never fails: a bad or
@@ -389,9 +394,65 @@ func (c *Client) AdvertiseIP() string {
 		return ""
 	}
 	if ip := selectAdvertiseIP(c.cfg.IP, ifaces); ip != "" {
+		c.warnContainerBridgeOnce(ip)
 		return ip
 	}
 	return "127.0.0.1"
+}
+
+// inDockerDefaultPool reports whether a falls inside Docker's default bridge
+// pool, which spans 172.17.0.0/16 through 172.31.0.0/16 — a strict subset of
+// RFC1918's 172.16.0.0/12.
+func inDockerDefaultPool(a netip.Addr) bool {
+	a = a.Unmap()
+	if !a.Is4() {
+		return false
+	}
+	// Docker's default pool runs from 172.17.0.0/16 up through 172.31.0.0/16.
+	// 172.16.x is deliberately outside it: that is a real LAN range (252's
+	// eth0 is 172.16.2.210) and Docker never allocates from it by default.
+	lo := netip.AddrFrom4([4]byte{172, 17, 0, 0})
+	hi := netip.AddrFrom4([4]byte{172, 31, 255, 255})
+	return a.Compare(lo) >= 0 && a.Compare(hi) <= 0
+}
+
+// warnContainerBridgeOnce explains the trap that auto-detection walks into
+// inside a container, exactly once per client.
+//
+// Inside a container the interface list is `lo` + `eth0 <bridge address>` and
+// nothing else — NetBird runs on the host, not in the container, so the mesh
+// address that selectAdvertiseIP prefers is simply not visible from in here.
+// The LAN fallback then lands on the container's own bridge address.
+//
+// That address is not simply "wrong", which is why this warns instead of
+// refusing. For a consumer inside the same Docker network it is exactly right:
+// containers reach each other over it, and that is the single-host compose case
+// the fallback exists for. It is only wrong for a consumer OUTSIDE that network
+// — a gateway in another container, nginx on the host, or any other host.
+//
+// And when it is wrong, nothing else says so. Measured 2026-10-14 against a
+// gateway with three registered instances: two of them advertised bridge
+// addresses, the status API reported all three healthy, every request silently
+// concentrated on the third, and the only trace was one log line per failure.
+//
+// The fix is to set Config.IP (GOACOS_IP) explicitly to an address the actual
+// consumers can dial — the host's mesh address when the port is published, or
+// do not register the service as an external one at all when it is not.
+func (c *Client) warnContainerBridgeOnce(ip string) {
+	if c.cfg.IP != "" {
+		return // an explicit choice was made; the operator already decided
+	}
+	addr, ok := netip.AddrFromSlice(net.ParseIP(ip).To4())
+	if !ok || !inDockerDefaultPool(addr.Unmap()) {
+		return
+	}
+	c.bridgeWarnOnce.Do(func() {
+		c.logger.Warn("auto-detected address is a Docker bridge address; "+
+			"consumers outside this Docker network cannot reach it. "+
+			"Set the advertised IP explicitly (e.g. the host's mesh address) "+
+			"if this service must be reachable from outside this network.",
+			"advertise_ip", ip)
+	})
 }
 
 // ResolveIP applies the same chain as AdvertiseIP but without a Client, so a
