@@ -237,16 +237,26 @@ func (o *options) registryConfig() (registry.Config, error) {
 
 // checkAddress applies the loopback policy.
 //
-// The opt-in accepts only addresses that are legitimately local — loopback or
-// unspecified — and only when they are actually well-formed. It does not
-// accept arbitrary strings just because the operator said "single host": a
-// typo'd address must still fail at boot.
+// The opt-in accepts only loopback — 127.0.0.0/8 and ::1 — and only when they
+// are actually well-formed. It does not accept arbitrary strings just because
+// the operator said "single host": a typo'd address must still fail at boot.
+//
+// The unspecified address (0.0.0.0, ::) is excluded even with the opt-in, which
+// is where sdk/registry.ConfigFromEnv draws the same line. 0.0.0.0 is a bind
+// wildcard, not a destination: a peer that dials it reaches nothing on a single
+// host just as much as on ten. On one host the correct answer is 127.0.0.1.
 func checkAddress(ip string, allowLoopback bool) error {
 	addr, err := netip.ParseAddr(ip)
 	if err != nil {
 		return fmt.Errorf("-advertise-ip %q is not an IP address: %w", ip, err)
 	}
-	if addr.IsLoopback() || addr.IsUnspecified() {
+	if addr.IsUnspecified() {
+		return fmt.Errorf(
+			"refusing to advertise %s. It is a bind wildcard, not a destination — a peer "+
+				"that dials it reaches nothing, on a single host just as much as on ten. "+
+				"Use 127.0.0.1 for a single-host deployment", ip)
+	}
+	if addr.IsLoopback() {
 		if !allowLoopback {
 			return fmt.Errorf(
 				"refusing to advertise %s. In a mesh every peer resolves it to itself, so this "+

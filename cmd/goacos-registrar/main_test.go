@@ -82,7 +82,7 @@ func TestRegistryConfigRequiresTheThreeThingsThatCannotBeGuessed(t *testing.T) {
 // TestLoopbackIsRefusedByDefault is the invariant the whole fleet shares with
 // the myvpn sidecar, ACC and RedClaw: default off, explicit opt-in.
 func TestLoopbackIsRefusedByDefault(t *testing.T) {
-	for _, addr := range []string{"127.0.0.1", "127.0.0.53", "0.0.0.0", "::1"} {
+	for _, addr := range []string{"127.0.0.1", "127.0.0.53", "::1"} {
 		t.Run(addr, func(t *testing.T) {
 			o := baseOptions()
 			o.advertiseIP = addr
@@ -92,6 +92,23 @@ func TestLoopbackIsRefusedByDefault(t *testing.T) {
 			}
 			if !strings.Contains(err.Error(), allowLoopbackEnv) {
 				t.Fatalf("报错没有告诉运维怎么显式放行：%v", err)
+			}
+		})
+	}
+}
+
+// 0.0.0.0 看着像「只在本机有意义」，其实它是 bind 通配符而不是目的地：
+// 对端拨号过去哪儿也不到，单机如此，十机也如此。单机部署的正确答案是
+// 127.0.0.1。这条与 sdk/registry.ConfigFromEnv 画同一条线。
+func TestUnspecifiedIsRefusedEvenWithTheOptIn(t *testing.T) {
+	for _, addr := range []string{"0.0.0.0", "::"} {
+		t.Run(addr, func(t *testing.T) {
+			o := baseOptions()
+			o.advertiseIP = addr
+			o.allowLoopback = true
+			_, err := o.registryConfig()
+			if err == nil {
+				t.Fatalf("%s 在开关打开下竟被放行 —— 它不是可拨号地址", addr)
 			}
 		})
 	}
@@ -110,7 +127,7 @@ func TestLoopbackOptInStillRejectsGarbage(t *testing.T) {
 }
 
 func TestLoopbackOptInAcceptsActuallyLocalAddresses(t *testing.T) {
-	for _, addr := range []string{"127.0.0.1", "0.0.0.0"} {
+	for _, addr := range []string{"127.0.0.1", "127.0.0.53", "::1"} {
 		o := baseOptions()
 		o.advertiseIP = addr
 		o.allowLoopback = true
