@@ -190,21 +190,7 @@ func (s *Server) componentList(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Server) componentWrite(w http.ResponseWriter, r *http.Request) {
-	var body struct {
-		NamespaceId string            `json:"namespaceId"`
-		AppName     string            `json:"appName"`
-		Name        string            `json:"name"`
-		Kind        string            `json:"kind"`
-		Protocol    string            `json:"protocol"`
-		ServiceName string            `json:"serviceName"`
-		GroupName   string            `json:"groupName"`
-		ClusterName string            `json:"clusterName"`
-		HealthPath  string            `json:"healthPath"`
-		Weight      float64           `json:"weight"`
-		LBAlgorithm string            `json:"lbAlgorithm"`
-		Sticky      string            `json:"sticky"`
-		Metadata    map[string]string `json:"metadata"`
-	}
+	var body componentSpec
 	if err := jsonDecode(r, &body); err != nil {
 		f := formOrJSON(r)
 		body.NamespaceId = f["namespaceId"]
@@ -237,20 +223,9 @@ func (s *Server) componentWrite(w http.ResponseWriter, r *http.Request) {
 		appError(w, http.StatusBadRequest, 400, "serviceName is required")
 		return
 	}
-	if body.Kind == "" {
-		body.Kind = "api"
-	}
-	if body.Protocol == "" {
-		body.Protocol = "http"
-	}
-	if body.GroupName == "" {
-		body.GroupName = "DEFAULT_GROUP"
-	}
-	if body.Weight <= 0 {
-		body.Weight = 1
-	}
-	if body.LBAlgorithm == "" {
-		body.LBAlgorithm = "round_robin"
+	if err := normalizeComponentSpec(&body); err != nil {
+		appError(w, http.StatusBadRequest, 400, err.Error())
+		return
 	}
 	created, err := s.ST.UpsertComponent(r.Context(), storage.ApplicationComponent{
 		NamespaceId: defaultNamespace(body.NamespaceId),
