@@ -102,6 +102,18 @@ type Config struct {
 	// static root, which is what a single-page application needs to deep-link
 	// its own routes.
 	GatewayStaticFallback bool
+	// GatewaySecurityHeaders are emitted on every gateway response, one
+	// "Name: value" pair per line. This is what a fronting nginx adds with
+	// add_header; without it, moving a domain off nginx silently loses
+	// nosniff / frame-options / referrer-policy / permissions-policy.
+	GatewaySecurityHeaders []string
+	// GatewayBlockUserAgents rejects scanner user agents with 403 before any
+	// route lookup, one Go regexp per line.
+	GatewayBlockUserAgents []string
+	// GatewayBlockPaths rejects sensitive paths with 404 before any route
+	// lookup, one Go regexp per line. 404 rather than 403 on purpose: a scanner
+	// probing /.git/config should learn nothing about whether the path exists.
+	GatewayBlockPaths []string
 	// GatewayCertRefreshSeconds is how often cached routes and certificates are
 	// re-read from the database. This is the upper bound on "a new instance
 	// registered now starts receiving traffic within".
@@ -201,6 +213,24 @@ func getenvBool(name string, def bool) bool {
 	return envbool.MustParse(func(key string) string { return getenv(key, "") }, name, def)
 }
 
+// getenvList reads a multi-line setting into its non-empty, non-comment lines.
+//
+// Splitting on newlines rather than commas: these values are Go regexps and
+// header strings, and a regexp may legitimately contain a comma.
+func getenvList(name string) []string {
+	raw := getenv(name, "")
+	if strings.TrimSpace(raw) == "" {
+		return nil
+	}
+	var out []string
+	for _, line := range strings.Split(raw, "\n") {
+		if s := strings.TrimSpace(line); s != "" && !strings.HasPrefix(s, "#") {
+			out = append(out, s)
+		}
+	}
+	return out
+}
+
 // FromEnv builds a Config from the process environment with sane defaults.
 func FromEnv() *Config {
 	return &Config{
@@ -242,6 +272,9 @@ func FromEnv() *Config {
 		GatewayTrustForwardedFor:  getenvBool("GATEWAY_TRUST_FORWARDED_FOR", false),
 		GatewayStaticRoot:         getenv("GATEWAY_STATIC_ROOT", ""),
 		GatewayStaticFallback:     getenvBool("GATEWAY_STATIC_FALLBACK", true),
+		GatewaySecurityHeaders:   getenvList("GATEWAY_SECURITY_HEADERS"),
+		GatewayBlockUserAgents:   getenvList("GATEWAY_BLOCK_USER_AGENTS"),
+		GatewayBlockPaths:        getenvList("GATEWAY_BLOCK_PATHS"),
 		GatewayCertRefreshSeconds: getenvInt("GATEWAY_REFRESH_SECONDS", 10),
 		GatewayCertDir:            getenv("GATEWAY_CERT_DIR", ""),
 		GatewayCertWriteBack:      getenvBool("GATEWAY_CERT_WRITE_BACK", true),

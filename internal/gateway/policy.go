@@ -12,6 +12,7 @@ import (
 	"net"
 	"net/http"
 	"net/netip"
+	"regexp"
 	"strings"
 
 	"github.com/halfking/goacos/internal/config"
@@ -29,6 +30,11 @@ type Policy struct {
 	ReadTimeoutMS      int
 	SendTimeoutMS      int
 	Websocket          bool
+	// Path-level controls. See security.go for why they exist and why a
+	// malformed entry is dropped rather than fatal.
+	SecurityHeaders   []SecurityHeader
+	BlockUserAgents   []*regexp.Regexp
+	BlockPaths        []*regexp.Regexp
 }
 
 // resolvePolicy merges the gateway defaults with a domain's row, if any.
@@ -41,6 +47,9 @@ func resolvePolicy(cfg *config.Config, v *storage.VHostPolicy) Policy {
 		ReadTimeoutMS:      cfg.GatewayReadTimeoutMS,
 		SendTimeoutMS:      cfg.GatewaySendTimeoutMS,
 		Websocket:          cfg.GatewayWebsocket,
+		SecurityHeaders:    parseSecurityHeaders(cfg.GatewaySecurityHeaders),
+		BlockUserAgents:    compilePatterns(cfg.GatewayBlockUserAgents),
+		BlockPaths:         compilePatterns(cfg.GatewayBlockPaths),
 	}
 	if v != nil {
 		p.ForceHTTPS = v.ForceHTTPS

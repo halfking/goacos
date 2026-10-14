@@ -274,6 +274,14 @@ func (g *Gateway) dispatch(w http.ResponseWriter, r *http.Request, secure bool) 
 // admit applies the domain's access rules. It returns false once it has
 // written a rejection.
 func (g *Gateway) admit(w http.ResponseWriter, r *http.Request, pol Policy) bool {
+	// Headers first: they must be on the response whether it is served,
+	// refused for size, or refused below. Setting them after a status is
+	// written would silently drop them.
+	pol.applyHeaders(w)
+	if pol.rejectSensitiveRequest(w, r) {
+		g.rejected.Add(1)
+		return false
+	}
 	if len(pol.Allow) == 0 && len(pol.Deny) == 0 {
 		return true
 	}
