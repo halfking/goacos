@@ -19,7 +19,6 @@ import (
 	"net/netip"
 	"os"
 	"path/filepath"
-	"sort"
 	"strings"
 	"testing"
 	"time"
@@ -111,15 +110,12 @@ func buildTable(routes ...testRoute) *Table {
 	return tbl
 }
 
-// sortRoutes mirrors the production ordering: longest prefix first, then
-// explicit priority. A test that used a different order would be testing its
-// own sort rather than the gateway's routing decision.
-func sortRoutes(list []routeEntry) {
-	sort.SliceStable(list, func(i, j int) bool {
-		return len(strings.TrimSuffix(list[i].PathPrefix, "/")) >
-			len(strings.TrimSuffix(list[j].PathPrefix, "/"))
-	})
-}
+// sortRoutes used to be a hand-copied second implementation of the production
+// ordering. Two copies can drift, and they did: flipping the production
+// comparator to "shortest prefix first" left every test green, because the
+// tests were exercising this copy rather than the gateway's real decision.
+// The rules now live once, in sortRouteEntries, and the fixtures call it.
+func sortRoutes(list []routeEntry) { sortRouteEntries(list) }
 
 func uniqueStrings(in []string) []string {
 	seen := map[string]bool{}

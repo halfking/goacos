@@ -182,19 +182,7 @@ func (t *Table) Refresh(ctx context.Context, st *storage.Store, ns string) error
 		seenDomains[d] = true
 	}
 	for d, list := range domains {
-		// Longest prefix first, then explicit priority, then name — a total
-		// order, so resolution is deterministic across refreshes and across
-		// gateway instances.
-		sort.SliceStable(list, func(i, j int) bool {
-			li, lj := strings.TrimSuffix(list[i].PathPrefix, "/"), strings.TrimSuffix(list[j].PathPrefix, "/")
-			if len(li) != len(lj) {
-				return len(li) > len(lj)
-			}
-			if list[i].Priority != list[j].Priority {
-				return list[i].Priority < list[j].Priority
-			}
-			return list[i].ComponentName < list[j].ComponentName
-		})
+		sortRouteEntries(list)
 		domains[d] = list
 	}
 
@@ -342,6 +330,26 @@ func stripPrefixRequested(comp *storage.ApplicationComponent) bool {
 
 // Policy returns the traffic policy for a domain, or nil when it has none.
 // A nil policy means "use the gateway defaults", not "no restrictions".
+// sortRouteEntries 定序：最长前缀优先，其次显式 priority，最后组件名。
+// 全序，保证每次刷新、每个网关实例解析出的落点都一样。
+//
+// 为什么单独抽出来：这份规则原先内联在 Refresh 里，而测试那边的 buildTable
+// 自己又抄了一份 sortRoutes。两份抄写可以各改各的——把生产里的比较符翻成
+// 「最短前缀优先」，测试依然全绿，因为它测的是自己那份。
+// 现在测试直接调这个函数，规则只有一处。
+func sortRouteEntries(list []routeEntry) {
+	sort.SliceStable(list, func(i, j int) bool {
+		li, lj := strings.TrimSuffix(list[i].PathPrefix, "/"), strings.TrimSuffix(list[j].PathPrefix, "/")
+		if len(li) != len(lj) {
+			return len(li) > len(lj)
+		}
+		if list[i].Priority != list[j].Priority {
+			return list[i].Priority < list[j].Priority
+		}
+		return list[i].ComponentName < list[j].ComponentName
+	})
+}
+
 func (t *Table) Policy(host string) *storage.VHostPolicy {
 	t.mu.RLock()
 	defer t.mu.RUnlock()

@@ -32,9 +32,9 @@ type Policy struct {
 	Websocket          bool
 	// Path-level controls. See security.go for why they exist and why a
 	// malformed entry is dropped rather than fatal.
-	SecurityHeaders   []SecurityHeader
-	BlockUserAgents   []*regexp.Regexp
-	BlockPaths        []*regexp.Regexp
+	SecurityHeaders []SecurityHeader
+	BlockUserAgents []*regexp.Regexp
+	BlockPaths      []*regexp.Regexp
 }
 
 // resolvePolicy merges the gateway defaults with a domain's row, if any.
