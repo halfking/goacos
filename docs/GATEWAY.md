@@ -156,6 +156,31 @@ SNI 多证书、到期前 21 天自动续期、HSTS、HTTP→HTTPS 跳转、`Str
 `stripPrefix=true` 显式开启。前后端路径约定不一致时，静默猜测约定会打挂一个本来健康的应用——
 所以宁可多写一个配置项。
 
+### 3.6 决定「前端还是后端」的是 protocol，不是 kind
+
+一个组件同时有 `kind` 与 `protocol` 两个字段，只有后者决定行为：
+
+| 字段 | 取值 | 作用 |
+|---|---|---|
+| `kind` | `web` / `api` / `worker` / `mcp` / `gateway` | **仅描述性**。存下来、在 API 里返回，不参与任何路由决策 |
+| `protocol` | `http` / `https` / `static` / `grpc` / `ws` | **决定性**。只有 `static` 会走磁盘交付，其余一律代理 |
+| `metadata.delivery` | `static` / `proxy` | 显式覆盖 `protocol`，无需改写路由 |
+
+判定链在 `internal/gateway/static.go`：
+
+1. `protocol != static` → `staticRoot()` 直接返回空 → 一定代理。**这一步先于任何
+   磁盘检查**，所以 API 组件不可能被误当成静态站点；
+2. `protocol == static` → 取 `<静态根>/<app>-<component>`，目录存在则从磁盘交付，
+   不存在则退回代理；
+3. `metadata.delivery` 为 `proxy` 或 `static` 时，跳过第 2 步的目录判断，直接指定。
+
+**所以 `kind: web` + `protocol: http` 表示「前端，但它由上游代理交付」**，不是
+「前端，由 goacos 从磁盘交付」。这两种部署在 itestu 上都存在：openpocket / smm /
+portal 三个组件走 `protocol=static`，其余 web 组件走 `http`（前端由 nginx 交付，
+goacos 只做数据面）。
+
+写 `kind: web` 的人通常以为它决定了什么。它不会 —— 决定的是 `protocol`。
+
 ---
 
 ## 四、哪些治理工作**不应该**放进本项目
