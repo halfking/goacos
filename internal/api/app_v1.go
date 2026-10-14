@@ -246,6 +246,14 @@ func (s *Server) componentWrite(w http.ResponseWriter, r *http.Request) {
 		appError(w, http.StatusInternalServerError, 500, err.Error())
 		return
 	}
+	// created:false means "the component already existed and was updated", not
+	// "the write failed". Both POST and PUT land here and UpsertComponent
+	// updates every policy field, including lb_algorithm, in place.
+	//
+	// Worth spelling out because the alternative reading has a real cost:
+	// DeleteComponent cascades to the routes that pointed at the component, so
+	// concluding from created:false that a component "cannot be changed" leads
+	// straight to delete-then-recreate and silently losing those routes.
 	writeJSON(w, http.StatusOK, V1Result{Code: 200, Data: map[string]any{"created": created}})
 }
 
