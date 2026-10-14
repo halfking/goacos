@@ -50,6 +50,20 @@ type Config struct {
 	EphemeralDeleteAfterMs int64 // delete ephemeral instance after this without beat
 	SweepInterval          time.Duration
 
+	// PersistentHeartbeatTimeoutMs marks a **persistent** instance unhealthy
+	// after this long without a refresh. Persistent instances are never
+	// deleted for silence — that is what "persistent" means — but before this
+	// existed nothing at all could take one out of rotation, so an instance
+	// whose process died stayed healthy forever and kept receiving traffic.
+	//
+	// Deliberately much larger than HeartbeatTimeoutMs. Persistent instances in
+	// this platform are refreshed by `goacos-reconcile.sh`, which re-registers
+	// every 30s rather than beating; reusing the 15s ephemeral timeout would
+	// mark every one of them down for half of every cycle and turn the fleet
+	// into a strobe. Keep this comfortably above the producer's interval.
+	// Set to 0 to disable the check entirely.
+	PersistentHeartbeatTimeoutMs int64
+
 	MaxOpenConns    int
 	MaxIdleConns    int
 	ConnMaxLifetime time.Duration
@@ -251,11 +265,14 @@ func FromEnv() *Config {
 		HeartbeatIntervalMs:    getenvInt64("HEARTBEAT_INTERVAL_MS", 5000),
 		HeartbeatTimeoutMs:     getenvInt64("HEARTBEAT_TIMEOUT_MS", 15000),
 		EphemeralDeleteAfterMs: getenvInt64("EPHEMERAL_DELETE_AFTER_MS", 30000),
-		SweepInterval:          time.Duration(getenvInt64("SWEEP_INTERVAL_MS", 5000)) * time.Millisecond,
-		MaxOpenConns:           getenvInt("MYSQL_MAX_OPEN_CONNS", 100),
-		MaxIdleConns:           getenvInt("MYSQL_MAX_IDLE_CONNS", 20),
-		ConnMaxLifetime:        time.Duration(getenvInt64("MYSQL_CONN_MAX_LIFETIME_SECONDS", 1800)) * time.Second,
-		LogLevel:               getenv("LOG_LEVEL", "info"),
+		// 90s: > the 30s goacos-reconcile timer, so a missed tick is tolerated,
+		// but a ghost still leaves rotation within a couple of minutes.
+		PersistentHeartbeatTimeoutMs: getenvInt64("PERSISTENT_HEARTBEAT_TIMEOUT_MS", 90000),
+		SweepInterval:                time.Duration(getenvInt64("SWEEP_INTERVAL_MS", 5000)) * time.Millisecond,
+		MaxOpenConns:                 getenvInt("MYSQL_MAX_OPEN_CONNS", 100),
+		MaxIdleConns:                 getenvInt("MYSQL_MAX_IDLE_CONNS", 20),
+		ConnMaxLifetime:              time.Duration(getenvInt64("MYSQL_CONN_MAX_LIFETIME_SECONDS", 1800)) * time.Second,
+		LogLevel:                     getenv("LOG_LEVEL", "info"),
 
 		// ---- gateway data plane ----
 		GatewayEnabled:            getenvBool("GATEWAY_ENABLED", false),

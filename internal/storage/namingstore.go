@@ -365,6 +365,32 @@ func (s *Store) SweepEphemeral(ctx context.Context, timeoutMS, deleteAfterMS int
 	return markedUnhealthy, deleted, nil
 }
 
+// MarkStalePersistentUnhealthy takes persistent instances out of rotation once
+// they stop refreshing, and — unlike SweepEphemeral — never deletes them.
+//
+// A persistent instance is registered, not beaten, and the only producer in
+// this platform (goacos-reconcile.sh) re-registers on a 30s timer. If it stops,
+// the instance must stop being selected: otherwise the one live registration on
+// the itestu registry kept an IP no container held, marked healthy forever, and
+// routed accgw.itestu.cn at it.
+//
+// The caller passes its own timeout because that number must exceed the
+// producer's refresh interval; see config.PersistentHeartbeatTimeoutMs.
+// A timeout of 0 disables the check.
+func (s *Store) MarkStalePersistentUnhealthy(ctx context.Context, timeoutMS int64) (int64, error) {
+	if timeoutMS <= 0 {
+		return 0, nil
+	}
+	res, err := s.Exec(ctx,
+		"UPDATE naming_instance SET healthy=0 WHERE ephemeral=0 AND healthy=1 AND last_heartbeat_ms < ?",
+		NowMS()-timeoutMS)
+	if err != nil {
+		return 0, fmt.Errorf("mark persistent unhealthy: %w", err)
+	}
+	n, _ := res.RowsAffected()
+	return n, nil
+}
+
 // CountNaming returns totals for the metrics endpoint.
 func (s *Store) CountNaming(ctx context.Context) (services, instances int64, err error) {
 	if err = s.QueryRow(ctx, "SELECT COUNT(*) FROM naming_service").Scan(&services); err != nil {

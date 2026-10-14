@@ -31,6 +31,18 @@ func StartNamingSweeper(ctx context.Context, st *storage.Store, cfg *config.Conf
 			if unhealthy > 0 || deleted > 0 {
 				log.Printf("[goacos] naming sweep: marked unhealthy=%d deleted=%d", unhealthy, deleted)
 			}
+			// Persistent instances are never deleted for silence, but a silent
+			// one must stop being selected — otherwise a dead endpoint stays
+			// healthy forever. Separate log line and counter: the two paths
+			// have different meanings (ephemeral died, persistent went quiet).
+			stale, err := st.MarkStalePersistentUnhealthy(ctx, cfg.PersistentHeartbeatTimeoutMs)
+			if err != nil {
+				log.Printf("[goacos] persistent sweep error: %v", err)
+				continue
+			}
+			if stale > 0 {
+				log.Printf("[goacos] persistent sweep: marked unhealthy=%d (still present, just out of rotation)", stale)
+			}
 		}
 	}()
 }
