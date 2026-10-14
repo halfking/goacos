@@ -33,7 +33,9 @@ func newFlagSet(o *options) *flag.FlagSet {
 	fs.StringVar(&o.cluster, "cluster", os.Getenv("GOACOS_CLUSTER"), "service cluster")
 	fs.Float64Var(&o.weight, "weight", 1, "load-balancing weight")
 	fs.StringVar(&o.role, "role", os.Getenv("GOACOS_ROLE"),
-		"value for the role metadata key, e.g. frontend — how the registry tells a static site from an API")
+		"descriptive instance metadata, e.g. frontend — free-form; the registry does NOT "+
+			"decide frontend-vs-API from it (that comes from the component's protocol; "+
+			"see docs/GATEWAY.md §3.6)")
 	fs.Var(&o.meta, "meta", "extra instance metadata as key=value; repeatable")
 
 	fs.StringVar(&o.username, "username", os.Getenv("GOACOS_USERNAME"),
