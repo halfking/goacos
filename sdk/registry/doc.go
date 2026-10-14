@@ -81,6 +81,22 @@
 // moment there is a second host, because every peer then resolves 127.0.0.1 to
 // itself. That asymmetry is why the guess is opt-in.
 //
+// # The one place this package and goacos-registrar disagree
+//
+// The loopback filter above applies to the address this package **detected**.
+// An address the operator **named** is not filtered: ConfigFromEnv puts
+// EnvIP into cfg.IP as given, and Announce only checks that it parses. So
+//
+//	GOACOS_IP=127.0.0.1        registers 127.0.0.1, silently
+//	-advertise-ip 127.0.0.1    refused by cmd/goacos-registrar
+//
+// Both spell out "the operator chose it deliberately", and the registrar is the
+// stricter of the two. If you are calling this package directly and set EnvIP,
+// know that you are opting out of a check the registrar applies — and that
+// nothing here will warn you. TestAChosenAddressIsNeverFiltered pins the current
+// behaviour so a future tightening cannot land without someone noticing the two
+// entry points disagree.
+//
 // # Why discovery fails fast
 //
 // The well-known candidates include Docker-network DNS names that frequently do

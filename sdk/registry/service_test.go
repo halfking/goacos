@@ -12,6 +12,7 @@ package registry
 import (
 	"context"
 	"encoding/json"
+	"net"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -40,7 +41,7 @@ func TestConfigFromEnvIsOffByDefault(t *testing.T) {
 		t.Fatalf("空环境不该是错误：%v", err)
 	}
 	if cfg.Enabled {
-		t.Error("未设 "+EnvEnabled+" 却默认开启")
+		t.Error("未设 " + EnvEnabled + " 却默认开启")
 	}
 	if probed {
 		t.Error("注册关闭时仍去探测通告地址 —— 每次启动都做一件用不上的事")
@@ -184,10 +185,10 @@ func TestDetectedAddressIsFilteredNotPassedThrough(t *testing.T) {
 
 func TestAdvertisedPortNeverGuesses(t *testing.T) {
 	tests := []struct {
-		name      string
-		explicit  int
-		listen    string
-		want      int
+		name     string
+		explicit int
+		listen   string
+		want     int
 	}{
 		{"显式端口优先", 4101, ":9999", 4101},
 		{"从监听地址取", 0, "0.0.0.0:8080", 8080},
@@ -393,4 +394,70 @@ func TestAnnouncePublishesExactlyTheResolvedIdentity(t *testing.T) {
 	if got["namespaceId"] != "itestu" {
 		t.Errorf("上线报文里命名空间 = %v, want itestu", got["namespaceId"])
 	}
+}
+
+// TestAChosenAddressIsNeverFiltered pins the one place where this package's
+// address policy differs from goacos-registrar's, because the difference is
+// invisible from the outside and the two are documented as one policy.
+//
+// configFromEnv filters only the address it DETECTED: the loopback fallback is
+// dropped unless allowLoopback. An address the operator NAMED via GOACOS_IP goes
+// into cfg.IP unfiltered, and Announce only checks that it parses. So:
+//
+//	GOACOS_IP=127.0.0.1  →  registers 127.0.0.1, silently
+//	-advertise-ip 127.0.0.1  →  refused, "every peer resolves it to itself"
+//
+// cmd/goacos-registrar/main.go checkAddress() refuses loopback unconditionally
+// (absent --allow-loopback); Service.AllowLoopback and EnvAllowLoopback exist on
+// this side but only gate detection. Both spellings are "deliberate operator
+// choice", so the divergence may well be intended — but it is currently
+// undocumented, and an SDK caller reading the empty-IP warning ("loopback is not
+// an option because every peer reads it as itself") would reasonably conclude
+// the opposite: that naming a loopback address would also be refused.
+//
+// This test asserts today's behaviour on purpose: if someone tightens it, the
+// failure is the prompt to update the comment above AND the registrar help text,
+// rather than a silent divergence between two callers of "the same policy".
+func TestAChosenAddressIsNeverFiltered(t *testing.T) {
+	cfg, err := ConfigFromEnv(env(map[string]string{
+		EnvEnabled: "true",
+		EnvIP:      "127.0.0.1",
+		EnvPort:    "4101",
+	}), Service{Name: "acc-go", ListenAddr: ":4101"})
+	if err != nil {
+		t.Fatalf("不该是错误：%v", err)
+	}
+	if cfg.IP != "127.0.0.1" {
+		t.Fatalf("显式指定的地址被过滤了，得到 %q。"+
+			"若这是有意收紧，请一并更新本测试上方的说明与 "+
+			"cmd/goacos-registrar 的 -role/-advertise-ip 帮助文本，"+
+			"否则两个入口对「同一条策略」的说法会长期不一致", cfg.IP)
+	}
+	// AllowLoopback 为 false 也不影响显式地址 —— 这正是与 registrar 的分歧点。
+	if !isLoopback(cfg.IP) {
+		t.Fatalf("测试前提变了：%q 不是回环地址，这条判据已经不再描述分歧", cfg.IP)
+	}
+}
+
+// TestADetectedLoopbackIsStillFiltered is the other half: the SDK is not wide
+// open, it just trusts a named address. Detection keeps its refusal.
+func TestADetectedLoopbackIsStillFiltered(t *testing.T) {
+	restore := swapDetect(func(func(string) string) string { return "127.0.0.1" })
+	defer restore()
+
+	cfg, err := ConfigFromEnv(env(map[string]string{
+		EnvEnabled: "true",
+		EnvPort:    "4101",
+	}), Service{Name: "acc-go", ListenAddr: ":4101"})
+	if err != nil {
+		t.Fatalf("不该是错误：%v", err)
+	}
+	if cfg.IP != "" {
+		t.Fatalf("探测到的回环地址不该被采用，得到 %q", cfg.IP)
+	}
+}
+
+func isLoopback(ip string) bool {
+	parsed := net.ParseIP(ip)
+	return parsed != nil && parsed.IsLoopback()
 }
