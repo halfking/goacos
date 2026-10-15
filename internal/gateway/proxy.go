@@ -29,6 +29,7 @@ package gateway
 // decision happens one level up, where the writer's state is known.
 
 import (
+	"bufio"
 	"context"
 	"fmt"
 	"log"
@@ -227,6 +228,28 @@ func (r *responseRecorder) WriteHeader(code int) {
 	r.ResponseWriter.WriteHeader(code)
 }
 
+// Hijack hands the underlying connection to ReverseProxy so a protocol upgrade
+// can switch to bidirectional relaying.
+//
+// Without this method the upgrade fails at the very last step, with Go's
+// "can't switch protocols using non-Hijacker ResponseWriter" — the request
+// would reach the upstream correctly and the response would come back
+// correctly, and the connection still could not be taken over. It is the
+// second half of the same bug the outbound Upgrade header was: both had to be
+// fixed before /ws worked at all.
+//
+// written is set because the connection is gone from here on: failover must
+// not retry a request whose socket another layer now owns.
+func (r *responseRecorder) Hijack() (net.Conn, *bufio.ReadWriter, error) {
+	h, ok := r.ResponseWriter.(http.Hijacker)
+	if !ok {
+		return nil, nil, fmt.Errorf("gateway: response writer %T cannot be hijacked",
+			r.ResponseWriter)
+	}
+	r.written = true
+	return h.Hijack()
+}
+
 func (r *responseRecorder) Write(b []byte) (int, error) {
 	r.written = true
 	return r.ResponseWriter.Write(b)
@@ -380,7 +403,27 @@ func applyRewrite(out *http.Request, plan *rewritePlan) {
 	// Hop-by-hop headers belong to a single connection and must not be
 	// forwarded. Connection-listed headers are named per request, so they have
 	// to be removed explicitly rather than by a fixed list alone.
+	//
+	// **协议升级是这套规则唯一的例外，而这里原来是漏的。**
+	// `Connection: Upgrade` 与 `Upgrade: websocket` 看着也是逐跳的，但
+	// RFC 7230 §6.1 要求代理把它们转发给下一跳 —— 删掉它们，升级永远协商不成。
+	// net/http 的 ReverseProxy 正是靠这两个头认出「这是一次升级」并切换到
+	// 双向中继；头被删之后，上游只会把它当成普通请求。
+	//
+	// 端到端实测（myvpn/scripts/goacos-websocket-probe.py，2026-10-16）：
+	// 删掉时，一个**合规**的 WS 后端回 `426 Upgrade Required`；
+	// 一个**宽松**的后端（不检查 Upgrade 就回 101）会让 ReverseProxy 报
+	// `backend tried to switch protocol "websocket" when "" was requested`
+	// —— 那个 `""` 就是被删掉的上游 Upgrade。两种症状下客户端都**拿不到 101**。
+	upgrade := isWebSocketUpgrade(out)
+	savedConn, savedUpgrade := out.Header.Get("Connection"), out.Header.Get("Upgrade")
 	removeHopByHop(out.Header)
+	if upgrade {
+		// 只把这两个放回去，`Connection` 里点名的其他逐跳头仍然被清掉 ——
+		// 放行升级不等于放行整张 Connection 表。
+		out.Header.Set("Connection", savedConn)
+		out.Header.Set("Upgrade", savedUpgrade)
+	}
 
 	// The forwarded chain is rebuilt rather than trusted. A client-supplied
 	// prefix survives only when the operator has declared that something

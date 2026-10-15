@@ -321,7 +321,8 @@ func (t *Table) TargetKeys() []string {
 	return out
 }
 
-func (t *Table) allTargets(domain string) []*Target {	d := storage.NormalizeDomain(domain)
+func (t *Table) allTargets(domain string) []*Target {
+	d := storage.NormalizeDomain(domain)
 	t.mu.RLock()
 	defer t.mu.RUnlock()
 	var out []*Target
