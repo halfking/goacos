@@ -283,8 +283,45 @@ func (t *Table) Lookup(host, path string, metaFilters map[string]string) *Target
 // allTargets returns every distinct target declared for one domain, so callers
 // that need the whole picture (transport pruning, console status) do not have
 // to probe a single representative path.
-func (t *Table) allTargets(domain string) []*Target {
-	d := storage.NormalizeDomain(domain)
+// TargetKeys returns the selection-state key of every target this table can
+// currently resolve — the exact strings Picker indexes its counters by.
+//
+// It exists so Forget is fed the keys it actually uses. Forget(live) deletes
+// every counter set whose key is missing from live, so the caller's set has to
+// be built from targetKey() output; handing it Domains (which are domain
+// names) silently wipes every counter on every refresh, and least_conn then
+// starts from zero on every routing tick and degenerates into "always pick the
+// first instance".
+//
+// Deduped: several domains and several path prefixes can resolve to the same
+// component, and they share one counter set by design.
+func (t *Table) TargetKeys() []string {
+	t.mu.RLock()
+	defer t.mu.RUnlock()
+	seen := make(map[string]bool, len(t.domains))
+	out := make([]string, 0, len(t.domains))
+	for _, entries := range t.domains {
+		for _, e := range entries {
+			if e.comp == nil {
+				continue
+			}
+			key := targetKey(&Target{
+				AppName:       e.comp.AppName,
+				ComponentName: e.comp.Name,
+				ServiceName:   e.comp.ServiceName,
+			})
+			if seen[key] {
+				continue
+			}
+			seen[key] = true
+			out = append(out, key)
+		}
+	}
+	sort.Strings(out)
+	return out
+}
+
+func (t *Table) allTargets(domain string) []*Target {	d := storage.NormalizeDomain(domain)
 	t.mu.RLock()
 	defer t.mu.RUnlock()
 	var out []*Target

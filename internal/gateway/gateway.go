@@ -364,9 +364,14 @@ func (g *Gateway) refresh(ctx context.Context) {
 		return
 	}
 	g.pool.prune(liveAddresses(g.table))
+	// Forget deletes every counter set whose key is absent from live, so live
+	// has to be keyed the way Picker indexes its counters — by targetKey, not
+	// by domain. Feeding it Domains wiped every lbState on every routing tick,
+	// which reset least_conn's inflight counts to zero each time and made the
+	// algorithm fall through to its tie-break: always the first instance.
 	live := map[string]bool{}
-	for _, d := range g.table.Domains {
-		live[d] = true
+	for _, k := range g.table.TargetKeys() {
+		live[k] = true
 	}
 	g.picker.Forget(live)
 }
