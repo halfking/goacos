@@ -262,6 +262,29 @@ func (r *responseRecorder) Flush() {
 	}
 }
 
+// untried narrows the candidate set to instances this request has not hit yet.
+//
+// Retry has to ask the picker to choose among *these*, not among the full
+// list. Only round_robin happens to move on by itself: least_conn keeps the
+// first entry while inflight and weights tie (which is every sequential
+// request), and ip_hash/cookie_sticky hash the client onto one fixed index.
+// Re-asking over the full list therefore hands back the instance that just
+// failed, the loop stops on its own `tried` check, and the client gets a 502
+// while a healthy instance sits idle — on a code path whose log line claims
+// "trying another instance" and never tries one.
+func untried(instances []Instance, tried map[string]bool) []Instance {
+	if len(tried) == 0 {
+		return instances
+	}
+	out := make([]Instance, 0, len(instances))
+	for _, in := range instances {
+		if !tried[addr(in)] {
+			out = append(out, in)
+		}
+	}
+	return out
+}
+
 // Forward proxies one request to a target, failing over between instances
 // while it is still safe to do so.
 func (g *Gateway) Forward(w http.ResponseWriter, r *http.Request, t *Target, pol Policy) {
@@ -280,14 +303,23 @@ func (g *Gateway) Forward(w http.ResponseWriter, r *http.Request, t *Target, pol
 	tried := map[string]bool{}
 
 	for attempt := 0; attempt < maxAttempts; attempt++ {
-		instance := g.picker.Pick(key, t.LBAlgorithm, sticky, t.Instances)
+		candidates := untried(t.Instances, tried)
+		if len(candidates) == 0 {
+			if len(t.Instances) > 1 {
+				// Everything reachable has already been tried: a further attempt
+				// would only re-hit a known-dead instance.
+				break
+			}
+			// Only one instance exists, so there is nowhere else to go. A stale
+			// pooled connection is a real transient failure, so try again.
+			candidates = t.Instances
+		}
+		instance := g.picker.Pick(key, t.LBAlgorithm, sticky, candidates)
 		if instance == nil {
 			break
 		}
 		upstream := addr(*instance)
 		if tried[upstream] && len(t.Instances) > 1 {
-			// Everything reachable has already been tried: a further attempt
-			// would only re-hit a known-dead instance.
 			break
 		}
 		tried[upstream] = true
