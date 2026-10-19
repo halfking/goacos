@@ -219,10 +219,11 @@ func (s *Server) componentWrite(w http.ResponseWriter, r *http.Request) {
 	if body.AppName == "" {
 		body.AppName = r.PathValue("app")
 	}
-	if body.ServiceName == "" {
-		appError(w, http.StatusBadRequest, 400, "serviceName is required")
-		return
-	}
+	// Whether a service name is owed depends on the protocol, and the
+	// protocol is defaulted during normalisation — so the rule lives there,
+	// in normalizeComponentSpec, with the rest of the declaration checks.
+	// Normalisation validates kind before checking the service name, so an
+	// invalid kind is not masked by an unrelated missing service-name error.
 	if err := normalizeComponentSpec(&body); err != nil {
 		appError(w, http.StatusBadRequest, 400, err.Error())
 		return

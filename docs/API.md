@@ -253,11 +253,23 @@ of `namespaceId`, `appName`, `name`, `kind`, `protocol`, `serviceName`,
 
 `POST /goacos/v1/apps/{app}/components` and
 `PUT /goacos/v1/apps/{app}/components/{component}` — body: `namespaceId`,
-`appName`, `name` (required), `serviceName` (required), `kind`, `protocol`,
-`groupName`, `clusterName`, `healthPath`, `weight`, `lbAlgorithm`, `sticky`,
-`metadata`. `appName` falls back to the `{app}` path segment. Defaults applied
-when omitted: `kind=api`, `protocol=http`, `groupName=DEFAULT_GROUP`, `weight=1`,
+`appName`, `name` (required), `serviceName` (required for instance-backed
+protocols), `kind`, `protocol`, `groupName`, `clusterName`, `healthPath`,
+`weight`, `lbAlgorithm`, `sticky`, `metadata`. `appName` falls back to the
+`{app}` path segment. Defaults applied when omitted: `kind=api`,
+`protocol=http`, `groupName=DEFAULT_GROUP`, `weight=1`,
 `lbAlgorithm=round_robin`. `data` is `{"created":<bool>}`.
+
+`serviceName` is owed per **protocol**, not per component. `http`, `https`,
+`grpc` and `ws` are forwarded to instances the naming service tracks, so they
+must name one; `static` is served off disk and needs none — its directory is
+keyed off `app` + `component` alone, and `ServeStatic` never consults the
+naming service. The check therefore fails **closed**: a protocol that is not
+exactly `static` — including a typo such as `stattic` — is treated as
+instance-backed and still rejected. The rule is enforced in the same
+normalisation pass that defaults and canonicalises `protocol`, so `protocol`
+is compared in its canonical lower-case form and an invalid `kind` is reported
+as such rather than being masked by an unrelated missing-service-name error.
 
 `DELETE /goacos/v1/apps/{app}/components/{component}` — query: `namespaceId`.
 Also removes any route pointing at the component, so the model can never hold a

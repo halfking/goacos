@@ -33,6 +33,7 @@ package api
 import (
 	"fmt"
 	"slices"
+	"strings"
 
 	"github.com/halfking/goacos/internal/storage"
 )
@@ -91,10 +92,10 @@ func defaultLBAlgorithmForKind(kind string) string {
 }
 
 // normalizeComponentSpec fills in what the declaration left blank and rejects
-// a kind the platform has no behaviour for. It does not validate the other
-// fields: an unknown protocol or algorithm already degrades to a documented
-// fallback at use time, whereas an unknown kind would now change which
-// default the component receives — which makes silence worth refusing.
+// a kind the platform has no behaviour for. Protocol spelling is canonicalised
+// before both service-name validation and storage, so the gateway sees the same
+// protocol that validation accepted. Unknown protocols retain the existing
+// runtime fallback, but never receive the static service-name exemption.
 func normalizeComponentSpec(c *componentSpec) error {
 	if c.Kind == "" {
 		c.Kind = storage.KindAPI
@@ -107,6 +108,7 @@ func normalizeComponentSpec(c *componentSpec) error {
 		slices.Sort(names)
 		return fmt.Errorf("kind %q is not one of %v", c.Kind, names)
 	}
+	c.Protocol = strings.ToLower(strings.TrimSpace(c.Protocol))
 	if c.Protocol == "" {
 		c.Protocol = storage.ProtocolHTTP
 	}
@@ -119,5 +121,45 @@ func normalizeComponentSpec(c *componentSpec) error {
 	if c.LBAlgorithm == "" {
 		c.LBAlgorithm = defaultLBAlgorithmForKind(c.Kind)
 	}
+	// Whether a service name is owed depends on the protocol, and the protocol
+	// has just been defaulted above — so this check belongs here, with the rest
+	// of the declaration rules, rather than in the HTTP handler where it used
+	// to sit. componentNeedsInstances is fail-closed over anything that is not
+	// exactly "static", so an unknown protocol still lands on the strict side.
+	if c.ServiceName == "" && componentNeedsInstances(c.Protocol) {
+		return fmt.Errorf("serviceName is required for protocol %q "+
+			"(a static component is served from disk and needs none)", c.Protocol)
+	}
 	return nil
+}
+
+// componentNeedsInstances reports whether a component has to be backed by
+// registered service instances.
+//
+// The obligation is per-protocol, not per-component. http, https, grpc and ws
+// are forwarded to instances the naming service tracks, so they must name one.
+// static is served off disk: staticRoot keys the directory off
+// app+component alone, and ServeStatic answers without consulting the naming
+// service at all.
+//
+// Requiring a service name there was a contract bug rather than a safety rail.
+// It made static frontends invent a placeholder service name despite having
+// no instance-backed delivery path. A component declaration alone does not
+// prove that a naming_service record was created.
+//
+// Failing closed is deliberate: anything that is not exactly "static" is
+// treated as instance-backed, so a typo ("stattic") cannot quietly produce a
+// component that nothing is able to serve.
+//
+// With default delivery, a missing directory falls through to Forward, which
+// finds no healthy instance for the empty service name and answers 503. Explicit
+// metadata delivery=static preserves the existing file-missing 404 path instead.
+// Neither mode requires constructing an empty upstream.
+func componentNeedsInstances(protocol string) bool {
+	switch strings.ToLower(strings.TrimSpace(protocol)) {
+	case storage.ProtocolStatic:
+		return false
+	default:
+		return true
+	}
 }
