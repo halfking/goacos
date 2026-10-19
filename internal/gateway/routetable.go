@@ -253,7 +253,7 @@ func (t *Table) Lookup(host, path string, metaFilters map[string]string) *Target
 			group = "DEFAULT_GROUP"
 		}
 		instances := t.services[serviceKey(group, comp.ServiceName)]
-		instances = selectInstances(instances, comp.LBAlgorithm, comp.ClusterName)
+		instances = selectForwardable(instances, comp.LBAlgorithm, comp.ClusterName)
 		if len(metaFilters) > 0 {
 			instances = filterInstancesByMeta(instances, metaFilters)
 		}
@@ -439,6 +439,58 @@ func selectInstances(instances []storage.Instance, lb, cluster string) []storage
 		}
 		return out[i].Port < out[j].Port
 	})
+	return out
+}
+
+// selectForwardable is the **data plane** view of a component's instances: the
+// cluster/Enabled narrowing of selectInstances, then nginx's `backup` semantics.
+//
+// The two are kept separate on purpose. selectInstances is also what feeds the
+// operator listing (`/goacos/v1/routes`), and an operator debugging a service
+// must still see its backup instances — hiding them would make the fleet view
+// lie exactly when someone is trying to work out why traffic is 502ing.
+func selectForwardable(instances []storage.Instance, lb, cluster string) []storage.Instance {
+	return dropBackupsWhenPrimaryExists(selectInstances(instances, lb, cluster))
+}
+
+// roleBackup is the metadata.role value the reconcile writes for a `!` row in
+// service-map.conf (goacos-reconcile.sh).
+const roleBackup = "backup"
+
+// dropBackupsWhenPrimaryExists keeps `role=backup` instances out of normal
+// rotation while at least one non-backup instance is eligible, and lets them
+// take over when every eligible instance is a backup.
+//
+// The fail-open half is deliberate. If a service is mis-tagged so that all of
+// its instances say backup, returning an empty set would take the service
+// completely dark — a worse failure than serving from instances the operator
+// intended as stand-bys. nginx behaves the same way: `backup` nodes engage when
+// the primaries are down, and a group made only of backups still answers.
+//
+// An instance with no role metadata is treated as a normal instance. That is
+// what every instance registered before the `!` syntax existed looks like, and
+// treating "unknown" as "stand-by" would silently drain them.
+func dropBackupsWhenPrimaryExists(instances []storage.Instance) []storage.Instance {
+	if len(instances) == 0 {
+		return instances
+	}
+	hasPrimary := false
+	for i := range instances {
+		if instances[i].Metadata()["role"] != roleBackup {
+			hasPrimary = true
+			break
+		}
+	}
+	if !hasPrimary {
+		return instances
+	}
+	out := make([]storage.Instance, 0, len(instances))
+	for _, inst := range instances {
+		if inst.Metadata()["role"] == roleBackup {
+			continue
+		}
+		out = append(out, inst)
+	}
 	return out
 }
 
