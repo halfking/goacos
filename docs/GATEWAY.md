@@ -271,6 +271,13 @@ HTTP→HTTPS、HSTS、IP 黑白名单、请求体上限、每域超时、状态�
 **升级前置**：网关默认关闭（`GOACOS_GATEWAY_ENABLED=false`），把 goacos 加进现有环境
 不会突然开始抢 80/443 端口。确认配置无误后再打开。
 
+**命名清扫的索引**：命名清扫每 `SWEEP_INTERVAL_MS`（默认 5s）跑三条按
+`(ephemeral, healthy, last_heartbeat_ms)` 过滤 `naming_instance` 的语句，而库里原有的
+索引全部以 `namespace_id` 打头，都用不上 —— 于是每 5 秒三次全表扫描，永久地。
+迁移 004 补上 `idx_instance_sweep (ephemeral, healthy, last_heartbeat_ms)`，一次索引
+覆盖三条语句，20,000 实例的实测：50 个清扫周期从约 1.4~1.8 秒降到 24~285 毫秒。
+**只有一条索引**是有意的：心跳 UPDATE 是这个表的热路径，索引越多，每一跳的写放大越大。
+
 ---
 
 ## 七、验证

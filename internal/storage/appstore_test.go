@@ -75,6 +75,15 @@ func TestSortInstancesByWeight(t *testing.T) {
 // practice — a table added to the MySQL twin during a feature and forgotten in
 // the PostgreSQL one produces a server that boots, passes every unit test, and
 // then 500s on the first query against that table in production.
+//
+// "Declares something" is the per-dialect half of that check, and it is
+// deliberately about **schema objects** rather than tables. A migration is
+// allowed to add an index to a table the base script already created — that is
+// exactly what the base script cannot express on MySQL, where
+// `CREATE TABLE IF NOT EXISTS` is a no-op on an existing table and MySQL 8 has
+// no `CREATE INDEX IF NOT EXISTS`. Counting tables alone would reject that
+// legitimate case while catching nothing the object check misses, because a
+// dialect file that declares no table and no index does nothing at all.
 func TestEveryMigrationHasBothDialects(t *testing.T) {
 	for _, m := range migrations {
 		tables := map[Dialect][]string{}
@@ -89,9 +98,17 @@ func TestEveryMigrationHasBothDialects(t *testing.T) {
 				t.Errorf("read %s: %v", p, err)
 				continue
 			}
-			tables[d] = createdTables(string(raw))
-			if len(tables[d]) == 0 {
-				t.Errorf("%s creates no tables", p)
+			body := string(raw)
+			// Comments are stripped before the tables are extracted, for the
+			// same reason TestApplicationModelHasNoAddressColumns strips
+			// them: a migration is allowed to *discuss* a construct in prose,
+			// and a naive scan would read the discussion as a declaration.
+			// The PostgreSQL file for migration 004 says out loud that
+			// MySQL's `CREATE TABLE IF NOT EXISTS` is a no-op, and without
+			// this the MySQL twin was scored as creating a table called "IF".
+			tables[d] = createdTables(stripSQLComments(body))
+			if len(createdSchemaObjects(body)) == 0 {
+				t.Errorf("%s declares no schema objects", p)
 			}
 		}
 		if len(tables) != 2 {
@@ -114,6 +131,33 @@ func createdTables(sql string) []string {
 	out := make([]string, 0, len(matches))
 	for _, m := range matches {
 		out = append(out, m[1])
+	}
+	sort.Strings(out)
+	return out
+}
+
+// The two dialects spell an index three different ways, and a migration has to
+// be able to use any of them:
+//
+//	PostgreSQL   CREATE INDEX [IF NOT EXISTS] name ON table (...)
+//	MySQL inline KEY name (...)            -- inside a CREATE TABLE body
+//	MySQL later  ALTER TABLE table ADD INDEX name (...)
+var createIndexRe = regexp.MustCompile("(?i)CREATE\\s+INDEX(?:\\s+IF\\s+NOT\\s+EXISTS)?\\s+[`\"]?([A-Za-z0-9_]+)")
+var inlineKeyRe = regexp.MustCompile("(?i)\\bKEY\\s+[`\"]?([A-Za-z0-9_]+)")
+var addIndexRe = regexp.MustCompile("(?i)\\bADD\\s+(?:UNIQUE\\s+)?INDEX\\s+[`\"]?([A-Za-z0-9_]+)")
+
+// createdSchemaObjects returns every table and index a migration declares.
+//
+// It is the "does this dialect file do anything" measure, deliberately
+// counting indexes as well as tables so that an index-only migration — adding
+// an index to a table the base script already created — is a legitimate
+// member of the ledger rather than a shape the guard has to be argued past.
+func createdSchemaObjects(sql string) []string {
+	out := createdTables(sql)
+	for _, re := range []*regexp.Regexp{createIndexRe, inlineKeyRe, addIndexRe} {
+		for _, m := range re.FindAllStringSubmatch(sql, -1) {
+			out = append(out, m[1])
+		}
 	}
 	sort.Strings(out)
 	return out

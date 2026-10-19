@@ -1,0 +1,51 @@
+-- Migration 004 — index the naming sweeper's predicates.
+--
+-- Why this exists: the sweeper is the only writer in goacos that scans
+-- naming_instance by a predicate no index covers. It runs every SWEEP_INTERVAL_MS
+-- (5s by default) and issues three statements:
+--
+--   UPDATE naming_instance SET healthy=0 WHERE ephemeral=1 AND healthy=1 AND last_heartbeat_ms < ?
+--   DELETE FROM naming_instance WHERE ephemeral=1 AND last_heartbeat_ms < ?
+--   UPDATE naming_instance SET healthy=0 WHERE ephemeral=0 AND healthy=1 AND last_heartbeat_ms < ?
+--
+-- The existing indexes (PRIMARY KEY, uk_instance, idx_instance_service) all
+-- lead with namespace_id, so none of the three can use them: every one of them
+-- is a full table scan of naming_instance, every 5 seconds, forever.
+--
+-- Measured on a live PostgreSQL registry (2026-10-20, 3 registered instances):
+-- naming_instance showed seq_scan=542462, seq_tup_read=1627569, idx_scan=0,
+-- and the counter grew by 26 in a 25-second window — the sweeper on its
+-- 5-second tick, exactly.
+--
+-- Why it matters even though the table is small today: the cost is linear in the
+-- number of registered instances, and a registry's whole job is to hold one row
+-- per instance. At three instances a table scan is free; at three thousand it is
+-- a full table read three times every five seconds, for ever, on every replica.
+--
+-- The column order is chosen so that all three statements are covered by one
+-- index, because a registry's hot path is the heartbeat UPDATE and every extra
+-- index on this table is paid for on every beat of every instance:
+--
+--   * ephemeral      — equality in all three statements.
+--   * healthy        — equality in the two UPDATEs, and it is the selective
+--                      part of them: only healthy-but-stale rows are ever
+--                      candidates, so a healthy=0 row is filtered by the index
+--                      rather than by the table.
+--   * last_heartbeat_ms — the range in all three statements.
+--
+-- One composite index therefore serves the whole sweeper, and the sweeper's own
+-- writes are the only ones that have to touch it.
+--
+-- MySQL dialect. The PostgreSQL twin lives in 004_instance_sweep.postgres.sql
+-- and must stay structurally identical.
+--
+-- Why ALTER TABLE and not CREATE INDEX: the index is added to a table the base
+-- script already created, and MySQL's `CREATE TABLE IF NOT EXISTS` is a no-op
+-- on an existing table — an index declared inline in the base script would
+-- therefore never reach a database that already exists. MySQL 8 also has no
+-- `CREATE INDEX IF NOT EXISTS`, so a versioned ALTER is the only form that is
+-- both idempotent-under-the-ledger and reachable from the base script's
+-- promise. The PostgreSQL twin spells the same operation `CREATE INDEX IF NOT
+-- EXISTS`, which is why the two files differ in exactly one line.
+
+ALTER TABLE naming_instance ADD INDEX idx_instance_sweep (ephemeral, healthy, last_heartbeat_ms);

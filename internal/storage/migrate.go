@@ -52,6 +52,7 @@ type migration struct {
 var migrations = []migration{
 	{Version: 2, Name: "application"},
 	{Version: 3, Name: "gateway"},
+	{Version: 4, Name: "instance_sweep"},
 }
 
 // baselineSchemaVersion is what a database created before the ledger existed

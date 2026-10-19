@@ -1,0 +1,46 @@
+-- Migration 004 — index the naming sweeper's predicates.
+-- PostgreSQL twin of 004_instance_sweep.mysql.sql. Keep the two structurally identical.
+--
+-- Why this exists: the sweeper is the only writer in goacos that scans
+-- naming_instance by a predicate no index covers. It runs every SWEEP_INTERVAL_MS
+-- (5s by default) and issues three statements:
+--
+--   UPDATE naming_instance SET healthy=0 WHERE ephemeral=1 AND healthy=1 AND last_heartbeat_ms < ?
+--   DELETE FROM naming_instance WHERE ephemeral=1 AND last_heartbeat_ms < ?
+--   UPDATE naming_instance SET healthy=0 WHERE ephemeral=0 AND healthy=1 AND last_heartbeat_ms < ?
+--
+-- The existing indexes (naming_instance_pkey, uk_instance, idx_instance_service)
+-- all lead with namespace_id, so none of the three can use them: every one of
+-- them is a full heap scan of naming_instance, every 5 seconds, forever.
+--
+-- Measured on a live registry (2026-10-20, 3 registered instances):
+--
+--   SELECT relname, seq_scan, seq_tup_read, idx_scan FROM pg_stat_user_tables
+--    WHERE relname='naming_instance';
+--    relname        | seq_scan | seq_tup_read | idx_scan
+--   ----------------+----------+--------------+----------
+--   naming_instance |   542462 |      1627569 |        0
+--
+-- 542,462 sequential scans and zero index scans. The counter grew by 26 in a
+-- 25-second window, which is the sweeper on its 5-second tick, exactly.
+--
+-- Why it matters even though the table is small today: the cost is linear in the
+-- number of registered instances, and a registry's whole job is to hold one row
+-- per instance. At three instances a seq scan is free; at three thousand it is
+-- a full table read three times every five seconds, for ever, on every replica.
+--
+-- The column order is chosen so that all three statements are covered by one
+-- index, because a registry's hot path is the heartbeat UPDATE and every extra
+-- index on this table is paid for on every beat of every instance:
+--
+--   * ephemeral      — equality in all three statements.
+--   * healthy        — equality in the two UPDATEs, and it is the selective
+--                      part of them: only unhealthy-but-still-healthy rows are
+--                      ever candidates, so a healthy=0 row is filtered by the
+--                      index rather than by the heap.
+--   * last_heartbeat_ms — the range in all three statements.
+--
+-- One composite index therefore serves the whole sweeper, and the sweeper's
+-- own writes are the only ones that have to touch it.
+
+CREATE INDEX IF NOT EXISTS idx_instance_sweep ON naming_instance (ephemeral, healthy, last_heartbeat_ms);
