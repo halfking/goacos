@@ -42,7 +42,12 @@ The deploy script discovers a reachable MySQL or PostgreSQL server — Docker co
 ```bash
 ./deploy/deploy.sh --host 10.0.0.5 --port-db 3306 --user root --password secret
 ./deploy/deploy.sh --db-type postgres --host 10.0.0.6 --port-db 5432 --user postgres --password secret
+./deploy/deploy.sh --auth --admin-pass '<12+ characters>' --token-secret '<32+ byte private key>' --db prod_goacos --force
 ```
+
+`--auth` makes the server require an explicit private JWT key and a private seeded
+admin password; the script checks the same contract the server does and refuses to
+start the container with a readable message instead of letting it crash-loop.
 
 ### Docker Compose (MySQL or PostgreSQL)
 

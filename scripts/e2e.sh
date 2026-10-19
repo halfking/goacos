@@ -21,6 +21,17 @@ HTTP_PORT=${HTTP_PORT:-18848}
 DB="goacos_e2e_$(date +%s)"
 PASS=0; FAIL=0
 
+# Auth-enabled startup now enforces a private configuration (ValidateAuth):
+#   - AUTH_TOKEN_SECRET must be an explicit private key of >= 32 bytes
+#   - the seeded admin password must be >= 12 chars / <= 72 bytes, unpadded
+#   - an enabled administrator still holding the old public "nacos" credential
+#     blocks startup (ValidateAuthState) until it is explicitly rotated
+# The first instance therefore seeds the private password too, otherwise the
+# second (auth-enabled) instance would refuse to serve against the same DB.
+E2E_ADMIN_USER=${E2E_ADMIN_USER:-nacos}
+E2E_ADMIN_PASS=${E2E_ADMIN_PASS:-GoacosE2eAdmin!2026}
+E2E_TOKEN_SECRET=${E2E_TOKEN_SECRET:-goacos-e2e-token-secret-0123456789abcdef}
+
 if [ "$ENGINE" = mysql ]; then
   DB_CONTAINER=goacos-e2e-mysql
   DB_PORT=${MYSQL_PORT:-13310}
@@ -108,6 +119,7 @@ SRV_LOG=/tmp/goacos-e2e-server.log
 GOACOS_DB_TYPE=$ENGINE \
 GOACOS_MYSQL_HOST=127.0.0.1 GOACOS_MYSQL_PORT=$DB_PORT GOACOS_MYSQL_DB=$DB \
 GOACOS_MYSQL_USER=$DB_USER GOACOS_MYSQL_PASSWORD="$DB_PASS" GOACOS_PORT=$HTTP_PORT \
+GOACOS_ADMIN_USERNAME="$E2E_ADMIN_USER" GOACOS_ADMIN_PASSWORD="$E2E_ADMIN_PASS" \
 GOACOS_HEARTBEAT_TIMEOUT_MS=2000 GOACOS_EPHEMERAL_DELETE_AFTER_MS=4000 \
 GOACOS_SWEEP_INTERVAL_MS=1000 \
 "$BIN" serve >"$SRV_LOG" 2>&1 &
@@ -216,9 +228,16 @@ check "component defaults applied" "$(curl -s "$B/goacos/v1/apps/acc" | python3 
 
 # Two components of the same application must be independently addressable —
 # this is the frontend+backend case the naming model alone cannot express.
-curl -s -X POST "$B/nacos/v1/ns/instance" -d 'serviceName=acc-api&ip=10.106.175.168&port=4100&metadata={"lane":"stable","app":"acc"}' >/dev/null
-curl -s -X POST "$B/nacos/v1/ns/instance" -d 'serviceName=acc-api&ip=10.106.175.169&port=4100&metadata={"lane":"canary","app":"acc"}' >/dev/null
-curl -s -X POST "$B/nacos/v1/ns/instance" -d 'serviceName=acc-web&ip=10.106.175.168&port=4175' >/dev/null
+#
+# These are stable backends, not heartbeat-driven clients: they are registered
+# once and never beat, so they must be persistent (ephemeral=false). An
+# ephemeral instance's health is derived from its last heartbeat at read time,
+# so without beats these would correctly read as unhealthy a heartbeat-timeout
+# after registration. The heartbeat lifecycle itself is covered separately above
+# (the beater loop). Same convention as the gateway section below.
+curl -s -X POST "$B/nacos/v1/ns/instance" -d 'serviceName=acc-api&ip=10.106.175.168&port=4100&healthy=true&enabled=true&ephemeral=false&metadata={"lane":"stable","app":"acc"}' >/dev/null
+curl -s -X POST "$B/nacos/v1/ns/instance" -d 'serviceName=acc-api&ip=10.106.175.169&port=4100&healthy=true&enabled=true&ephemeral=false&metadata={"lane":"canary","app":"acc"}' >/dev/null
+curl -s -X POST "$B/nacos/v1/ns/instance" -d 'serviceName=acc-web&ip=10.106.175.168&port=4175&healthy=true&enabled=true&ephemeral=false' >/dev/null
 curl -s -X POST "$B/goacos/v1/routes" -H 'Content-Type: application/json' \
   -d '{"domain":"acc.itestu.cn","pathPrefix":"/","appName":"acc","componentName":"api","upstreamName":"acc_api"}' >/dev/null
 curl -s -X POST "$B/goacos/v1/routes" -H 'Content-Type: application/json' \
@@ -431,13 +450,15 @@ say "== auth (second instance, same DB) =="
 GOACOS_DB_TYPE=$ENGINE \
 GOACOS_MYSQL_HOST=127.0.0.1 GOACOS_MYSQL_PORT=$DB_PORT GOACOS_MYSQL_DB=$DB \
 GOACOS_MYSQL_USER=$DB_USER GOACOS_MYSQL_PASSWORD="$DB_PASS" GOACOS_PORT=$((HTTP_PORT+1)) GOACOS_AUTH_ENABLED=true \
+GOACOS_AUTH_TOKEN_SECRET="$E2E_TOKEN_SECRET" \
+GOACOS_ADMIN_USERNAME="$E2E_ADMIN_USER" GOACOS_ADMIN_PASSWORD="$E2E_ADMIN_PASS" \
 "$BIN" serve >/dev/null 2>&1 &
 SRV2_PID=$!
 B2="http://127.0.0.1:$((HTTP_PORT+1))"
 for i in $(seq 1 20); do curl -sf "$B2/nacos/actuator/health" >/dev/null && break; sleep 0.5; done
 check "auth: no token -> 403" "$(curl -s -o /dev/null -w '%{http_code}' "$B2/nacos/v1/cs/configs?search=blur&pageNo=1&pageSize=1")" "403"
-check "auth: bad login -> 401" "$(curl -s -o /dev/null -w '%{http_code}' -X POST "$B2/nacos/v1/auth/users/login" -d 'username=nacos&password=nope')" "401"
-TOKEN=$(curl -s -X POST "$B2/nacos/v1/auth/users/login" -d 'username=nacos&password=nacos' | python3 -c 'import json,sys; print(json.load(sys.stdin).get("accessToken",""))')
+check "auth: bad login -> 401" "$(curl -s -o /dev/null -w '%{http_code}' -X POST "$B2/nacos/v1/auth/users/login" -d "username=$E2E_ADMIN_USER&password=nope")" "401"
+TOKEN=$(curl -s -X POST "$B2/nacos/v1/auth/users/login" -d "username=$E2E_ADMIN_USER&password=$E2E_ADMIN_PASS" | python3 -c 'import json,sys; print(json.load(sys.stdin).get("accessToken",""))')
 [ -n "$TOKEN" ] && ok "auth: admin login issued JWT" || bad "auth: admin login"
 check "auth: token accepted" "$(curl -s -o /dev/null -w '%{http_code}' "$B2/nacos/v1/cs/configs?search=blur&pageNo=1&pageSize=1&accessToken=$TOKEN")" "200"
 

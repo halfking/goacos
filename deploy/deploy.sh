@@ -10,7 +10,7 @@
 #   deploy/deploy.sh                       # auto-discover MySQL, deploy
 #   deploy/deploy.sh --host 10.0.0.5 --port-db 3306 --user root --password secret
 #   deploy/deploy.sh --cidr 192.168.1.0/24 # also scan a subnet for MySQL
-#   deploy/deploy.sh --auth --admin-pass S3cret
+#   deploy/deploy.sh --auth --admin-pass <12+ chars> --token-secret <32+ bytes>
 #
 # Useful flags: --image IMG --port 8848 --name goacos --db goacos --force --list-only
 # Database engine: --db-type mysql|postgres|auto (default auto: discover either
@@ -25,6 +25,7 @@ DB_TYPE="${GOACOS_DB_TYPE:-auto}"   # mysql | postgres | auto
 AUTH_ENABLED=false
 ADMIN_USER="${GOACOS_ADMIN_USERNAME:-nacos}"
 ADMIN_PASS="${GOACOS_ADMIN_PASSWORD:-nacos}"
+AUTH_SECRET="${GOACOS_AUTH_TOKEN_SECRET:-}"
 CIDR=""
 FORCE=0
 LIST_ONLY=0
@@ -49,6 +50,7 @@ while [ $# -gt 0 ]; do
     --auth) AUTH_ENABLED=true; shift;;
     --admin-user) ADMIN_USER="$2"; shift 2;;
     --admin-pass) ADMIN_PASS="$2"; shift 2;;
+    --token-secret) AUTH_SECRET="$2"; shift 2;;
     --force) FORCE=1; shift;;
     --list-only) LIST_ONLY=1; shift;;
     -h|--help) sed -n '2,14p' "$0"; exit 0;;
@@ -56,6 +58,28 @@ while [ $# -gt 0 ]; do
   esac
 done
 case "$DB_TYPE" in mysql|postgres|auto) ;; *) die "invalid --db-type '$DB_TYPE' (mysql|postgres|auto)";; esac
+
+# ---------------------------------------------------------------- auth preflight
+# An auth-enabled server refuses to start on a public or short JWT key, or on a
+# weak seeded admin password (config.ValidateAuth). Check the same contract
+# here so the operator gets a readable message instead of a container that
+# crash-loops on boot with the error buried in `docker logs`.
+OLD_PUBLIC_KEY="goacos-default-secret-SecretKey012345678901234567890123456789012345678901234567890123456789"
+
+# Trim leading/trailing whitespace the same way the server's strings.TrimSpace does.
+_trim() { local v="$1"; v="${v#"${v%%[![:space:]]*}"}"; printf '%s' "${v%"${v##*[![:space:]]}"}"; }
+
+if [ "$AUTH_ENABLED" = true ]; then
+  [ -n "$AUTH_SECRET" ] || die "--auth requires --token-secret (or GOACOS_AUTH_TOKEN_SECRET): an explicit private JWT key of at least 32 bytes"
+  [ "${#AUTH_SECRET}" -ge 32 ] || die "--token-secret must be at least 32 bytes (got ${#AUTH_SECRET})"
+  [ "$AUTH_SECRET" != "$OLD_PUBLIC_KEY" ] || die "--token-secret must not be the old public repository default"
+  [ "$(_trim "$AUTH_SECRET")" = "$AUTH_SECRET" ] || die "--token-secret must not start or end with whitespace"
+  [ -n "$ADMIN_USER" ] || die "--admin-user must be nonblank when --auth is used"
+  [ "$(_trim "$ADMIN_USER")" = "$ADMIN_USER" ] || die "--admin-user must not start or end with whitespace"
+  [ "${#ADMIN_PASS}" -ge 12 ] || die "--admin-pass must be at least 12 characters when --auth is used (got ${#ADMIN_PASS})"
+  [ "$(printf '%s' "$ADMIN_PASS" | wc -c | tr -d ' ')" -le 72 ] || die "--admin-pass must be at most 72 bytes when --auth is used"
+  [ "$(_trim "$ADMIN_PASS")" = "$ADMIN_PASS" ] || die "--admin-pass must not start or end with whitespace"
+fi
 
 # ---------------------------------------------------------------- goacos binary
 # (used host-side for DB discovery & initialization; multi-arch, no deps)
@@ -128,6 +152,7 @@ docker run -d --name "$NAME" \
   -e MYSQL_HOST="$CONTAINER_HOST" -e MYSQL_PORT="$DB_PORT" \
   -e MYSQL_DB="$DBNAME" -e MYSQL_USER="$DB_USER" -e MYSQL_PASSWORD="$DB_PASS" \
   -e GOACOS_AUTH_ENABLED="$AUTH_ENABLED" \
+  -e GOACOS_AUTH_TOKEN_SECRET="$AUTH_SECRET" \
   -e GOACOS_ADMIN_USERNAME="$ADMIN_USER" -e GOACOS_ADMIN_PASSWORD="$ADMIN_PASS" \
   --restart unless-stopped \
   ${EXTRA_RUN_ARGS+"${EXTRA_RUN_ARGS[@]}"} \
