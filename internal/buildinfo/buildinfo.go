@@ -34,14 +34,14 @@ func RuntimeInfo() map[string]any {
 	var m runtime.MemStats
 	runtime.ReadMemStats(&m)
 	return map[string]any{
-		"goVersion":      GoVersion,
-		"numGoroutine":   runtime.NumGoroutine(),
-		"numCPU":         runtime.NumCPU(),
-		"allocMB":        m.Alloc / 1024 / 1024,
-		"totalAllocMB":   m.TotalAlloc / 1024 / 1024,
-		"sysMB":          m.Sys / 1024 / 1024,
-		"numGC":          m.NumGC,
-		"uptimeSeconds":  int64(time.Since(startTime).Seconds()),
+		"goVersion":     GoVersion,
+		"numGoroutine":  runtime.NumGoroutine(),
+		"numCPU":        runtime.NumCPU(),
+		"allocMB":       m.Alloc / 1024 / 1024,
+		"totalAllocMB":  m.TotalAlloc / 1024 / 1024,
+		"sysMB":         m.Sys / 1024 / 1024,
+		"numGC":         m.NumGC,
+		"uptimeSeconds": int64(time.Since(startTime).Seconds()),
 	}
 }
 
