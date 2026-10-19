@@ -216,8 +216,8 @@ root 属主的 `0700` 目录会导致一张证书都加载不出来，且没有�
 
 ```bash
 make test                            # 单元测试
-E2E_DB=mysql bash scripts/e2e.sh     # MySQL 8 全链路验收(28 项)
-E2E_DB=postgres bash scripts/e2e.sh  # PostgreSQL 16 全链路验收(28 项)
+E2E_DB=mysql bash scripts/e2e.sh     # MySQL 8 全链路验收(75 项)
+E2E_DB=postgres bash scripts/e2e.sh  # PostgreSQL 16 全链路验收(75 项)
 make image-multi                     # 构建 linux/amd64 + linux/arm64 镜像
 ```
 
