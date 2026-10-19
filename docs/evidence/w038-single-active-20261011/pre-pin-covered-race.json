@@ -1,0 +1,21 @@
+{
+  "argv": [
+    "/tmp/memora-w020-toolchain-20261011/go-cache/bin/go",
+    "test",
+    "-race",
+    "-tags=integration",
+    "-coverpkg=./internal/...",
+    "-coverprofile=docs/evidence/w038-single-active-20261011/coverage.out",
+    "./...",
+    "-v",
+    "-count=1"
+  ],
+  "exit_code": 0,
+  "duration_seconds": 79.095,
+  "environment": {
+    "GOTOOLCHAIN": "local",
+    "GOCACHE": "/tmp/goacos-single-active-gocache-20261011",
+    "GOACOS_TEST_PG_DSN": "owned loopback PG17 private file parsed in memory",
+    "GOACOS_TEST_MYSQL_DSN": "owned loopback MySQL8.4 private file parsed in memory"
+  }
+}

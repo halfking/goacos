@@ -1,6 +1,7 @@
 package core
 
 import (
+	"context"
 	"testing"
 	"time"
 
@@ -38,5 +39,52 @@ func TestAuthServiceParseRoundTrip(t *testing.T) {
 	tokExp, _ := jwt.NewWithClaims(jwt.SigningMethodHS256, claims).SignedString([]byte(cfg.TokenSecret))
 	if _, err := a.Parse(tokExp); err == nil {
 		t.Error("expired token must fail")
+	}
+}
+
+func TestAuthServiceCannotAuthenticateWithoutLiveStore(t *testing.T) {
+	cfg := &config.Config{TokenSecret: "unit-test-live-store"}
+	claims := jwt.MapClaims{"sub": "reader", "roles": []string{"ROLE_ADMIN"}, "iss": "goacos", "exp": time.Now().Add(time.Minute).Unix()}
+	token, err := jwt.NewWithClaims(jwt.SigningMethodHS256, claims).SignedString([]byte(cfg.TokenSecret))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := NewAuthService(cfg, nil).Authenticate(context.Background(), token); err == nil {
+		t.Fatal("valid signed token without live principal store was accepted")
+	}
+}
+
+func TestAuthServiceRejectsTokensOutsideIssuerContract(t *testing.T) {
+	cfg := &config.Config{TokenSecret: "unit-test-issuer-contract", TokenTTLSeconds: 60}
+	a := NewAuthService(cfg, nil)
+	cases := []struct {
+		name   string
+		method jwt.SigningMethod
+		mutate func(jwt.MapClaims)
+	}{
+		{"missing-issuer", jwt.SigningMethodHS256, func(c jwt.MapClaims) { delete(c, "iss") }},
+		{"wrong-issuer", jwt.SigningMethodHS256, func(c jwt.MapClaims) { c["iss"] = "another-service" }},
+		{"missing-expiry", jwt.SigningMethodHS256, func(c jwt.MapClaims) { delete(c, "exp") }},
+		{"expired", jwt.SigningMethodHS256, func(c jwt.MapClaims) { c["exp"] = time.Now().Add(-time.Minute).Unix() }},
+		{"future-issued-at", jwt.SigningMethodHS256, func(c jwt.MapClaims) { c["iat"] = time.Now().Add(time.Hour).Unix() }},
+		{"missing-subject", jwt.SigningMethodHS256, func(c jwt.MapClaims) { delete(c, "sub") }},
+		{"blank-subject", jwt.SigningMethodHS256, func(c jwt.MapClaims) { c["sub"] = "  " }},
+		{"padded-subject", jwt.SigningMethodHS256, func(c jwt.MapClaims) { c["sub"] = " reader " }},
+		{"HS384", jwt.SigningMethodHS384, func(jwt.MapClaims) {}},
+		{"HS512", jwt.SigningMethodHS512, func(jwt.MapClaims) {}},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			c := jwt.MapClaims{"sub": "reader", "roles": []string{"ROLE_USER"}, "iss": "goacos",
+				"iat": time.Now().Unix(), "exp": time.Now().Add(time.Minute).Unix()}
+			tc.mutate(c)
+			token, err := jwt.NewWithClaims(tc.method, c).SignedString([]byte(cfg.TokenSecret))
+			if err != nil {
+				t.Fatal(err)
+			}
+			if _, err := a.Parse(token); err == nil {
+				t.Error("token outside goacos issuer contract was accepted")
+			}
+		})
 	}
 }

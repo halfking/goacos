@@ -1,0 +1,8 @@
+=== RUN   TestSingleActiveListenerMethodCompatibility
+2026/10/11 02:56:04 [goacos] database-active config hub preloaded 22 entries
+2026/10/11 02:56:04 [goacos] GET /nacos/v1/cs/configs/listener 2ms
+    config_fencing_integration_test.go:372: active listener method rejection changed to HTTP 503
+--- FAIL: TestSingleActiveListenerMethodCompatibility (0.18s)
+FAIL
+FAIL	github.com/halfking/goacos/internal/api	0.640s
+FAIL

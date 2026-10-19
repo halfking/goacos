@@ -1,0 +1,156 @@
+{
+  "full_actual_race_replay": {
+    "top_level_passes": 49,
+    "subtest_passes": 154,
+    "failures": 0,
+    "skips": 0,
+    "databases": [
+      "PostgreSQL17.11",
+      "MySQL8.4.11"
+    ]
+  },
+  "verification_check_count": 12,
+  "all_verification_exits": 0,
+  "coverage": {
+    "raw_duplicate_identical_blocks": 6208,
+    "normalization": "one source-block location counted once; union of real cross-package executions, max counter; statement counts asserted identical",
+    "scope": "four complete primary files implementing new ownership/config facade, replacement hub, and HTTP admission; not repository/global/auth gate coverage",
+    "primary_files": [
+      {
+        "file": "internal/storage/config_owner.go",
+        "covered_statements": 106,
+        "statements": 122,
+        "percent": 86.89
+      },
+      {
+        "file": "internal/storage/config_facade.go",
+        "covered_statements": 57,
+        "statements": 60,
+        "percent": 95.0
+      },
+      {
+        "file": "internal/core/hub.go",
+        "covered_statements": 71,
+        "statements": 78,
+        "percent": 91.03
+      },
+      {
+        "file": "internal/api/config_admission.go",
+        "covered_statements": 41,
+        "statements": 43,
+        "percent": 95.35
+      }
+    ],
+    "primary_percent": 90.76,
+    "whole_repository_instrumented_percent": 51.59
+  },
+  "added_block_coverage_percent": 89.76,
+  "scan_results": {
+    "govuln-source": {
+      "finding_records": 1,
+      "module_only_records": 1,
+      "imported_package_records": 0,
+      "called_records": 0,
+      "retained_module_only": "GO-2026-5932"
+    },
+    "govuln-binary-host": {
+      "finding_records": 1,
+      "module_only_records": 1,
+      "imported_package_records": 0,
+      "called_records": 0,
+      "retained_module_only": "GO-2026-5932"
+    },
+    "govuln-binary-linux-arm64": {
+      "finding_records": 1,
+      "module_only_records": 1,
+      "imported_package_records": 0,
+      "called_records": 0,
+      "retained_module_only": "GO-2026-5932"
+    }
+  },
+  "dependency_change": "minimum go directive1.27.2; go.sum/module dependency versions unchanged",
+  "auth_dependency": "418b4df exactaccepted patches cb3492d/5bbc8a2 verified; no534acceptance claim",
+  "acceptance": "owner verified bounded candidate awaiting independent reviewer; no push",
+  "limitations": "single-active oneauthoritative DB only; no global/HA/production/platform/ACL/atomic-auth-revocation acceptance",
+  "validated_product_commit": "02c75e8461df9f78dd2f8584518b8460b195a3ab",
+  "validated_product_tree": "57c6a6783c3bec0ce319e276ffda9c494cf6f008",
+  "freeze_note": "next receipt-only commit changes evidence manifest/summary; exact final immutable SHA+tree returned separately to parent; product bytes remain this validated commit",
+  "product_test_manifest": [
+    {
+      "path": "README.md",
+      "sha256": "e792af0aa8c0ef3e705cbb6dbd073016608a4cb5c930d78b61be38966966d266"
+    },
+    {
+      "path": "go.mod",
+      "sha256": "cda012809777cbcf6751daa278d3a56837efbde6afa341d2b672dff388e0d5dc"
+    },
+    {
+      "path": "internal/api/config_admission.go",
+      "sha256": "ccda91924155cce3c1307c500363f84f6aaadb1460df0c0aa615de1b9cc396a0"
+    },
+    {
+      "path": "internal/api/config_fencing_integration_test.go",
+      "sha256": "5d74d952321bd11a95a89c02b27a3d246a770343ac2a54c7b0a19ffd4b7b0454"
+    },
+    {
+      "path": "internal/api/config_process_integration_test.go",
+      "sha256": "a7aaded077ec8aa47a42c03242311baff979d4a90a060cee744dbe5bebd78421"
+    },
+    {
+      "path": "internal/api/config_single_active_integration_test.go",
+      "sha256": "6ea57b0fd5168e7cf842cc37103ee4b7f27790f6a2349cd6e8833fcd1597cdd0"
+    },
+    {
+      "path": "internal/api/config_v1.go",
+      "sha256": "2e496c1f8fe0525d29810ce5e113aa8965b396741a4750380a9cbb9a789a9763"
+    },
+    {
+      "path": "internal/api/config_v2.go",
+      "sha256": "d504da6d73a53c0e4c09fbb1279f5b7790928c3222d8e0353ff96d682054278f"
+    },
+    {
+      "path": "internal/api/naming_v1.go",
+      "sha256": "21ca6fb451acfb8893b3956deefe5f522f05dab6359aa07577c1d1f76dfab504"
+    },
+    {
+      "path": "internal/api/router.go",
+      "sha256": "346552449281e0cdef6f393b55fcfc06bd426769a767ff94e88db001e9764c17"
+    },
+    {
+      "path": "internal/core/hub.go",
+      "sha256": "d345e4f5577fbb661b18082fdb4692bc9237704a396c756b86e1c065a37fd3fe"
+    },
+    {
+      "path": "internal/core/hub_test.go",
+      "sha256": "55a64cc358343a3ca3e267ddcaa46ab8c53b35129421b6a93ebd5f98ceb9c88d"
+    },
+    {
+      "path": "internal/storage/config_facade.go",
+      "sha256": "e96eb94fd98b6a5715d77334059cd173a51cdbe5d7e3bdc39183b6178ae9d109"
+    },
+    {
+      "path": "internal/storage/config_owner.go",
+      "sha256": "16ff07a48d2195bf54a10286081257391b3cda285882228aae2f4d68ba4890a8"
+    },
+    {
+      "path": "internal/storage/config_owner_integration_test.go",
+      "sha256": "73c9909b2c4c4f513885758c8885cc95e4deeafeb06cf5100a1dede4df32100d"
+    },
+    {
+      "path": "internal/storage/configstore.go",
+      "sha256": "0a68481ab6af768d4bd37805895003246d8c32b7e3457fa7e21e69cfcf9f82f9"
+    },
+    {
+      "path": "internal/storage/namingstore.go",
+      "sha256": "b308ed29dd8167443dfd670ab4ab12b47efe93b5ca0434a61ea3e97b73a59016"
+    },
+    {
+      "path": "internal/storage/store.go",
+      "sha256": "a50c88ac82488bbad490c06fba2922b254af3134277ce98f7d6ea8a697a263c7"
+    },
+    {
+      "path": "internal/storage/tenantstore.go",
+      "sha256": "9a21e5894a8db4c1960bf3480b3056f71e8cd68376daa7c2e48a68cc4b3b1054"
+    }
+  ]
+}

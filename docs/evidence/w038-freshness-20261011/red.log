@@ -1,0 +1,84 @@
+=== RUN   TestW038ReadTimeHealthWithoutSweeper
+2026/10/11 01:21:19 [goacos] seeded admin user "w038-test-admin" (initial password from ADMIN_PASSWORD)
+=== RUN   TestW038ReadTimeHealthWithoutSweeper/v1
+=== RUN   TestW038ReadTimeHealthWithoutSweeper/v1/list-healthyOnly-false
+2026/10/11 01:21:19 [goacos] GET /nacos/v1/ns/instance/list 1ms
+    naming_freshness_integration_test.go:159: stale list health=true exists=true, want false
+    naming_freshness_integration_test.go:159: missing-heartbeat list health=true exists=true, want false
+    naming_freshness_integration_test.go:159: future-heartbeat list health=true exists=true, want false
+=== RUN   TestW038ReadTimeHealthWithoutSweeper/v1/list-healthyOnly-true
+2026/10/11 01:21:19 [goacos] GET /nacos/v1/ns/instance/list 1ms
+    naming_freshness_integration_test.go:156: stale appeared in healthyOnly list (healthy=true)
+    naming_freshness_integration_test.go:156: missing-heartbeat appeared in healthyOnly list (healthy=true)
+    naming_freshness_integration_test.go:156: future-heartbeat appeared in healthyOnly list (healthy=true)
+    naming_freshness_integration_test.go:166: healthyOnly has 5 rows, want fresh+persistent
+=== RUN   TestW038ReadTimeHealthWithoutSweeper/v1/get-fresh
+2026/10/11 01:21:19 [goacos] GET /nacos/v1/ns/instance 0s
+=== RUN   TestW038ReadTimeHealthWithoutSweeper/v1/get-stale
+2026/10/11 01:21:19 [goacos] GET /nacos/v1/ns/instance 1ms
+    naming_freshness_integration_test.go:177: get stale health=true, want false
+=== RUN   TestW038ReadTimeHealthWithoutSweeper/v1/get-missing-heartbeat
+2026/10/11 01:21:19 [goacos] GET /nacos/v1/ns/instance 1ms
+    naming_freshness_integration_test.go:177: get missing-heartbeat health=true, want false
+=== RUN   TestW038ReadTimeHealthWithoutSweeper/v1/get-future-heartbeat
+2026/10/11 01:21:19 [goacos] GET /nacos/v1/ns/instance 1ms
+    naming_freshness_integration_test.go:177: get future-heartbeat health=true, want false
+=== RUN   TestW038ReadTimeHealthWithoutSweeper/v1/get-persistent
+2026/10/11 01:21:19 [goacos] GET /nacos/v1/ns/instance 1ms
+=== RUN   TestW038ReadTimeHealthWithoutSweeper/v1/get-explicit-unhealthy
+2026/10/11 01:21:19 [goacos] GET /nacos/v1/ns/instance 0s
+=== RUN   TestW038ReadTimeHealthWithoutSweeper/v2
+=== RUN   TestW038ReadTimeHealthWithoutSweeper/v2/list-healthyOnly-false
+2026/10/11 01:21:19 [goacos] GET /nacos/v2/ns/instance/list 1ms
+    naming_freshness_integration_test.go:159: stale list health=true exists=true, want false
+    naming_freshness_integration_test.go:159: missing-heartbeat list health=true exists=true, want false
+    naming_freshness_integration_test.go:159: future-heartbeat list health=true exists=true, want false
+=== RUN   TestW038ReadTimeHealthWithoutSweeper/v2/list-healthyOnly-true
+2026/10/11 01:21:19 [goacos] GET /nacos/v2/ns/instance/list 0s
+    naming_freshness_integration_test.go:156: stale appeared in healthyOnly list (healthy=true)
+    naming_freshness_integration_test.go:156: missing-heartbeat appeared in healthyOnly list (healthy=true)
+    naming_freshness_integration_test.go:156: future-heartbeat appeared in healthyOnly list (healthy=true)
+    naming_freshness_integration_test.go:166: healthyOnly has 5 rows, want fresh+persistent
+=== RUN   TestW038ReadTimeHealthWithoutSweeper/v2/get-fresh
+2026/10/11 01:21:19 [goacos] GET /nacos/v2/ns/instance 0s
+=== RUN   TestW038ReadTimeHealthWithoutSweeper/v2/get-stale
+2026/10/11 01:21:19 [goacos] GET /nacos/v2/ns/instance 1ms
+    naming_freshness_integration_test.go:177: get stale health=true, want false
+=== RUN   TestW038ReadTimeHealthWithoutSweeper/v2/get-missing-heartbeat
+2026/10/11 01:21:19 [goacos] GET /nacos/v2/ns/instance 1ms
+    naming_freshness_integration_test.go:177: get missing-heartbeat health=true, want false
+=== RUN   TestW038ReadTimeHealthWithoutSweeper/v2/get-future-heartbeat
+2026/10/11 01:21:19 [goacos] GET /nacos/v2/ns/instance 1ms
+    naming_freshness_integration_test.go:177: get future-heartbeat health=true, want false
+=== RUN   TestW038ReadTimeHealthWithoutSweeper/v2/get-persistent
+2026/10/11 01:21:19 [goacos] GET /nacos/v2/ns/instance 0s
+=== RUN   TestW038ReadTimeHealthWithoutSweeper/v2/get-explicit-unhealthy
+2026/10/11 01:21:19 [goacos] GET /nacos/v2/ns/instance 0s
+--- FAIL: TestW038ReadTimeHealthWithoutSweeper (0.17s)
+    --- FAIL: TestW038ReadTimeHealthWithoutSweeper/v1 (0.01s)
+        --- FAIL: TestW038ReadTimeHealthWithoutSweeper/v1/list-healthyOnly-false (0.00s)
+        --- FAIL: TestW038ReadTimeHealthWithoutSweeper/v1/list-healthyOnly-true (0.00s)
+        --- PASS: TestW038ReadTimeHealthWithoutSweeper/v1/get-fresh (0.00s)
+        --- FAIL: TestW038ReadTimeHealthWithoutSweeper/v1/get-stale (0.00s)
+        --- FAIL: TestW038ReadTimeHealthWithoutSweeper/v1/get-missing-heartbeat (0.00s)
+        --- FAIL: TestW038ReadTimeHealthWithoutSweeper/v1/get-future-heartbeat (0.00s)
+        --- PASS: TestW038ReadTimeHealthWithoutSweeper/v1/get-persistent (0.00s)
+        --- PASS: TestW038ReadTimeHealthWithoutSweeper/v1/get-explicit-unhealthy (0.00s)
+    --- FAIL: TestW038ReadTimeHealthWithoutSweeper/v2 (0.01s)
+        --- FAIL: TestW038ReadTimeHealthWithoutSweeper/v2/list-healthyOnly-false (0.00s)
+        --- FAIL: TestW038ReadTimeHealthWithoutSweeper/v2/list-healthyOnly-true (0.00s)
+        --- PASS: TestW038ReadTimeHealthWithoutSweeper/v2/get-fresh (0.00s)
+        --- FAIL: TestW038ReadTimeHealthWithoutSweeper/v2/get-stale (0.00s)
+        --- FAIL: TestW038ReadTimeHealthWithoutSweeper/v2/get-missing-heartbeat (0.00s)
+        --- FAIL: TestW038ReadTimeHealthWithoutSweeper/v2/get-future-heartbeat (0.00s)
+        --- PASS: TestW038ReadTimeHealthWithoutSweeper/v2/get-persistent (0.00s)
+        --- PASS: TestW038ReadTimeHealthWithoutSweeper/v2/get-explicit-unhealthy (0.00s)
+=== RUN   TestW038HeartbeatRecoversWithoutSweeper
+2026/10/11 01:21:20 [goacos] GET /nacos/v1/ns/instance 1ms
+    naming_freshness_integration_test.go:204: expired heartbeat was reported healthy before recovery
+2026/10/11 01:21:20 [goacos] PUT /nacos/v1/ns/instance/beat 1ms
+2026/10/11 01:21:20 [goacos] GET /nacos/v1/ns/instance 1ms
+--- FAIL: TestW038HeartbeatRecoversWithoutSweeper (0.07s)
+FAIL
+FAIL	github.com/halfking/goacos/internal/api	0.688s
+FAIL

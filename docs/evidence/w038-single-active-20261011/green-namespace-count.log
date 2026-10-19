@@ -1,0 +1,7 @@
+=== RUN   TestSingleActiveNamespaceConfigCountsFailClosed
+2026/10/11 02:52:04 [goacos] GET /nacos/v1/console/namespaces 1ms
+2026/10/11 02:52:04 [goacos] GET /nacos/v2/console/namespace/list 1ms
+2026/10/11 02:52:04 [goacos] database-active config hub preloaded 17 entries
+--- PASS: TestSingleActiveNamespaceConfigCountsFailClosed (0.24s)
+PASS
+ok  	github.com/halfking/goacos/internal/api	6.932s

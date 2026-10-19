@@ -75,6 +75,20 @@ func scanInstance(row interface{ Scan(...any) error }) (*Instance, error) {
 	return &i, nil
 }
 
+// effectiveInstanceHealth derives ephemeral health at the read boundary. The
+// stored flag may lag if the sweeper is delayed or unavailable. Persistent
+// instances retain their explicitly stored health; heartbeat freshness alone
+// does not prove application readiness or authorization.
+func (s *Store) effectiveInstanceHealth(i *Instance, nowMS int64) bool {
+	if !i.Healthy || !i.Ephemeral {
+		return i.Healthy
+	}
+	if s.cfg == nil || s.cfg.HeartbeatTimeoutMs <= 0 || i.LastHeartbeatMS <= 0 || i.LastHeartbeatMS > nowMS {
+		return false
+	}
+	return nowMS-i.LastHeartbeatMS <= s.cfg.HeartbeatTimeoutMs
+}
+
 // EnsureService creates the service row when missing.
 func (s *Store) EnsureService(ctx context.Context, ns, group, name string) error {
 	_, err := s.Exec(ctx, s.dialect.Rebind(s.dialect.InsertIgnore("naming_service", "namespace_id", "group_name", "name")), ns, group, name)
@@ -295,6 +309,9 @@ func (s *Store) GetInstance(ctx context.Context, ns, group, service, cluster, ip
 	if err == sql.ErrNoRows {
 		return nil, nil
 	}
+	if err == nil {
+		i.Healthy = s.effectiveInstanceHealth(i, NowMS())
+	}
 	return i, err
 }
 
@@ -335,11 +352,16 @@ func (s *Store) ListInstances(ctx context.Context, q InstanceListQuery) ([]Insta
 		return nil, err
 	}
 	defer rows.Close()
+	nowMS := NowMS()
 	var out []Instance
 	for rows.Next() {
 		i, err := scanInstance(rows)
 		if err != nil {
 			return nil, err
+		}
+		i.Healthy = s.effectiveInstanceHealth(i, nowMS)
+		if q.HealthyOnly && !i.Healthy {
+			continue
 		}
 		out = append(out, *i)
 	}
@@ -401,7 +423,7 @@ func (s *Store) CountNaming(ctx context.Context) (services, instances int64, err
 }
 
 // CountConfigs returns config totals for metrics.
-func (s *Store) CountConfigs(ctx context.Context) (n int64, err error) {
+func (s *Store) countConfigs(ctx context.Context) (n int64, err error) {
 	err = s.QueryRow(ctx, "SELECT COUNT(*) FROM config_info").Scan(&n)
 	return
 }

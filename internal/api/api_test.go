@@ -120,3 +120,28 @@ func TestIsOpenPathConsoleStatic(t *testing.T) {
 		}
 	}
 }
+
+func TestIsOpenPathDoesNotBypassUnknownWrites(t *testing.T) {
+	for _, tc := range []struct{ method, path string }{
+		{"POST", "/"}, {"PUT", "/nacos/index.html"},
+		{"POST", "/nacos/actuator/health"}, {"POST", "/nacos/actuator/new-action"},
+		{"POST", "/nacos/v1/console/health/readiness"}, {"POST", "/nacos/v1/console/health/new-action"},
+		{"PUT", "/nacos/v1/console/server/state"},
+		{"GET", "/nacos/actuator/new-action"}, {"GET", "/nacos/v1/console/health/new-action"},
+	} {
+		t.Run(tc.method+tc.path, func(t *testing.T) {
+			if isOpenPath(tc.method, tc.path) {
+				t.Error("unknown route or write bypassed authentication")
+			}
+		})
+	}
+	for _, path := range []string{"/nacos/actuator/health", "/nacos/v1/console/health/readiness", "/nacos/v1/console/health/liveness", "/nacos/v1/console/server/state"} {
+		for _, method := range []string{"GET", "HEAD"} {
+			t.Run(method+path, func(t *testing.T) {
+				if !isOpenPath(method, path) {
+					t.Error("known health read unexpectedly requires authentication")
+				}
+			})
+		}
+	}
+}

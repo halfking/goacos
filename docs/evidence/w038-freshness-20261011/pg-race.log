@@ -1,0 +1,61 @@
+=== RUN   TestW038ReadTimeHealthWithoutSweeper
+=== RUN   TestW038ReadTimeHealthWithoutSweeper/v1
+=== RUN   TestW038ReadTimeHealthWithoutSweeper/v1/list-healthyOnly-false
+2026/10/11 01:23:11 [goacos] GET /nacos/v1/ns/instance/list 2ms
+=== RUN   TestW038ReadTimeHealthWithoutSweeper/v1/list-healthyOnly-true
+2026/10/11 01:23:11 [goacos] GET /nacos/v1/ns/instance/list 1ms
+=== RUN   TestW038ReadTimeHealthWithoutSweeper/v1/get-fresh
+2026/10/11 01:23:12 [goacos] GET /nacos/v1/ns/instance 1ms
+=== RUN   TestW038ReadTimeHealthWithoutSweeper/v1/get-stale
+2026/10/11 01:23:12 [goacos] GET /nacos/v1/ns/instance 1ms
+=== RUN   TestW038ReadTimeHealthWithoutSweeper/v1/get-missing-heartbeat
+2026/10/11 01:23:12 [goacos] GET /nacos/v1/ns/instance 1ms
+=== RUN   TestW038ReadTimeHealthWithoutSweeper/v1/get-future-heartbeat
+2026/10/11 01:23:12 [goacos] GET /nacos/v1/ns/instance 1ms
+=== RUN   TestW038ReadTimeHealthWithoutSweeper/v1/get-persistent
+2026/10/11 01:23:12 [goacos] GET /nacos/v1/ns/instance 1ms
+=== RUN   TestW038ReadTimeHealthWithoutSweeper/v1/get-explicit-unhealthy
+2026/10/11 01:23:12 [goacos] GET /nacos/v1/ns/instance 1ms
+=== RUN   TestW038ReadTimeHealthWithoutSweeper/v2
+=== RUN   TestW038ReadTimeHealthWithoutSweeper/v2/list-healthyOnly-false
+2026/10/11 01:23:12 [goacos] GET /nacos/v2/ns/instance/list 2ms
+=== RUN   TestW038ReadTimeHealthWithoutSweeper/v2/list-healthyOnly-true
+2026/10/11 01:23:12 [goacos] GET /nacos/v2/ns/instance/list 1ms
+=== RUN   TestW038ReadTimeHealthWithoutSweeper/v2/get-fresh
+2026/10/11 01:23:12 [goacos] GET /nacos/v2/ns/instance 1ms
+=== RUN   TestW038ReadTimeHealthWithoutSweeper/v2/get-stale
+2026/10/11 01:23:12 [goacos] GET /nacos/v2/ns/instance 1ms
+=== RUN   TestW038ReadTimeHealthWithoutSweeper/v2/get-missing-heartbeat
+2026/10/11 01:23:12 [goacos] GET /nacos/v2/ns/instance 1ms
+=== RUN   TestW038ReadTimeHealthWithoutSweeper/v2/get-future-heartbeat
+2026/10/11 01:23:12 [goacos] GET /nacos/v2/ns/instance 1ms
+=== RUN   TestW038ReadTimeHealthWithoutSweeper/v2/get-persistent
+2026/10/11 01:23:12 [goacos] GET /nacos/v2/ns/instance 1ms
+=== RUN   TestW038ReadTimeHealthWithoutSweeper/v2/get-explicit-unhealthy
+2026/10/11 01:23:12 [goacos] GET /nacos/v2/ns/instance 1ms
+--- PASS: TestW038ReadTimeHealthWithoutSweeper (0.64s)
+    --- PASS: TestW038ReadTimeHealthWithoutSweeper/v1 (0.01s)
+        --- PASS: TestW038ReadTimeHealthWithoutSweeper/v1/list-healthyOnly-false (0.00s)
+        --- PASS: TestW038ReadTimeHealthWithoutSweeper/v1/list-healthyOnly-true (0.00s)
+        --- PASS: TestW038ReadTimeHealthWithoutSweeper/v1/get-fresh (0.00s)
+        --- PASS: TestW038ReadTimeHealthWithoutSweeper/v1/get-stale (0.00s)
+        --- PASS: TestW038ReadTimeHealthWithoutSweeper/v1/get-missing-heartbeat (0.00s)
+        --- PASS: TestW038ReadTimeHealthWithoutSweeper/v1/get-future-heartbeat (0.00s)
+        --- PASS: TestW038ReadTimeHealthWithoutSweeper/v1/get-persistent (0.00s)
+        --- PASS: TestW038ReadTimeHealthWithoutSweeper/v1/get-explicit-unhealthy (0.00s)
+    --- PASS: TestW038ReadTimeHealthWithoutSweeper/v2 (0.01s)
+        --- PASS: TestW038ReadTimeHealthWithoutSweeper/v2/list-healthyOnly-false (0.00s)
+        --- PASS: TestW038ReadTimeHealthWithoutSweeper/v2/list-healthyOnly-true (0.00s)
+        --- PASS: TestW038ReadTimeHealthWithoutSweeper/v2/get-fresh (0.00s)
+        --- PASS: TestW038ReadTimeHealthWithoutSweeper/v2/get-stale (0.00s)
+        --- PASS: TestW038ReadTimeHealthWithoutSweeper/v2/get-missing-heartbeat (0.00s)
+        --- PASS: TestW038ReadTimeHealthWithoutSweeper/v2/get-future-heartbeat (0.00s)
+        --- PASS: TestW038ReadTimeHealthWithoutSweeper/v2/get-persistent (0.00s)
+        --- PASS: TestW038ReadTimeHealthWithoutSweeper/v2/get-explicit-unhealthy (0.00s)
+=== RUN   TestW038HeartbeatRecoversWithoutSweeper
+2026/10/11 01:23:12 [goacos] GET /nacos/v1/ns/instance 1ms
+2026/10/11 01:23:12 [goacos] PUT /nacos/v1/ns/instance/beat 1ms
+2026/10/11 01:23:12 [goacos] GET /nacos/v1/ns/instance 1ms
+--- PASS: TestW038HeartbeatRecoversWithoutSweeper (0.59s)
+PASS
+ok  	github.com/halfking/goacos/internal/api	3.495s

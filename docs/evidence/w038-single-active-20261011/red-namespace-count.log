@@ -1,0 +1,6 @@
+=== RUN   TestSingleActiveNamespaceConfigCountsFailClosed
+    config_fencing_integration_test.go:346: namespace config counts bypass active DB fence: <nil>
+--- FAIL: TestSingleActiveNamespaceConfigCountsFailClosed (0.12s)
+FAIL
+FAIL	github.com/halfking/goacos/internal/api	0.559s
+FAIL

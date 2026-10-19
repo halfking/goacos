@@ -10,6 +10,8 @@ import (
 	"fmt"
 	"log"
 	"strings"
+	"sync"
+	"sync/atomic"
 	"time"
 
 	_ "github.com/go-sql-driver/mysql" // mysql driver
@@ -24,9 +26,11 @@ var schemaFS embed.FS
 
 // Store wraps the database connection pool.
 type Store struct {
-	DB      *sql.DB
-	cfg     *config.Config
-	dialect Dialect
+	DB            *sql.DB
+	cfg           *config.Config
+	dialect       Dialect
+	configOwnerMu sync.Mutex
+	configOwner   atomic.Pointer[configOwner]
 }
 
 // Dialect reports the SQL engine backing this store.
@@ -36,14 +40,23 @@ func (s *Store) Dialect() Dialect { return s.dialect }
 // call sites can keep writing MySQL-style `?` placeholders regardless of
 // the backing engine (PostgreSQL receives $n placeholders).
 func (s *Store) Exec(ctx context.Context, query string, args ...any) (sql.Result, error) {
+	if v := s.configTransaction(ctx); v != nil {
+		return v.tx.ExecContext(ctx, s.dialect.Rebind(query), args...)
+	}
 	return s.DB.ExecContext(ctx, s.dialect.Rebind(query), args...)
 }
 
 func (s *Store) Query(ctx context.Context, query string, args ...any) (*sql.Rows, error) {
+	if v := s.configTransaction(ctx); v != nil {
+		return v.tx.QueryContext(ctx, s.dialect.Rebind(query), args...)
+	}
 	return s.DB.QueryContext(ctx, s.dialect.Rebind(query), args...)
 }
 
 func (s *Store) QueryRow(ctx context.Context, query string, args ...any) *sql.Row {
+	if v := s.configTransaction(ctx); v != nil {
+		return v.tx.QueryRowContext(ctx, s.dialect.Rebind(query), args...)
+	}
 	return s.DB.QueryRowContext(ctx, s.dialect.Rebind(query), args...)
 }
 
@@ -201,6 +214,9 @@ func (s *Store) Seed(ctx context.Context) error {
 		}
 		log.Printf("[goacos] seeded admin user %q (initial password from ADMIN_PASSWORD)", s.cfg.AdminUsername)
 	}
+	if err := s.ValidateAuthState(ctx); err != nil {
+		return err
+	}
 	// public namespace row so console tooling sees it (idempotent under races)
 	var m int
 	if err := s.QueryRow(ctx,
@@ -212,7 +228,7 @@ func (s *Store) Seed(ctx context.Context) error {
 }
 
 // Close closes the pool.
-func (s *Store) Close() error { return s.DB.Close() }
+func (s *Store) Close() error { _ = s.ReleaseConfigOwnership(); return s.DB.Close() }
 
 // NewID returns a random 32-hex-char identifier.
 func NewID() string {

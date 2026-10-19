@@ -3,7 +3,44 @@ package storage
 import (
 	"context"
 	"database/sql"
+	"errors"
+	"fmt"
+
+	"golang.org/x/crypto/bcrypt"
 )
+
+// ValidateAuthState blocks serving an auth-enabled database with an active
+// administrator still using the old public seed credential. Bootstrap env
+// values do not replace existing password hashes; remediation needs an explicit
+// controlled rotation. Disabled accounts do not grant admission.
+func (s *Store) ValidateAuthState(ctx context.Context) error {
+	if !s.cfg.AuthEnabled {
+		return nil
+	}
+	rows, err := s.Query(ctx, `SELECT DISTINCT u.password FROM users u
+		JOIN roles r ON r.username=u.username WHERE u.enabled=1 AND r.role='ROLE_ADMIN'`)
+	if err != nil {
+		return fmt.Errorf("auth state: cannot verify active administrator credentials")
+	}
+	defer rows.Close()
+	for rows.Next() {
+		var hash string
+		if err := rows.Scan(&hash); err != nil {
+			return fmt.Errorf("auth state: cannot read active administrator credentials")
+		}
+		err := bcrypt.CompareHashAndPassword([]byte(hash), []byte("nacos"))
+		if err == nil {
+			return fmt.Errorf("auth state: old public administrator credential requires explicit rotation")
+		}
+		if !errors.Is(err, bcrypt.ErrMismatchedHashAndPassword) {
+			return fmt.Errorf("auth state: invalid active administrator password hash")
+		}
+	}
+	if rows.Err() != nil {
+		return fmt.Errorf("auth state: incomplete active administrator credential check")
+	}
+	return nil
+}
 
 // User is an auth user row.
 type User struct {
@@ -112,6 +149,31 @@ func (s *Store) ListRolesByUser(ctx context.Context, username string) ([]string,
 		out = append(out, r)
 	}
 	return out, rows.Err()
+}
+
+// EnabledUserRoles reads account activity and current grants in one database
+// snapshot. An enabled account with no roles remains a valid read principal.
+func (s *Store) EnabledUserRoles(ctx context.Context, username string) ([]string, bool, error) {
+	rows, err := s.Query(ctx, `SELECT r.role FROM users u
+		LEFT JOIN roles r ON r.username=u.username
+		WHERE u.username=? AND u.enabled=1`, username)
+	if err != nil {
+		return nil, false, err
+	}
+	defer rows.Close()
+	var roles []string
+	active := false
+	for rows.Next() {
+		var role sql.NullString
+		if err := rows.Scan(&role); err != nil {
+			return nil, false, err
+		}
+		active = true
+		if role.Valid {
+			roles = append(roles, role.String)
+		}
+	}
+	return roles, active, rows.Err()
 }
 
 // AddRole grants a role to a user.

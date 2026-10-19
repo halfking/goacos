@@ -1,0 +1,15 @@
+{
+  "argv": [
+    "/tmp/memora-w020-toolchain-20261011/go-cache/bin/go",
+    "test",
+    "-count=1",
+    "-run",
+    "TestIsOpenPathDoesNotBypassUnknownWrites",
+    "-v",
+    "./internal/api"
+  ],
+  "actual_exit_code": 1,
+  "recorded_utc": "2026-10-10T17:54:42.396487+00:00",
+  "scope": "nine open-path mutation/unknown-route bypass assertions fail after live-role guards; baseline isOpenPath remains unchanged",
+  "log_sha256": "c2a3202d6376750fde7fbf4081f1302b9f254183c4f6472403555f0457986e94"
+}

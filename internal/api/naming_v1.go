@@ -12,7 +12,7 @@ import (
 // normalizeNamespace maps an absent/blank namespaceId to the Nacos default
 // namespace "public". Before this normalization (fixed 2026-10-09, found on
 // the 252 deployment) clients that omitted namespaceId split services into a
-// '' namespace parallel to "public", creating duplicate service rows and
+// ” namespace parallel to "public", creating duplicate service rows and
 // hiding instances from default-namespace queries.
 func normalizeNamespace(ns string) string {
 	if ns == "" {
@@ -314,7 +314,11 @@ func (s *Server) namingV1Metrics(w http.ResponseWriter, r *http.Request) {
 		v1Fail(w, http.StatusInternalServerError, 500, err.Error())
 		return
 	}
-	configs, _ := s.ST.CountConfigs(r.Context())
+	configs, err := s.ST.CountConfigs(r.Context())
+	if err != nil {
+		writeText(w, http.StatusServiceUnavailable, "configuration instance unavailable")
+		return
+	}
 	writeJSON(w, http.StatusOK, map[string]any{
 		"status":               map[string]any{"responsibilityForServiceCount": services},
 		"serviceCount":         services,

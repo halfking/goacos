@@ -22,6 +22,9 @@ import (
 // serves two surfaces until interrupted: the Nacos-compatible API and, when
 // enabled, the gateway data plane.
 func RunServer(cfg *config.Config) error {
+	if err := cfg.ValidateAuth(); err != nil {
+		return err
+	}
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer stop()
 

@@ -1,0 +1,157 @@
+=== RUN   TestW038NormalUserCannotMutateRegistryConfigurationOrNamespace
+2026/10/11 01:49:28 [goacos] config hub loaded 0 md5 entries
+=== RUN   TestW038NormalUserCannotMutateRegistryConfigurationOrNamespace/v1-POST-/nacos/v1/ns/instance
+2026/10/11 01:49:30 [goacos] POST /nacos/v1/ns/instance 4ms
+    auth_guard_integration_test.go:105: ordinary user mutation returned HTTP 200, want 403
+=== RUN   TestW038NormalUserCannotMutateRegistryConfigurationOrNamespace/v1-PUT-/nacos/v1/ns/instance
+2026/10/11 01:49:30 [goacos] PUT /nacos/v1/ns/instance 2ms
+    auth_guard_integration_test.go:105: ordinary user mutation returned HTTP 200, want 403
+=== RUN   TestW038NormalUserCannotMutateRegistryConfigurationOrNamespace/v1-DELETE-/nacos/v1/ns/instance
+2026/10/11 01:49:30 [goacos] DELETE /nacos/v1/ns/instance 1ms
+    auth_guard_integration_test.go:105: ordinary user mutation returned HTTP 200, want 403
+=== RUN   TestW038NormalUserCannotMutateRegistryConfigurationOrNamespace/v1-PUT-/nacos/v1/ns/service
+2026/10/11 01:49:30 [goacos] PUT /nacos/v1/ns/service 1ms
+    auth_guard_integration_test.go:105: ordinary user mutation returned HTTP 200, want 403
+=== RUN   TestW038NormalUserCannotMutateRegistryConfigurationOrNamespace/v1-DELETE-/nacos/v1/ns/service
+2026/10/11 01:49:30 [goacos] DELETE /nacos/v1/ns/service 1ms
+    auth_guard_integration_test.go:105: ordinary user mutation returned HTTP 200, want 403
+=== RUN   TestW038NormalUserCannotMutateRegistryConfigurationOrNamespace/v1-GET-/nacos/v1/ns/instance/beat
+2026/10/11 01:49:30 [goacos] GET /nacos/v1/ns/instance/beat 3ms
+    auth_guard_integration_test.go:105: ordinary user mutation returned HTTP 200, want 403
+=== RUN   TestW038NormalUserCannotMutateRegistryConfigurationOrNamespace/v1-PUT-/nacos/v1/ns/instance/beat
+2026/10/11 01:49:30 [goacos] PUT /nacos/v1/ns/instance/beat 1ms
+    auth_guard_integration_test.go:105: ordinary user mutation returned HTTP 200, want 403
+=== RUN   TestW038NormalUserCannotMutateRegistryConfigurationOrNamespace/v1-POST-/nacos/v1/cs/configs
+2026/10/11 01:49:30 [goacos] POST /nacos/v1/cs/configs 4ms
+    auth_guard_integration_test.go:105: ordinary user mutation returned HTTP 200, want 403
+=== RUN   TestW038NormalUserCannotMutateRegistryConfigurationOrNamespace/v1-DELETE-/nacos/v1/cs/configs
+2026/10/11 01:49:30 [goacos] DELETE /nacos/v1/cs/configs 4ms
+    auth_guard_integration_test.go:105: ordinary user mutation returned HTTP 200, want 403
+=== RUN   TestW038NormalUserCannotMutateRegistryConfigurationOrNamespace/v1-POST-/nacos/v1/console/namespaces
+2026/10/11 01:49:30 [goacos] POST /nacos/v1/console/namespaces 2ms
+    auth_guard_integration_test.go:105: ordinary user mutation returned HTTP 200, want 403
+=== RUN   TestW038NormalUserCannotMutateRegistryConfigurationOrNamespace/v1-PUT-/nacos/v1/console/namespaces
+2026/10/11 01:49:30 [goacos] PUT /nacos/v1/console/namespaces 1ms
+    auth_guard_integration_test.go:105: ordinary user mutation returned HTTP 200, want 403
+=== RUN   TestW038NormalUserCannotMutateRegistryConfigurationOrNamespace/v1-DELETE-/nacos/v1/console/namespaces
+2026/10/11 01:49:30 [goacos] DELETE /nacos/v1/console/namespaces 2ms
+    auth_guard_integration_test.go:105: ordinary user mutation returned HTTP 200, want 403
+=== RUN   TestW038NormalUserCannotMutateRegistryConfigurationOrNamespace/v2-POST-/nacos/v2/ns/instance
+2026/10/11 01:49:30 [goacos] POST /nacos/v2/ns/instance 2ms
+    auth_guard_integration_test.go:105: ordinary user mutation returned HTTP 200, want 403
+=== RUN   TestW038NormalUserCannotMutateRegistryConfigurationOrNamespace/v2-PUT-/nacos/v2/ns/instance
+2026/10/11 01:49:30 [goacos] PUT /nacos/v2/ns/instance 2ms
+    auth_guard_integration_test.go:105: ordinary user mutation returned HTTP 200, want 403
+=== RUN   TestW038NormalUserCannotMutateRegistryConfigurationOrNamespace/v2-DELETE-/nacos/v2/ns/instance
+2026/10/11 01:49:30 [goacos] DELETE /nacos/v2/ns/instance 1ms
+    auth_guard_integration_test.go:105: ordinary user mutation returned HTTP 200, want 403
+=== RUN   TestW038NormalUserCannotMutateRegistryConfigurationOrNamespace/v2-PUT-/nacos/v2/ns/service
+2026/10/11 01:49:30 [goacos] PUT /nacos/v2/ns/service 1ms
+    auth_guard_integration_test.go:105: ordinary user mutation returned HTTP 200, want 403
+=== RUN   TestW038NormalUserCannotMutateRegistryConfigurationOrNamespace/v2-DELETE-/nacos/v2/ns/service
+2026/10/11 01:49:30 [goacos] DELETE /nacos/v2/ns/service 1ms
+    auth_guard_integration_test.go:105: ordinary user mutation returned HTTP 200, want 403
+=== RUN   TestW038NormalUserCannotMutateRegistryConfigurationOrNamespace/v2-POST-/nacos/v2/ns/instance/beat
+2026/10/11 01:49:30 [goacos] POST /nacos/v2/ns/instance/beat 3ms
+    auth_guard_integration_test.go:105: ordinary user mutation returned HTTP 200, want 403
+=== RUN   TestW038NormalUserCannotMutateRegistryConfigurationOrNamespace/v2-POST-/nacos/v2/ns/service
+2026/10/11 01:49:30 [goacos] POST /nacos/v2/ns/service 2ms
+    auth_guard_integration_test.go:105: ordinary user mutation returned HTTP 200, want 403
+=== RUN   TestW038NormalUserCannotMutateRegistryConfigurationOrNamespace/v2-POST-/nacos/v2/cs/config
+2026/10/11 01:49:30 [goacos] POST /nacos/v2/cs/config 3ms
+    auth_guard_integration_test.go:105: ordinary user mutation returned HTTP 200, want 403
+=== RUN   TestW038NormalUserCannotMutateRegistryConfigurationOrNamespace/v2-DELETE-/nacos/v2/cs/config
+2026/10/11 01:49:30 [goacos] DELETE /nacos/v2/cs/config 3ms
+    auth_guard_integration_test.go:105: ordinary user mutation returned HTTP 200, want 403
+=== RUN   TestW038NormalUserCannotMutateRegistryConfigurationOrNamespace/v2-POST-/nacos/v2/console/namespace
+2026/10/11 01:49:30 [goacos] POST /nacos/v2/console/namespace 2ms
+    auth_guard_integration_test.go:105: ordinary user mutation returned HTTP 200, want 403
+=== RUN   TestW038NormalUserCannotMutateRegistryConfigurationOrNamespace/v2-PUT-/nacos/v2/console/namespace
+2026/10/11 01:49:30 [goacos] PUT /nacos/v2/console/namespace 1ms
+    auth_guard_integration_test.go:105: ordinary user mutation returned HTTP 200, want 403
+=== RUN   TestW038NormalUserCannotMutateRegistryConfigurationOrNamespace/v2-DELETE-/nacos/v2/console/namespace
+2026/10/11 01:49:30 [goacos] DELETE /nacos/v2/console/namespace 2ms
+    auth_guard_integration_test.go:105: ordinary user mutation returned HTTP 200, want 403
+=== NAME  TestW038NormalUserCannotMutateRegistryConfigurationOrNamespace
+    auth_guard_integration_test.go:118: denied requests left 1 rows in naming_instance
+    auth_guard_integration_test.go:118: denied requests left 1 rows in naming_service
+    auth_guard_integration_test.go:118: denied requests left 4 rows in his_config_info
+--- FAIL: TestW038NormalUserCannotMutateRegistryConfigurationOrNamespace (1.87s)
+    --- FAIL: TestW038NormalUserCannotMutateRegistryConfigurationOrNamespace/v1-POST-/nacos/v1/ns/instance (0.00s)
+    --- FAIL: TestW038NormalUserCannotMutateRegistryConfigurationOrNamespace/v1-PUT-/nacos/v1/ns/instance (0.00s)
+    --- FAIL: TestW038NormalUserCannotMutateRegistryConfigurationOrNamespace/v1-DELETE-/nacos/v1/ns/instance (0.00s)
+    --- FAIL: TestW038NormalUserCannotMutateRegistryConfigurationOrNamespace/v1-PUT-/nacos/v1/ns/service (0.00s)
+    --- FAIL: TestW038NormalUserCannotMutateRegistryConfigurationOrNamespace/v1-DELETE-/nacos/v1/ns/service (0.00s)
+    --- FAIL: TestW038NormalUserCannotMutateRegistryConfigurationOrNamespace/v1-GET-/nacos/v1/ns/instance/beat (0.00s)
+    --- FAIL: TestW038NormalUserCannotMutateRegistryConfigurationOrNamespace/v1-PUT-/nacos/v1/ns/instance/beat (0.00s)
+    --- FAIL: TestW038NormalUserCannotMutateRegistryConfigurationOrNamespace/v1-POST-/nacos/v1/cs/configs (0.00s)
+    --- FAIL: TestW038NormalUserCannotMutateRegistryConfigurationOrNamespace/v1-DELETE-/nacos/v1/cs/configs (0.00s)
+    --- FAIL: TestW038NormalUserCannotMutateRegistryConfigurationOrNamespace/v1-POST-/nacos/v1/console/namespaces (0.00s)
+    --- FAIL: TestW038NormalUserCannotMutateRegistryConfigurationOrNamespace/v1-PUT-/nacos/v1/console/namespaces (0.00s)
+    --- FAIL: TestW038NormalUserCannotMutateRegistryConfigurationOrNamespace/v1-DELETE-/nacos/v1/console/namespaces (0.00s)
+    --- FAIL: TestW038NormalUserCannotMutateRegistryConfigurationOrNamespace/v2-POST-/nacos/v2/ns/instance (0.00s)
+    --- FAIL: TestW038NormalUserCannotMutateRegistryConfigurationOrNamespace/v2-PUT-/nacos/v2/ns/instance (0.00s)
+    --- FAIL: TestW038NormalUserCannotMutateRegistryConfigurationOrNamespace/v2-DELETE-/nacos/v2/ns/instance (0.00s)
+    --- FAIL: TestW038NormalUserCannotMutateRegistryConfigurationOrNamespace/v2-PUT-/nacos/v2/ns/service (0.00s)
+    --- FAIL: TestW038NormalUserCannotMutateRegistryConfigurationOrNamespace/v2-DELETE-/nacos/v2/ns/service (0.00s)
+    --- FAIL: TestW038NormalUserCannotMutateRegistryConfigurationOrNamespace/v2-POST-/nacos/v2/ns/instance/beat (0.00s)
+    --- FAIL: TestW038NormalUserCannotMutateRegistryConfigurationOrNamespace/v2-POST-/nacos/v2/ns/service (0.00s)
+    --- FAIL: TestW038NormalUserCannotMutateRegistryConfigurationOrNamespace/v2-POST-/nacos/v2/cs/config (0.00s)
+    --- FAIL: TestW038NormalUserCannotMutateRegistryConfigurationOrNamespace/v2-DELETE-/nacos/v2/cs/config (0.00s)
+    --- FAIL: TestW038NormalUserCannotMutateRegistryConfigurationOrNamespace/v2-POST-/nacos/v2/console/namespace (0.00s)
+    --- FAIL: TestW038NormalUserCannotMutateRegistryConfigurationOrNamespace/v2-PUT-/nacos/v2/console/namespace (0.00s)
+    --- FAIL: TestW038NormalUserCannotMutateRegistryConfigurationOrNamespace/v2-DELETE-/nacos/v2/console/namespace (0.00s)
+=== RUN   TestW038LiveAccountAndRolesOverrideTokenRoles
+2026/10/11 01:49:30 [goacos] config hub loaded 0 md5 entries
+=== RUN   TestW038LiveAccountAndRolesOverrideTokenRoles/live-grant
+2026/10/11 01:49:32 [goacos] POST /nacos/v1/ns/instance 4ms
+=== RUN   TestW038LiveAccountAndRolesOverrideTokenRoles/demoted-token
+2026/10/11 01:49:32 [goacos] DELETE /nacos/v1/ns/instance 1ms
+    auth_guard_integration_test.go:149: demoted token returned 200
+=== RUN   TestW038LiveAccountAndRolesOverrideTokenRoles/token-role-not-authority
+2026/10/11 01:49:32 [goacos] POST /nacos/v1/ns/instance 3ms
+    auth_guard_integration_test.go:159: ungranted token role returned 200
+=== RUN   TestW038LiveAccountAndRolesOverrideTokenRoles/disabled-user
+2026/10/11 01:49:32 [goacos] GET /nacos/v1/ns/instance/list 2ms
+    auth_guard_integration_test.go:167: disabled user returned 200
+=== RUN   TestW038LiveAccountAndRolesOverrideTokenRoles/deleted-user
+2026/10/11 01:49:32 [goacos] GET /nacos/v1/console/namespaces 1ms
+    auth_guard_integration_test.go:175: deleted user returned 200
+--- FAIL: TestW038LiveAccountAndRolesOverrideTokenRoles (2.49s)
+    --- PASS: TestW038LiveAccountAndRolesOverrideTokenRoles/live-grant (0.00s)
+    --- FAIL: TestW038LiveAccountAndRolesOverrideTokenRoles/demoted-token (0.00s)
+    --- FAIL: TestW038LiveAccountAndRolesOverrideTokenRoles/token-role-not-authority (0.00s)
+    --- FAIL: TestW038LiveAccountAndRolesOverrideTokenRoles/disabled-user (0.00s)
+    --- FAIL: TestW038LiveAccountAndRolesOverrideTokenRoles/deleted-user (0.00s)
+=== RUN   TestW038ReadListenerAndLiveAdminCompatibility
+2026/10/11 01:49:33 [goacos] config hub loaded 0 md5 entries
+=== RUN   TestW038ReadListenerAndLiveAdminCompatibility//nacos/v1/cs/configs/listener
+2026/10/11 01:49:34 [goacos] POST /nacos/v1/cs/configs/listener 0s
+=== RUN   TestW038ReadListenerAndLiveAdminCompatibility//nacos/v2/cs/config/listener
+2026/10/11 01:49:34 [goacos] POST /nacos/v2/cs/config/listener 0s
+=== RUN   TestW038ReadListenerAndLiveAdminCompatibility/POST/nacos/v1/ns/instance
+2026/10/11 01:49:37 [goacos] POST /nacos/v1/ns/instance 8ms
+=== RUN   TestW038ReadListenerAndLiveAdminCompatibility/GET/nacos/v1/ns/instance/beat
+2026/10/11 01:49:38 [goacos] GET /nacos/v1/ns/instance/beat 4ms
+=== RUN   TestW038ReadListenerAndLiveAdminCompatibility/POST/nacos/v2/ns/instance/beat
+2026/10/11 01:49:38 [goacos] POST /nacos/v2/ns/instance/beat 3ms
+=== RUN   TestW038ReadListenerAndLiveAdminCompatibility/DELETE/nacos/v2/ns/instance
+2026/10/11 01:49:38 [goacos] DELETE /nacos/v2/ns/instance 3ms
+=== RUN   TestW038ReadListenerAndLiveAdminCompatibility/unknown-write
+2026/10/11 01:49:38 [goacos] POST /nacos/v3/new-mutating-endpoint 0s
+    auth_guard_integration_test.go:203: unknown ordinary-user write returned 405
+=== RUN   TestW038ReadListenerAndLiveAdminCompatibility/user-directory
+2026/10/11 01:49:38 [goacos] GET /nacos/v1/auth/users 5ms
+    auth_guard_integration_test.go:208: user directory returned 200
+--- FAIL: TestW038ReadListenerAndLiveAdminCompatibility (5.39s)
+    --- PASS: TestW038ReadListenerAndLiveAdminCompatibility//nacos/v1/cs/configs/listener (0.00s)
+    --- PASS: TestW038ReadListenerAndLiveAdminCompatibility//nacos/v2/cs/config/listener (0.00s)
+    --- PASS: TestW038ReadListenerAndLiveAdminCompatibility/POST/nacos/v1/ns/instance (0.01s)
+    --- PASS: TestW038ReadListenerAndLiveAdminCompatibility/GET/nacos/v1/ns/instance/beat (0.00s)
+    --- PASS: TestW038ReadListenerAndLiveAdminCompatibility/POST/nacos/v2/ns/instance/beat (0.01s)
+    --- PASS: TestW038ReadListenerAndLiveAdminCompatibility/DELETE/nacos/v2/ns/instance (0.01s)
+    --- FAIL: TestW038ReadListenerAndLiveAdminCompatibility/unknown-write (0.00s)
+    --- FAIL: TestW038ReadListenerAndLiveAdminCompatibility/user-directory (0.01s)
+FAIL
+FAIL	github.com/halfking/goacos/internal/api	10.338s
+FAIL

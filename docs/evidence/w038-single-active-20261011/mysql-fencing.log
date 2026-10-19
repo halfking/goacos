@@ -1,0 +1,10 @@
+=== RUN   TestSingleActiveMySQLActualDialect
+2026/10/11 02:49:49 [goacos] seeded admin user "w038-test-admin" (initial password from ADMIN_PASSWORD)
+2026/10/11 02:49:49 [goacos] database-active config hub preloaded 0 entries
+2026/10/11 02:49:49 [goacos] database-active config hub preloaded 1 entries
+[mysql] 2026/10/11 02:49:49 packets.go:58 unexpected EOF
+2026/10/11 02:49:49 [goacos] database-active config hub preloaded 0 entries
+    config_owner_integration_test.go:131: actual MySQL8.4 GET_LOCK same-connection transactions, KILL rollback, takeover and physical session release verified
+--- PASS: TestSingleActiveMySQLActualDialect (0.59s)
+PASS
+ok  	github.com/halfking/goacos/internal/storage	1.008s

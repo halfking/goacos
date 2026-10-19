@@ -1,0 +1,11 @@
+=== RUN   TestSingleActiveMetricsRefusesInactive
+2026/10/11 02:48:32 [goacos] GET /nacos/v1/ns/operator/metrics 2ms
+    config_fencing_integration_test.go:310: inactive config metrics manufactured a successful count: HTTP 200
+--- FAIL: TestSingleActiveMetricsRefusesInactive (0.18s)
+=== RUN   TestSingleActiveDeleteTagFailureRollsBackWithoutLosingOwner
+2026/10/11 02:48:32 [goacos] database-active config hub preloaded 11 entries
+    config_fencing_integration_test.go:336: SQL failure unnecessarily loses owner or commits delete: <nil> configuration instance is not database-active
+--- FAIL: TestSingleActiveDeleteTagFailureRollsBackWithoutLosingOwner (0.14s)
+FAIL
+FAIL	github.com/halfking/goacos/internal/api	0.767s
+FAIL

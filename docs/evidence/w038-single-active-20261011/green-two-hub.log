@@ -1,0 +1,6 @@
+=== RUN   TestSingleActiveRejectsStaleSecondHub
+2026/10/11 02:45:44 [goacos] database-active config hub preloaded 2 entries
+    config_single_active_integration_test.go:28: database refused second active hub
+--- PASS: TestSingleActiveRejectsStaleSecondHub (0.15s)
+PASS
+ok  	github.com/halfking/goacos/internal/api	0.583s

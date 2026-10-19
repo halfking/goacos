@@ -42,11 +42,11 @@ matrix. "v1" = `/nacos/v1/...` (legacy REST), "v2" = `/nacos/v2/...`
 | Area | Endpoint | Status |
 |---|---|---|
 | Login (`accessToken`, `tokenTtl`, `globalAdmin`) | `POST /v1/auth/users/login`, `POST /v2/auth/user/login` | ✅ |
-| User CRUD (admin) / self password change | `GET/POST/PUT/DELETE /v1/auth/users` | ✅ |
+| User CRUD (live admin) | `GET/POST/PUT/DELETE /v1/auth/users` | ✅ |
 | Roles | `GET/POST/DELETE /v1/auth/roles` | ✅ |
 
 Token sources: `?accessToken=`, `accessToken` cookie, or `Authorization: Bearer`.
-JWT HS256 with `GOACOS_AUTH_TOKEN_SECRET`.
+JWT HS256 with an explicit private `GOACOS_AUTH_TOKEN_SECRET`, required issuer `goacos` and expiry. Protected requests reload enabled users and live roles from storage. All writes require global admin, including GET/HEAD v1 heartbeat; POST config listeners are read exceptions. Normal-user self password change and per-resource permissions are not implemented. Existing reads are authenticated without namespace/service isolation. Auth-disabled compatibility mode is unsecured. No commit-atomic revocation or HA guarantee is implied.
 
 ## Console / ops
 

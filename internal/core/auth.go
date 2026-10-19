@@ -3,6 +3,7 @@ package core
 import (
 	"context"
 	"errors"
+	"strings"
 	"time"
 
 	"github.com/golang-jwt/jwt/v5"
@@ -28,6 +29,12 @@ func NewAuthService(cfg *config.Config, st *storage.Store) *AuthService {
 
 // Login verifies credentials and returns (token, ttlSeconds, globalAdmin).
 func (a *AuthService) Login(ctx context.Context, username, password string) (string, int, bool, error) {
+	if err := a.cfg.ValidateAuth(); err != nil {
+		return "", 0, false, err
+	}
+	if a.cfg.AuthEnabled && !config.ValidAuthPassword(password) {
+		return "", 0, false, ErrBadCredentials
+	}
 	u, err := a.st.GetUser(ctx, username)
 	if err != nil {
 		return "", 0, false, err
@@ -70,12 +77,16 @@ type Claims struct {
 
 // Parse validates a token string and returns its claims.
 func (a *AuthService) Parse(tokenString string) (*Claims, error) {
+	if err := a.cfg.ValidateAuth(); err != nil {
+		return nil, err
+	}
 	tok, err := jwt.Parse(tokenString, func(t *jwt.Token) (any, error) {
-		if _, ok := t.Method.(*jwt.SigningMethodHMAC); !ok {
+		if t.Method != jwt.SigningMethodHS256 {
 			return nil, errors.New("unexpected signing method")
 		}
 		return []byte(a.cfg.TokenSecret), nil
-	})
+	}, jwt.WithValidMethods([]string{"HS256"}), jwt.WithIssuer("goacos"),
+		jwt.WithExpirationRequired(), jwt.WithIssuedAt())
 	if err != nil || !tok.Valid {
 		return nil, errors.New("invalid token")
 	}
@@ -84,7 +95,7 @@ func (a *AuthService) Parse(tokenString string) (*Claims, error) {
 		return nil, errors.New("invalid claims")
 	}
 	sub, _ := mc["sub"].(string)
-	if sub == "" {
+	if sub == "" || strings.TrimSpace(sub) != sub {
 		return nil, errors.New("invalid subject")
 	}
 	var roles []string
@@ -102,6 +113,34 @@ func (a *AuthService) Parse(tokenString string) (*Claims, error) {
 		}
 	}
 	return &Claims{Username: sub, Roles: roles, Admin: admin}, nil
+}
+
+// Authenticate validates the issuer token and reloads its principal from one
+// database statement. Embedded token roles are a login-time projection, not
+// authority for subsequent requests. Revocation is checked at request admission;
+// it does not serialize a concurrent revocation with a later business commit.
+func (a *AuthService) Authenticate(ctx context.Context, tokenString string) (*Claims, error) {
+	claims, err := a.Parse(tokenString)
+	if err != nil {
+		return nil, err
+	}
+	if a.st == nil {
+		return nil, ErrBadCredentials
+	}
+	roles, active, err := a.st.EnabledUserRoles(ctx, claims.Username)
+	if err != nil {
+		return nil, err
+	}
+	if !active {
+		return nil, ErrBadCredentials
+	}
+	claims.Roles, claims.Admin = roles, false
+	for _, role := range roles {
+		if role == "ROLE_ADMIN" {
+			claims.Admin = true
+		}
+	}
+	return claims, nil
 }
 
 // HashPassword produces a bcrypt hash for storage.

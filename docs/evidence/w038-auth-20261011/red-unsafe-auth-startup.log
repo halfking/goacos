@@ -1,0 +1,6 @@
+=== RUN   TestServerRejectsUnsafeAuthBeforeOpeningDatabase
+    auth_configuration_test.go:16: unsafe auth reached database opening instead of failing configuration validation
+--- FAIL: TestServerRejectsUnsafeAuthBeforeOpeningDatabase (0.01s)
+FAIL
+FAIL	github.com/halfking/goacos/internal/app	0.583s
+FAIL

@@ -1,0 +1,7 @@
+=== RUN   TestSingleActivePoolCannotStarveAuth
+2026/10/11 02:56:48 [goacos] database-active config hub preloaded 22 entries
+    config_fencing_integration_test.go:387: reserved config session consumes sole auth/naming connection: <nil>
+--- FAIL: TestSingleActivePoolCannotStarveAuth (0.20s)
+FAIL
+FAIL	github.com/halfking/goacos/internal/api	0.653s
+FAIL

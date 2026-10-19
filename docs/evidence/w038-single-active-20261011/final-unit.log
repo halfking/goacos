@@ -1,0 +1,8 @@
+?   	github.com/halfking/goacos	[no test files]
+ok  	github.com/halfking/goacos/internal/api	0.610s
+ok  	github.com/halfking/goacos/internal/app	0.953s
+?   	github.com/halfking/goacos/internal/buildinfo	[no test files]
+ok  	github.com/halfking/goacos/internal/config	1.724s
+ok  	github.com/halfking/goacos/internal/core	2.106s
+?   	github.com/halfking/goacos/internal/dbcli	[no test files]
+ok  	github.com/halfking/goacos/internal/storage	1.342s
