@@ -23,7 +23,7 @@
 
 - **配置中心** — 发布/查询/删除、命名空间、分组、标签、变更历史+回滚、**长轮询监听**(v1 `\x02/\x01` 协议与 v2 JSON)、MD5 变更检测(进程内 hub,不冲击数据库)。
 - **服务发现** — 临时/持久实例注册注销、集群、权重、元数据、心跳(Nacos 同款 15 秒不健康 / 30 秒摘除生命周期)、实例与服务查询(v1 `ServiceInfo` 形状 + v2 信封)。
-- **认证** — JWT access token(HS256,兼容 Nacos 登录端点)、用户/角色/权限、管理接口仅限管理员、可选开启(`GOACOS_AUTH_ENABLED=true`)。
+- **认证** — JWT access token(HS256,要求 issuer 为 `goacos` 且带过期时间)、用户/角色、管理接口仅限管理员、可选开启(`GOACOS_AUTH_ENABLED=true`);按资源的细粒度权限尚未实现。
 - **控制台** — 内嵌单页 UI(`/nacos/index.html`):服务/实例、配置编辑器、命名空间、用户。
 - **双引擎存储** — **MySQL** 与 **PostgreSQL** 均为一等公民。每个引擎各内嵌一份 schema(配置表与 Nacos 官方布局一致);统一方言层自动切换。
 - **数据库自动发现** — `goacos db discover` 自动查找可达的数据库服务器:优先 Docker 容器(直接读取容器 env 中的 `MYSQL_ROOT_PASSWORD` / `POSTGRES_PASSWORD`),其次 localhost(MySQL :3306、PostgreSQL :5432),可选子网扫描(`--cidr`);`--db-type` 可限定引擎。
@@ -42,7 +42,7 @@
 ```bash
 ./deploy/deploy.sh --host 10.0.0.5 --port-db 3306 --user root --password secret
 ./deploy/deploy.sh --db-type postgres --host 10.0.0.6 --port-db 5432 --user postgres --password secret
-./deploy/deploy.sh --auth --admin-pass S3cret --db prod_goacos --force
+./deploy/deploy.sh --auth --admin-pass '<12+ characters>' --token-secret '<32+ byte private key>' --db prod_goacos --force
 ```
 
 ### Docker Compose(自带 MySQL 或 PostgreSQL)
@@ -70,7 +70,7 @@ make build && GOACOS_MYSQL_HOST=127.0.0.1 GOACOS_MYSQL_USER=root GOACOS_MYSQL_PA
 | `GOACOS_MYSQL_DB` | `goacos` | 数据库(不存在则自动创建) |
 | `GOACOS_MYSQL_USER` / `MYSQL_PASSWORD` | `root` / `` | 凭据 |
 | `GOACOS_AUTH_ENABLED` | `false` | 是否强制 access token |
-| `GOACOS_AUTH_TOKEN_SECRET` | 内置开发密钥 | JWT 签名密钥(多副本必须一致) |
+| `GOACOS_AUTH_TOKEN_SECRET` | (空) | JWT 签名密钥;开启认证时必须显式提供至少 32 字节的私有密钥,内置的旧公开默认值会被拒绝 |
 | `GOACOS_ADMIN_USERNAME` / `ADMIN_PASSWORD` | `nacos` / `nacos` | 播种管理员(仅 users 表为空时) |
 | `GOACOS_HEARTBEAT_TIMEOUT_MS` | `15000` | 临时实例转不健康阈值 |
 | `GOACOS_EPHEMERAL_DELETE_AFTER_MS` | `30000` | 临时实例删除阈值 |
@@ -210,7 +210,7 @@ root 属主的 `0700` 目录会导致一张证书都加载不出来，且没有�
 
 ## 多副本
 
-所配数据库(MySQL 或 PostgreSQL,`GOACOS_DB_TYPE`)即事实源,副本无状态:多个节点指向同一数据库、挂在同一 LB 后、设置相同的 `GOACOS_AUTH_TOKEN_SECRET` 即可。配置长轮询 ~1 秒内感知跨节点变更;实例生命周期清扫幂等,多节点并发执行安全。
+所配数据库(MySQL 或 PostgreSQL,`GOACOS_DB_TYPE`)即事实源,但配置服务是单活动(single-active)的:启动时会在一条独立连接上取 PostgreSQL 会话级 advisory 锁或 MySQL 库级命名锁,第二个实例因此拒绝启动。共享连接池至少需要两条连接(一条被所有权占用,认证与命名检查还要用池)。配置读写、标签、历史与命名空间配置计数都走这条被占用连接上的事务,提交前再次校验所有权;成功响应与本地通知在提交之后才发出。长轮询在两次短事务之间释放连接,靠本地通知与周期检查唤醒,返回前再做一次带围栏的校验。连接或所有权一旦丢失,该进程的配置服务永久关闭(HTTP 503),不会改走池里的另一条连接重试;需要重启一个全新进程去竞争所有权。认证与命名沿用各自的连接池与权限。这是单一数据库上的单活动约束,不包含请求转发、自动故障切换或跨副本 HA 声明。详见[有界的 PG/MySQL 证据](docs/evidence/w038-single-active-20261011/README.md)。
 
 ## 开发
 
