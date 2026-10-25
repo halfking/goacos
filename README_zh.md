@@ -71,6 +71,7 @@ make build && GOACOS_MYSQL_HOST=127.0.0.1 GOACOS_MYSQL_USER=root GOACOS_MYSQL_PA
 | `GOACOS_MYSQL_USER` / `MYSQL_PASSWORD` | `root` / `` | 凭据 |
 | `GOACOS_AUTH_ENABLED` | `false` | 是否强制 access token |
 | `GOACOS_AUTH_TOKEN_SECRET` | (空) | JWT 签名密钥;开启认证时必须显式提供至少 32 字节的私有密钥,内置的旧公开默认值会被拒绝 |
+| `GOACOS_AUTH_TOKEN_TTL_SECONDS` | `18000` | 访问令牌有效期(秒);必须为正数且不超过 `86400` |
 | `GOACOS_ADMIN_USERNAME` / `ADMIN_PASSWORD` | `nacos` / `nacos` | 播种管理员(仅 users 表为空时) |
 | `GOACOS_HEARTBEAT_TIMEOUT_MS` | `15000` | 临时实例转不健康阈值 |
 | `GOACOS_EPHEMERAL_DELETE_AFTER_MS` | `30000` | 临时实例删除阈值 |
@@ -136,6 +137,9 @@ curl -sX POST localhost:8848/goacos/v1/gateway/refresh
 | `GOACOS_GATEWAY_TRUST_FORWARDED_FOR` | `false` | 是否采信 `X-Forwarded-For` 判定客户端 IP |
 | `GOACOS_GATEWAY_STATIC_ROOT` | — | `protocol=static` 组件的根目录(为空则关闭静态托管) |
 | `GOACOS_GATEWAY_STATIC_FALLBACK` | `true` | 无扩展名且未命中的路径回落到 `index.html` |
+| `GOACOS_GATEWAY_SECURITY_HEADERS` | — | 逐行下发的安全响应头，每行 `名称: 值`；无冒号的行被丢弃 |
+| `GOACOS_GATEWAY_BLOCK_USER_AGENTS` | — | 逐行 UA 正则；命中即在进路由前 403 |
+| `GOACOS_GATEWAY_BLOCK_PATHS` | — | 逐行路径正则；命中即在进路由前 404 |
 | `GOACOS_GATEWAY_REFRESH_SECONDS` | `10` | 路由与证书从数据库重新读取的间隔 |
 | `GOACOS_GATEWAY_ACME_ENABLED` | `true` | 自动签发证书 |
 | `GOACOS_GATEWAY_ACME_EMAIL` | — | ACME 账户邮箱 |

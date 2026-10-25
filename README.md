@@ -75,6 +75,7 @@ make build && GOACOS_MYSQL_HOST=127.0.0.1 GOACOS_MYSQL_USER=root GOACOS_MYSQL_PA
 | `GOACOS_MYSQL_USER` / `MYSQL_PASSWORD` | `root` / `` | credentials |
 | `GOACOS_AUTH_ENABLED` | `false` | unsecured compatibility mode; enable for private deployments |
 | `GOACOS_AUTH_TOKEN_SECRET` | empty | explicit private JWT key, at least 32 bytes; old public default rejected when auth enabled |
+| `GOACOS_AUTH_TOKEN_TTL_SECONDS` | `18000` | access-token lifetime; must be positive and at most `86400` |
 | `GOACOS_ADMIN_USERNAME` / `ADMIN_PASSWORD` | `nacos` / `nacos` | seed values; auth-enabled startup requires nonblank username and private password with 12+ characters/72 bytes max |
 | `GOACOS_HEARTBEAT_TIMEOUT_MS` | `15000` | ephemeral instance → unhealthy |
 | `GOACOS_EPHEMERAL_DELETE_AFTER_MS` | `30000` | ephemeral instance → removed |
@@ -142,6 +143,9 @@ curl -sX POST localhost:8848/goacos/v1/gateway/refresh
 | `GOACOS_GATEWAY_TRUST_FORWARDED_FOR` | `false` | honour `X-Forwarded-For` for client-IP rules |
 | `GOACOS_GATEWAY_STATIC_ROOT` | — | root directory for `protocol=static` components (empty = off) |
 | `GOACOS_GATEWAY_STATIC_FALLBACK` | `true` | serve `index.html` for unmatched extension-less paths |
+| `GOACOS_GATEWAY_SECURITY_HEADERS` | — | security response headers to emit, one `Name: Value` per line; a line without a colon is dropped |
+| `GOACOS_GATEWAY_BLOCK_USER_AGENTS` | — | user-agent regular expressions, one per line; a match is rejected with 403 before routing |
+| `GOACOS_GATEWAY_BLOCK_PATHS` | — | path regular expressions, one per line; a match is rejected with 404 before routing |
 | `GOACOS_GATEWAY_REFRESH_SECONDS` | `10` | how often routes + certificates are re-read from the database |
 | `GOACOS_GATEWAY_ACME_ENABLED` | `true` | automatic certificate issuance |
 | `GOACOS_GATEWAY_ACME_EMAIL` | — | ACME account email |
