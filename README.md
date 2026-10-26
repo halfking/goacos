@@ -67,6 +67,7 @@ make build && GOACOS_MYSQL_HOST=127.0.0.1 GOACOS_MYSQL_USER=root GOACOS_MYSQL_PA
 
 | Variable | Default | Meaning |
 |---|---|---|
+| `GOACOS_HOST` | `0.0.0.0` | HTTP listen host (the port comes from `GOACOS_PORT`) |
 | `GOACOS_PORT` | `8848` | HTTP listen port |
 | `GOACOS_DB_TYPE` | `mysql` | `mysql` or `postgres` — forced by deployment files |
 | `GOACOS_DB_DSN` | — | full DSN override (`postgres://...` implies PostgreSQL) |
@@ -77,9 +78,15 @@ make build && GOACOS_MYSQL_HOST=127.0.0.1 GOACOS_MYSQL_USER=root GOACOS_MYSQL_PA
 | `GOACOS_AUTH_TOKEN_SECRET` | empty | explicit private JWT key, at least 32 bytes; old public default rejected when auth enabled |
 | `GOACOS_AUTH_TOKEN_TTL_SECONDS` | `18000` | access-token lifetime; must be positive and at most `86400` |
 | `GOACOS_ADMIN_USERNAME` / `ADMIN_PASSWORD` | `nacos` / `nacos` | seed values; auth-enabled startup requires nonblank username and private password with 12+ characters/72 bytes max |
+| `GOACOS_HEARTBEAT_INTERVAL_MS` | `5000` | heartbeat interval advertised to clients |
 | `GOACOS_HEARTBEAT_TIMEOUT_MS` | `15000` | ephemeral instance → unhealthy |
 | `GOACOS_EPHEMERAL_DELETE_AFTER_MS` | `30000` | ephemeral instance → removed |
+| `GOACOS_PERSISTENT_HEARTBEAT_TIMEOUT_MS` | `90000` | persistent instance → unhealthy (`0` disables the check) |
 | `GOACOS_SWEEP_INTERVAL_MS` | `5000` | instance cleanup sweep interval |
+| `GOACOS_MYSQL_MAX_OPEN_CONNS` | `100` | database pool max open connections |
+| `GOACOS_MYSQL_MAX_IDLE_CONNS` | `20` | database pool max idle connections |
+| `GOACOS_MYSQL_CONN_MAX_LIFETIME_SECONDS` | `1800` | database connection max lifetime |
+| `GOACOS_LOG_LEVEL` | `info` | log level (read into the config; not consumed by the logger yet) |
 
 `NACOS_*` is accepted as an alias prefix.
 

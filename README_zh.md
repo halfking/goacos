@@ -63,6 +63,7 @@ make build && GOACOS_MYSQL_HOST=127.0.0.1 GOACOS_MYSQL_USER=root GOACOS_MYSQL_PA
 
 | 变量 | 默认值 | 说明 |
 |---|---|---|
+| `GOACOS_HOST` | `0.0.0.0` | HTTP 监听地址(端口取自 `GOACOS_PORT`) |
 | `GOACOS_PORT` | `8848` | HTTP 监听端口 |
 | `GOACOS_DB_TYPE` | `mysql` | `mysql` 或 `postgres`——部署文件强制指定入口 |
 | `GOACOS_DB_DSN` | — | 完整 DSN 覆盖(`postgres://...` 前缀自动识别为 PostgreSQL) |
@@ -73,9 +74,15 @@ make build && GOACOS_MYSQL_HOST=127.0.0.1 GOACOS_MYSQL_USER=root GOACOS_MYSQL_PA
 | `GOACOS_AUTH_TOKEN_SECRET` | (空) | JWT 签名密钥;开启认证时必须显式提供至少 32 字节的私有密钥,内置的旧公开默认值会被拒绝 |
 | `GOACOS_AUTH_TOKEN_TTL_SECONDS` | `18000` | 访问令牌有效期(秒);必须为正数且不超过 `86400` |
 | `GOACOS_ADMIN_USERNAME` / `ADMIN_PASSWORD` | `nacos` / `nacos` | 播种管理员(仅 users 表为空时) |
+| `GOACOS_HEARTBEAT_INTERVAL_MS` | `5000` | 对客户端下发的心跳间隔 |
 | `GOACOS_HEARTBEAT_TIMEOUT_MS` | `15000` | 临时实例转不健康阈值 |
 | `GOACOS_EPHEMERAL_DELETE_AFTER_MS` | `30000` | 临时实例删除阈值 |
+| `GOACOS_PERSISTENT_HEARTBEAT_TIMEOUT_MS` | `90000` | 持久实例转不健康阈值(`0` 表示关闭该检查) |
 | `GOACOS_SWEEP_INTERVAL_MS` | `5000` | 实例清理扫描间隔 |
+| `GOACOS_MYSQL_MAX_OPEN_CONNS` | `100` | 数据库连接池最大连接数 |
+| `GOACOS_MYSQL_MAX_IDLE_CONNS` | `20` | 数据库连接池最大空闲连接数 |
+| `GOACOS_MYSQL_CONN_MAX_LIFETIME_SECONDS` | `1800` | 数据库连接最长存活时间(秒) |
+| `GOACOS_LOG_LEVEL` | `info` | 日志级别(已读入配置,尚未被日志初始化消费) |
 
 `NACOS_*` 前缀同样有效。
 
