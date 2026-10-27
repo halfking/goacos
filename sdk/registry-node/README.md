@@ -3,7 +3,7 @@
 goacos 服务注册中心的 Node/TypeScript 客户端，零依赖，使用全局 `fetch`。
 
 Go SDK 是 [`sdk/registry`](../registry)，本绑定与它实现**同一套线上契约**；
-三语言共用的不变量见 [`../CONTRACT.md`](../CONTRACT.md)，
+三语言共用的不变量见 [`../conformance/CONTRACT.md`](../conformance/CONTRACT.md)，
 一致性由 `../conformance/run.py` 的契约检查守住。
 
 ## 安装

@@ -283,7 +283,7 @@ HTTP→HTTPS、HSTS、IP 黑白名单、请求体上限、每域超时、状态�
 ## 七、验证
 
 ```bash
-go test ./...              # 149 项，含真实 TLS 握手、故障转移、静态 SPA、证书目录
-./scripts/e2e.sh           # MySQL 8 端到端 80 项
+go test ./...              # 286 项，含真实 TLS 握手、故障转移、静态 SPA、证书目录
+./scripts/e2e.sh           # MySQL 8 端到端 75 项
 E2E_DB=postgres ./scripts/e2e.sh   # PostgreSQL 同上
 ```

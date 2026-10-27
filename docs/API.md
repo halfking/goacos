@@ -111,18 +111,19 @@ call, so an operator does not have to curl the site being diagnosed.
 | `reason` | present only when `enabled` is `false` |
 | `namespace` | the namespace this instance serves (`GOACOS_GATEWAY_NAMESPACE`) |
 | `listeners` | `{"http":"...","https":"..."}` — the bound addresses |
-| `policyDefaults` | the gateway-wide defaults in effect (`forceHttps`, `hstsMaxAge`, `maxBodyBytes`, the three timeouts, `websocket`, `trustForwardedFor`, `staticRoot`, `staticFallback`, `refreshSeconds`) |
+| `policyDefaults` | the gateway-wide defaults in effect (`forceHttps`, `hstsMaxAge`, `maxBodyBytes`, the three timeouts, `websocket`, `trustForwardedFor`, `staticRoot`, `staticFallback`, `refreshSeconds`, `certDir`, `certWriteBack`, `certScanSeconds`) |
 | `routing` | `{"loadedAt","ageSeconds","domainCount","error"}` — snapshot freshness |
 | `acme` | `{"enabled","directory","email","dataDir","challengeEndpoint","pending","backingOff"}` |
+| `certDir` | `{"path","writeBack","scanSeconds","servedFromDir","readable"}` — the shared certificate directory and whether it can actually be read |
 | `domains` | one entry per declared domain |
 | `certificates` | one entry per stored certificate |
-| `counters` | `requests`, `proxied`, `static`, `redirects`, `rejected`, `noRoute`, `pooledUpstreams` |
+| `counters` | `requests`, `proxied`, `static`, `redirects`, `rejected`, `noRoute`, `upstreamFailed`, `pooledUpstreams` |
 | `uptimeSeconds` | server uptime |
 
 Each `domains[]` entry carries `"domain"`, one key **per declared path prefix**
 (each holding `app`, `component`, `kind`, `protocol`, `service`, `group`, `lb`,
-`instances[]`, `healthy`) and the TLS summary `tls` / `tlsIssuer` / `tlsExpiry` /
-`tlsDaysLeft` / `tlsWarning`:
+`instances[]`, `healthy`, `healthyIsFrom`) and the TLS summary `tls` / `tlsIssuer` /
+`tlsExpiry` / `tlsDaysLeft` / `tlsWarning` / `tlsPath` / `tlsNote`:
 
 ```json
 {
