@@ -73,7 +73,7 @@ make build && GOACOS_MYSQL_HOST=127.0.0.1 GOACOS_MYSQL_USER=root GOACOS_MYSQL_PA
 | `GOACOS_AUTH_ENABLED` | `false` | 是否强制 access token |
 | `GOACOS_AUTH_TOKEN_SECRET` | (空) | JWT 签名密钥;开启认证时必须显式提供至少 32 字节的私有密钥,内置的旧公开默认值会被拒绝 |
 | `GOACOS_AUTH_TOKEN_TTL_SECONDS` | `18000` | 访问令牌有效期(秒);必须为正数且不超过 `86400` |
-| `GOACOS_ADMIN_USERNAME` / `ADMIN_PASSWORD` | `nacos` / `nacos` | 播种管理员(仅 users 表为空时) |
+| `GOACOS_ADMIN_USERNAME` / `GOACOS_ADMIN_PASSWORD` | `nacos` / `nacos` | 播种管理员(仅 users 表为空时);裸名 `ADMIN_PASSWORD` 不生效——无前缀回退只覆盖 `MYSQL_*` |
 | `GOACOS_HEARTBEAT_INTERVAL_MS` | `5000` | 对客户端下发的心跳间隔 |
 | `GOACOS_HEARTBEAT_TIMEOUT_MS` | `15000` | 临时实例转不健康阈值 |
 | `GOACOS_EPHEMERAL_DELETE_AFTER_MS` | `30000` | 临时实例删除阈值 |

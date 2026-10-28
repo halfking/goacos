@@ -77,7 +77,7 @@ make build && GOACOS_MYSQL_HOST=127.0.0.1 GOACOS_MYSQL_USER=root GOACOS_MYSQL_PA
 | `GOACOS_AUTH_ENABLED` | `false` | unsecured compatibility mode; enable for private deployments |
 | `GOACOS_AUTH_TOKEN_SECRET` | empty | explicit private JWT key, at least 32 bytes; old public default rejected when auth enabled |
 | `GOACOS_AUTH_TOKEN_TTL_SECONDS` | `18000` | access-token lifetime; must be positive and at most `86400` |
-| `GOACOS_ADMIN_USERNAME` / `ADMIN_PASSWORD` | `nacos` / `nacos` | seed values; auth-enabled startup requires nonblank username and private password with 12+ characters/72 bytes max |
+| `GOACOS_ADMIN_USERNAME` / `GOACOS_ADMIN_PASSWORD` | `nacos` / `nacos` | seed values; auth-enabled startup requires nonblank username and private password with 12+ characters/72 bytes max (bare `ADMIN_PASSWORD` is not read — the bare-name fallback covers `MYSQL_*` only) |
 | `GOACOS_HEARTBEAT_INTERVAL_MS` | `5000` | heartbeat interval advertised to clients |
 | `GOACOS_HEARTBEAT_TIMEOUT_MS` | `15000` | ephemeral instance → unhealthy |
 | `GOACOS_EPHEMERAL_DELETE_AFTER_MS` | `30000` | ephemeral instance → removed |
