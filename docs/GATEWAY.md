@@ -158,11 +158,11 @@ SNI 多证书、到期前 21 天自动续期、HSTS、HTTP→HTTPS 跳转、`Str
 
 ### 3.6 决定「前端还是后端」的是 protocol，不是 kind
 
-一个组件同时有 `kind` 与 `protocol` 两个字段，只有后者决定行为：
+一个组件同时有 `kind` 与 `protocol` 两个字段，只有后者决定**交付方式**：
 
 | 字段 | 取值 | 作用 |
 |---|---|---|
-| `kind` | `web` / `api` / `worker` / `mcp` / `gateway` | **仅描述性**。存下来、在 API 里返回，不参与任何路由决策 |
+| `kind` | `web` / `api` / `worker` / `mcp` / `gateway` | **描述性**。存下来、在 API 里返回；不决定交付方式，但未声明 `lbAlgorithm` 时它决定默认算法（`web` → `ip_hash`） |
 | `protocol` | `http` / `https` / `static` / `grpc` / `ws` | **决定性**。只有 `static` 会走磁盘交付，其余一律代理 |
 | `metadata.delivery` | `static` / `proxy` | 显式覆盖 `protocol`，无需改写路由 |
 
@@ -186,7 +186,7 @@ goacos 只做数据面）。
 `ws`）仍必须填，且检查**失败关闭**：不是精确的 `static`（含 `stattic` 这类拼写错误）
 一律按实例型处理。
 
-写 `kind: web` 的人通常以为它决定了什么。它不会 —— 决定的是 `protocol`。
+写 `kind: web` 的人通常以为它决定了交付方式。它不会 —— 决定的是 `protocol`。
 
 ### 3.7 台账里的 `!` 兜底，在数据面上必须真的兜底
 

@@ -259,7 +259,9 @@ protocols), `kind`, `protocol`, `groupName`, `clusterName`, `healthPath`,
 `weight`, `lbAlgorithm`, `sticky`, `metadata`. `appName` falls back to the
 `{app}` path segment. Defaults applied when omitted: `kind=api`,
 `protocol=http`, `groupName=DEFAULT_GROUP`, `weight=1`,
-`lbAlgorithm=round_robin`. `data` is `{"created":<bool>}`.
+`lbAlgorithm=round_robin` — except `kind=web`, whose default algorithm is
+`ip_hash`, so one page load is not split across two instances. `data` is
+`{"created":<bool>}`.
 
 `serviceName` is owed per **protocol**, not per component. `http`, `https`,
 `grpc` and `ws` are forwarded to instances the naming service tracks, so they
@@ -271,6 +273,12 @@ instance-backed and still rejected. The rule is enforced in the same
 normalisation pass that defaults and canonicalises `protocol`, so `protocol`
 is compared in its canonical lower-case form and an invalid `kind` is reported
 as such rather than being masked by an unrelated missing-service-name error.
+
+**Component `metadata` keys the gateway reads:**
+
+| Key | Meaning |
+|---|---|
+| `stripPrefix` | `true`/`1`/`yes`/`on` removes the matched route prefix before forwarding. Opt-in only: guessing wrong breaks the application, not just the gateway. |
 
 `DELETE /goacos/v1/apps/{app}/components/{component}` — query: `namespaceId`.
 Also removes any route pointing at the component, so the model can never hold a

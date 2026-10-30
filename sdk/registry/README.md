@@ -6,8 +6,9 @@ register itself, keep its registration alive, and find the registry when nobody
 told it where the registry is.
 
 It is a pure client library: standard library only, no third-party
-dependencies, and it never touches the environment, a config file, or any
-global state. The caller owns configuration and precedence.
+dependencies, and it never touches a config file or any global state. The
+caller owns configuration and precedence — `ConfigFromEnv` reads the
+environment through a getter the caller passes in.
 
 > Migrated from `acc-go/internal/platform/nacos`. The behaviour is unchanged;
 > the package was renamed from `nacos` to `registry` so the import path reads
@@ -27,6 +28,8 @@ Distributed services need two things, and this SDK provides both:
 
 | Capability | API |
 | --- | --- |
+| Build a `Config` from the environment | `ConfigFromEnv(getenv, Service{...})` |
+| Register, beat and deregister as one call | `Announce(ctx, cfg, listenAddr, logger)` |
 | Register an ephemeral instance | `Client.Register(ctx)` |
 | Send one heartbeat | `Client.Beat(ctx)` |
 | Deregister (best-effort) | `Client.Deregister(ctx)` |
@@ -196,7 +199,9 @@ is the authoritative source. This is only an index.
 
 ## Non-goals
 
-This package speaks the registry wire protocol and nothing else. It does not
-read the environment, cache discovered peers, load-balance across instances, or
-depend on anything outside the standard library. Discovery returns one address;
-the caller decides whether to reuse it, re-run it, or fall back to a static one.
+This package speaks the registry wire protocol and nothing else. Apart from
+`ConfigFromEnv` — which reads the `GOACOS_*` variables through a getter the
+caller passes in — it does not read the environment, cache discovered peers,
+load-balance across instances, or depend on anything outside the standard
+library. Discovery returns one address; the caller decides whether to reuse
+it, re-run it, or fall back to a static one.
