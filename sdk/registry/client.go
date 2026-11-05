@@ -18,6 +18,7 @@ import (
 	"net/http"
 	"net/netip"
 	"net/url"
+	"os"
 	"strconv"
 	"strings"
 	"sync"
@@ -57,7 +58,12 @@ const (
 // Wire paths. Every path is relative to the "/nacos" context path and every
 // one of them is a v2 endpoint — see the "why v2" note on the register method.
 const (
-	pathPrefix       = "/nacos"
+	pathPrefix = "/nacos"
+	// goacosPrefix is where the application model lives: applications,
+	// components and routes. It is deliberately NOT under /nacos — those are
+	// goacos's own surfaces, and there is no Nacos API to stay compatible
+	// with.
+	goacosPrefix     = "/goacos/v1"
 	pathInstance     = "/v2/ns/instance"
 	pathBeat         = "/v2/ns/instance/beat"
 	pathInstanceList = "/v2/ns/instance/list"
@@ -136,6 +142,22 @@ type Config struct {
 	// guessed during registration — Register fails with a clear error and
 	// AdvertiseIP is the opt-in fallback. See AdvertiseIP.
 	IP string
+
+	// IPAutoDetected records that IP was auto-detected rather than written by
+	// the operator.
+	//
+	// It exists because "the address is set" and "somebody chose the address"
+	// are two different questions, and the SDK can only answer the second one
+	// while it still knows the answer. The address usually arrives already
+	// resolved: ConfigFromEnv fills it in, or an integration resolves it and
+	// hands it over — and in both cases Config.IP is non-empty, so a check on
+	// `IP != ""` cannot tell a chosen address from a detected one.
+	//
+	// The difference decides whether the container-bridge warning may fire.
+	// An operator who typed GOACOS_IP has decided and is not second-guessed;
+	// an address nobody picked is exactly what that warning is for. Set this
+	// flag whenever the address was resolved rather than chosen.
+	IPAutoDetected bool
 
 	// Port is the port other services should dial. Required for Register.
 	Port int
@@ -416,13 +438,159 @@ func inDockerDefaultPool(a netip.Addr) bool {
 	return a.Compare(lo) >= 0 && a.Compare(hi) <= 0
 }
 
+// containerNetns reports whether this process runs inside a container's own
+// network namespace.
+//
+// It is a variable rather than a plain function so tests can pin the answer
+// instead of inheriting whatever the machine running the test happens to be.
+// That is not a convenience: the warning test used to decide "am I in a
+// container?" by asking the real filesystem, so its verdict changed with the
+// environment — green on a laptop, and red inside a CI container for a reason
+// that had nothing to do with the code under test.
+var containerNetns = detectContainerNetns
+
+// containerFSExists is the filesystem half of the container probe, kept
+// separate so the detection can be exercised without a container.
+var containerFSExists = func(path string) bool {
+	_, err := os.Stat(path)
+	return err == nil
+}
+
+// containerCgroupPath returns THIS process's own cgroup path.
+//
+// It is deliberately not /proc/1/cgroup: on a Docker host the host daemon is
+// PID 1 and its cgroup path contains "docker", so reading PID 1's path would
+// make every Docker host look like a container.
+var containerCgroupPath = func() (string, error) {
+	b, err := os.ReadFile("/proc/self/cgroup")
+	return string(b), err
+}
+
+// containerMarkerPaths are the files a container runtime drops into the
+// container's own filesystem.
+//
+// /.dockerenv is Docker's marker (podman writes it too when it emulates
+// Docker's API surface). /run/.containerenv is podman's marker — verified
+// present inside the podman containers on 252, which have no /.dockerenv at
+// all.
+//
+// Both are probed because neither runtime reliably writes the other's file,
+// and a runtime that writes neither (containerd/CRI without a Docker shim)
+// would otherwise be invisible to the warning.
+func containerMarkerPaths() []string {
+	return []string{"/.dockerenv", "/run/.containerenv"}
+}
+
+// looksLikeContainerCgroup reports whether our own cgroup path belongs to a
+// container.
+//
+// The markers are the ones that only ever show up in a container's cgroup
+// path: a kubelet-managed pod, a containerd scope, podman's libpod scope,
+// an LXC container. The Docker marker is matched as "docker/" or "docker-"
+// rather than the bare word, because a HOST running dockerd has a PID-1 cgroup
+// path like /system.slice/docker.service — matching the bare word would make
+// every Docker host look like a container.
+func looksLikeContainerCgroup(content string) bool {
+	for _, marker := range []string{"kubepods", "containerd", "libpod", "lxc", "docker/", "docker-"} {
+		if strings.Contains(content, marker) {
+			return true
+		}
+	}
+	return false
+}
+
+// detectContainerNetns performs the actual probe.
+//
+// The file markers come first because they are cheap and definitive; the
+// cgroup path is the fallback for runtimes that write neither file.
+func detectContainerNetns() bool {
+	for _, p := range containerMarkerPaths() {
+		if containerFSExists(p) {
+			return true
+		}
+	}
+	if c, err := containerCgroupPath(); err == nil && looksLikeContainerCgroup(c) {
+		return true
+	}
+	return false
+}
+
+// isContainerLocalAddr reports whether a is an address that only makes sense
+// INSIDE a container's own network.
+//
+// RFC1918 private space is the criterion, and the overlay range is excluded
+// on purpose: 100.64.0.0/10 is where NetBird hands out addresses, those are
+// dialable from outside the container's network, and warning about them would
+// be exactly backwards.
+func isContainerLocalAddr(a netip.Addr) bool {
+	a = a.Unmap()
+	if !a.Is4() {
+		return false
+	}
+	if meshPrefix.Contains(a) {
+		return false
+	}
+	return a.IsPrivate()
+}
+
+// ContainerLocalWarning returns a non-empty explanation when ip is an address
+// that only makes sense inside a container's own network, and "" when there is
+// nothing to say.
+//
+// It is exported because the address is very often resolved OUTSIDE the SDK —
+// by ConfigFromEnv, or by an integration that resolves it and hands it over as
+// an explicit one. At that point the SDK can no longer see that nobody chose
+// it, and the caller needs the same rule the SDK applies rather than a second,
+// drifting copy of it.
+//
+// The rules, in order:
+//   - Docker's default bridge pool (172.17.0.0/16-172.31.0.0/16) always
+//     qualifies: it is the signature of a container bridge, whichever runtime
+//     allocated it.
+//   - Any other private address qualifies only inside a container, where it is
+//     the container's own address on its own network.
+//   - An overlay address (100.64.0.0/10, where NetBird hands out addresses)
+//     never qualifies: peers outside the container's network can dial it.
+func ContainerLocalWarning(ip string) string {
+	addr, ok := netip.AddrFromSlice(net.ParseIP(ip).To4())
+	if !ok {
+		return ""
+	}
+	addr = addr.Unmap()
+	switch {
+	case inDockerDefaultPool(addr):
+		return "falls inside Docker's default bridge pool (172.17.0.0/16-172.31.0.0/16)"
+	case containerNetns() && isContainerLocalAddr(addr):
+		return "is this container's own bridge address (a private address)"
+	}
+	return ""
+}
+
 // warnContainerBridgeOnce explains the trap that auto-detection walks into
 // inside a container, exactly once per client.
+//
+// The address is published by Register, so that is where the warning has to
+// be reachable from — and the two conditions below are what make it so:
+//
+//  1. The address must be one nobody chose. Config.IP is non-empty on every
+//     real path (ConfigFromEnv fills it in, an integration resolves it and
+//     hands it over), so "is it set?" cannot answer that question;
+//     Config.IPAutoDetected can.
+//
+//  2. The warning must not depend on Register calling AdvertiseIP. It does
+//     not, and must not: Register refuses to guess an address, so the
+//     address is always already in Config.IP by the time it runs.
 //
 // Inside a container the interface list is `lo` + `eth0 <bridge address>` and
 // nothing else — NetBird runs on the host, not in the container, so the mesh
 // address that selectAdvertiseIP prefers is simply not visible from in here.
 // The LAN fallback then lands on the container's own bridge address.
+//
+// "Container" here means any container runtime, not Docker specifically. The
+// bridge subnet is the runtime's business: Docker defaults to
+// 172.17.0.0/16, podman to 10.88.0.0/16 and 10.89.0.0/24, Kubernetes to the
+// pod CIDR. A check that only recognises Docker's default pool is silent on
+// every one of the others, which is the same trap with the warning removed.
 //
 // That address is not simply "wrong", which is why this warns instead of
 // refusing. For a consumer inside the same Docker network it is exactly right:
@@ -439,16 +607,16 @@ func inDockerDefaultPool(a netip.Addr) bool {
 // consumers can dial — the host's mesh address when the port is published, or
 // do not register the service as an external one at all when it is not.
 func (c *Client) warnContainerBridgeOnce(ip string) {
-	if c.cfg.IP != "" {
+	if c.cfg.IP != "" && !c.cfg.IPAutoDetected {
 		return // an explicit choice was made; the operator already decided
 	}
-	addr, ok := netip.AddrFromSlice(net.ParseIP(ip).To4())
-	if !ok || !inDockerDefaultPool(addr.Unmap()) {
+	reason := ContainerLocalWarning(ip)
+	if reason == "" {
 		return
 	}
 	c.bridgeWarnOnce.Do(func() {
-		c.logger.Warn("auto-detected address is a Docker bridge address; "+
-			"consumers outside this Docker network cannot reach it. "+
+		c.logger.Warn("auto-detected address "+reason+"; "+
+			"consumers outside this network cannot reach it. "+
 			"Set the advertised IP explicitly (e.g. the host's mesh address) "+
 			"if this service must be reachable from outside this network.",
 			"advertise_ip", ip)
@@ -581,7 +749,16 @@ func (c *Client) Register(ctx context.Context) error {
 	if err := c.ready(); err != nil {
 		return err
 	}
-
+	// The address is published here, so this is where an address that nobody
+	// chose has to be called out.
+	//
+	// AdvertiseIP's warning could not do it: Register never calls
+	// AdvertiseIP — Register refuses to guess an address, so by the time it
+	// runs the address is always already in Config.IP, which the old
+	// "IP == '' means nobody chose it" check read as "the operator chose it".
+	// The warning was therefore unreachable on every path that registers
+	// anything.
+	c.warnContainerBridgeOnce(c.cfg.IP)
 	body := registerRequest{
 		ServiceName: c.cfg.ServiceName,
 		IP:          c.cfg.IP,
@@ -800,7 +977,16 @@ func (c *Client) usable() error {
 // out may be nil when the caller does not care about the data object. body may
 // be nil for GET/DELETE.
 func (c *Client) do(ctx context.Context, method, path string, query url.Values, body, out any) error {
-	raw, err := c.send(ctx, method, path, query, body)
+	return c.doAt(ctx, method, pathPrefix, path, query, body, out)
+}
+
+// doAt is do with an explicit API prefix.
+//
+// The naming API lives under /nacos and the application model under
+// /goacos/v1. They are separate surfaces on the same server, so the prefix
+// cannot be a constant baked into the request builder.
+func (c *Client) doAt(ctx context.Context, method, prefix, path string, query url.Values, body, out any) error {
+	raw, err := c.sendAt(ctx, method, prefix, path, query, body)
 	if err != nil {
 		if !isAuthRejection(err) {
 			return err
@@ -808,7 +994,7 @@ func (c *Client) do(ctx context.Context, method, path string, query url.Values, 
 		c.logger.Warn("nacos rejected credentials; refreshing token and retrying once",
 			"path", path, "method", method)
 		c.invalidateToken()
-		raw, err = c.send(ctx, method, path, query, body)
+		raw, err = c.sendAt(ctx, method, prefix, path, query, body)
 		if err != nil {
 			return err
 		}
@@ -842,6 +1028,11 @@ func (c *Client) do(ctx context.Context, method, path string, query url.Values, 
 // "serviceName/ip/port required", which is far more useful to the operator
 // than a bare status code, so the body is quoted back.
 func (c *Client) send(ctx context.Context, method, path string, query url.Values, body any) ([]byte, error) {
+	return c.sendAt(ctx, method, pathPrefix, path, query, body)
+}
+
+// sendAt is send with an explicit API prefix.
+func (c *Client) sendAt(ctx context.Context, method, prefix, path string, query url.Values, body any) ([]byte, error) {
 	if c == nil {
 		return nil, ErrNilClient
 	}
@@ -860,7 +1051,7 @@ func (c *Client) send(ctx context.Context, method, path string, query url.Values
 		contentType = "application/json"
 	}
 
-	u := c.base + pathPrefix + path
+	u := c.base + prefix + path
 	if len(query) > 0 {
 		u += "?" + query.Encode()
 	}

@@ -289,6 +289,17 @@ func untried(instances []Instance, tried map[string]bool) []Instance {
 // while it is still safe to do so.
 func (g *Gateway) Forward(w http.ResponseWriter, r *http.Request, t *Target, pol Policy) {
 	if len(t.Instances) == 0 {
+		// A port conflict is a different failure from "nothing is registered",
+		// and the difference is the whole diagnosis: every instance of this
+		// service is healthy, but they do not agree on a port, so there is no
+		// pool to balance across. Saying "no healthy instance" here would send
+		// the operator hunting for a registration that is actually there.
+		if t.PortConflict != nil {
+			writeGatewayError(w, http.StatusServiceUnavailable,
+				fmt.Sprintf("no usable upstream for component %s/%s: %s",
+					t.AppName, t.ComponentName, t.PortConflict.Reason()))
+			return
+		}
 		writeGatewayError(w, http.StatusServiceUnavailable,
 			fmt.Sprintf("no healthy instance for service %q (component %s/%s)", t.ServiceName, t.AppName, t.ComponentName))
 		return

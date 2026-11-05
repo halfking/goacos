@@ -3,13 +3,17 @@ package gateway
 // Full-application routing: one application, a frontend component and a backend
 // component, on one domain.
 //
-// Why this file exists separately from routetable_pg_test.go
+// Why this file exists separately from routetable_db_test.go
 //
 // That file proves a *service* reaches the data plane. The goal this subsystem
 // actually has is bigger — "不只是支持 nacos 类型的服务，还要支持前端后端的
 // 完整应用" — and nothing asserted that. A full application is not a bigger
 // version of the same thing: it is two kinds of component sharing a domain, and
 // the interesting failures are about the boundary between them.
+//
+// 2026-10-24: this file, like its sibling, had never been executed (it skipped
+// without a DSN) and its fixture was broken in the same way. See `dbtest_test.go`
+// for the whole story. It now runs against both engines.
 //
 // The boundary that matters
 //
@@ -149,53 +153,54 @@ func registerAppInstance(t *testing.T, store *storage.Store, service, ip string,
 // than by prefix, the API would be served by the web host and every assertion
 // here would still be "passing" on the frontend half alone.
 func TestFullApplicationRoutesEachPrefixToItsOwnComponent(t *testing.T) {
-	store := openPGStore(t)
-	ctx := context.Background()
-	declareFullApplication(t, store)
+	forEachEngine(t, func(t *testing.T, store *storage.Store) {
+		ctx := context.Background()
+		declareFullApplication(t, store)
 
-	registerAppInstance(t, store, "shop-web", "100.106.175.10", 80)
-	registerAppInstance(t, store, "shop-web", "100.106.175.11", 80)
-	registerAppInstance(t, store, "shop-api", "100.106.175.20", 8080)
-	registerAppInstance(t, store, "shop-api", "100.106.175.21", 8080)
+		registerAppInstance(t, store, "shop-web", "100.106.175.10", 80)
+		registerAppInstance(t, store, "shop-web", "100.106.175.11", 80)
+		registerAppInstance(t, store, "shop-api", "100.106.175.20", 8080)
+		registerAppInstance(t, store, "shop-api", "100.106.175.21", 8080)
 
-	tbl := NewTable()
-	if err := tbl.Refresh(ctx, store, gwTestNamespace); err != nil {
-		t.Fatalf("refresh: %v", err)
-	}
-
-	front := tbl.Lookup(appTestDomain, "/index.html", nil)
-	if front == nil {
-		t.Fatalf("no target for the frontend prefix; domain %s is declared and its instances are registered",
-			appTestDomain)
-	}
-	if front.ComponentName != appTestFrontendCmp {
-		t.Errorf("/ resolved to component %q, want %q", front.ComponentName, appTestFrontendCmp)
-	}
-	if got := sortedAddrs(front.Instances); len(got) != 2 {
-		t.Errorf("frontend routed to %v, want both web instances — a full application must balance across them", got)
-	}
-
-	back := tbl.Lookup(appTestDomain, "/api/orders", nil)
-	if back == nil {
-		t.Fatalf("no target for /api; its component and instances are both registered")
-	}
-	if back.ComponentName != appTestBackendCmp {
-		t.Errorf("/api resolved to component %q, want %q", back.ComponentName, appTestBackendCmp)
-	}
-	if got := sortedAddrs(back.Instances); len(got) != 2 {
-		t.Errorf("/api routed to %v, want both api instances", got)
-	}
-	for _, addr := range sortedAddrs(back.Instances) {
-		if addr == "100.106.175.10:80" || addr == "100.106.175.11:80" {
-			t.Errorf("/api was served by a frontend instance %s", addr)
+		tbl := NewTable()
+		if err := tbl.Refresh(ctx, store, gwTestNamespace); err != nil {
+			t.Fatalf("refresh: %v", err)
 		}
-	}
 
-	// A deeper prefix under the backend must stay on the backend, not climb
-	// back up to the shorter /api rule or down to /.
-	if deep := tbl.Lookup(appTestDomain, "/api/v2/orders/42", nil); deep == nil || deep.ComponentName != appTestBackendCmp {
-		t.Errorf("/api/v2/orders/42 resolved to %v, want the backend component", deep)
-	}
+		front := tbl.Lookup(appTestDomain, "/index.html", nil)
+		if front == nil {
+			t.Fatalf("no target for the frontend prefix; domain %s is declared and its instances are registered",
+				appTestDomain)
+		}
+		if front.ComponentName != appTestFrontendCmp {
+			t.Errorf("/ resolved to component %q, want %q", front.ComponentName, appTestFrontendCmp)
+		}
+		if got := sortedAddrs(front.Instances); len(got) != 2 {
+			t.Errorf("frontend routed to %v, want both web instances — a full application must balance across them", got)
+		}
+
+		back := tbl.Lookup(appTestDomain, "/api/orders", nil)
+		if back == nil {
+			t.Fatalf("no target for /api; its component and instances are both registered")
+		}
+		if back.ComponentName != appTestBackendCmp {
+			t.Errorf("/api resolved to component %q, want %q", back.ComponentName, appTestBackendCmp)
+		}
+		if got := sortedAddrs(back.Instances); len(got) != 2 {
+			t.Errorf("/api routed to %v, want both api instances", got)
+		}
+		for _, addr := range sortedAddrs(back.Instances) {
+			if addr == "100.106.175.10:80" || addr == "100.106.175.11:80" {
+				t.Errorf("/api was served by a frontend instance %s", addr)
+			}
+		}
+
+		// A deeper prefix under the backend must stay on the backend, not climb
+		// back up to the shorter /api rule or down to /.
+		if deep := tbl.Lookup(appTestDomain, "/api/v2/orders/42", nil); deep == nil || deep.ComponentName != appTestBackendCmp {
+			t.Errorf("/api/v2/orders/42 resolved to %v, want the backend component", deep)
+		}
+	})
 }
 
 // TestAGatewayFailsClosedRatherThanServingAnUnreachableFrontend is the boundary
@@ -207,42 +212,43 @@ func TestFullApplicationRoutesEachPrefixToItsOwnComponent(t *testing.T) {
 // 404 ("no such route"), while an empty instance list is a 503 ("the route
 // exists and nothing is behind it"). Those are different pages of the runbook.
 func TestAGatewayFailsClosedRatherThanServingAnUnreachableFrontend(t *testing.T) {
-	store := openPGStore(t)
-	ctx := context.Background()
-	declareFullApplication(t, store)
+	forEachEngine(t, func(t *testing.T, store *storage.Store) {
+		ctx := context.Background()
+		declareFullApplication(t, store)
 
-	// Only the frontend is up. The backend component is declared and routed,
-	// with nothing registered behind it — an ordinary deployment accident.
-	registerAppInstance(t, store, "shop-web", "100.106.175.10", 80)
-	registerAppInstance(t, store, "shop-web", "100.106.175.11", 80)
+		// Only the frontend is up. The backend component is declared and routed,
+		// with nothing registered behind it — an ordinary deployment accident.
+		registerAppInstance(t, store, "shop-web", "100.106.175.10", 80)
+		registerAppInstance(t, store, "shop-web", "100.106.175.11", 80)
 
-	tbl := NewTable()
-	if err := tbl.Refresh(ctx, store, gwTestNamespace); err != nil {
-		t.Fatalf("refresh: %v", err)
-	}
+		tbl := NewTable()
+		if err := tbl.Refresh(ctx, store, gwTestNamespace); err != nil {
+			t.Fatalf("refresh: %v", err)
+		}
 
-	back := tbl.Lookup(appTestDomain, "/api/orders", nil)
-	if back == nil {
-		t.Fatalf("/api returned nil; the route IS declared, so the data plane must see an " +
-			"empty target and answer 503, not 404")
-	}
-	if back.ComponentName != appTestBackendCmp {
-		t.Fatalf("/api fell through to component %q — an API outage must not be served "+
-			"the frontend's index.html with a 200", back.ComponentName)
-	}
-	if len(back.Instances) != 0 {
-		t.Errorf("/api has %d instances (%v), want none", len(back.Instances), sortedAddrs(back.Instances))
-	}
+		back := tbl.Lookup(appTestDomain, "/api/orders", nil)
+		if back == nil {
+			t.Fatalf("/api returned nil; the route IS declared, so the data plane must see an " +
+				"empty target and answer 503, not 404")
+		}
+		if back.ComponentName != appTestBackendCmp {
+			t.Fatalf("/api fell through to component %q — an API outage must not be served "+
+				"the frontend's index.html with a 200", back.ComponentName)
+		}
+		if len(back.Instances) != 0 {
+			t.Errorf("/api has %d instances (%v), want none", len(back.Instances), sortedAddrs(back.Instances))
+		}
 
-	// The frontend must be unaffected: one component being down is not a
-	// reason to take the whole application offline.
-	front := tbl.Lookup(appTestDomain, "/index.html", nil)
-	if front == nil || front.ComponentName != appTestFrontendCmp {
-		t.Fatalf("frontend broke when the backend was empty: %v", front)
-	}
-	if got := sortedAddrs(front.Instances); len(got) != 2 {
-		t.Errorf("frontend routed to %v, want both instances — the backend outage must not shrink the frontend pool", got)
-	}
+		// The frontend must be unaffected: one component being down is not a
+		// reason to take the whole application offline.
+		front := tbl.Lookup(appTestDomain, "/index.html", nil)
+		if front == nil || front.ComponentName != appTestFrontendCmp {
+			t.Fatalf("frontend broke when the backend was empty: %v", front)
+		}
+		if got := sortedAddrs(front.Instances); len(got) != 2 {
+			t.Errorf("frontend routed to %v, want both instances — the backend outage must not shrink the frontend pool", got)
+		}
+	})
 }
 
 // TestAnUnreachableFrontendIsAlsoJustAnEmptyTarget pins the other half of the
@@ -254,27 +260,28 @@ func TestAGatewayFailsClosedRatherThanServingAnUnreachableFrontend(t *testing.T)
 // someone adds real static serving, this assertion is the line they have to
 // consciously cross rather than something that quietly stops holding.
 func TestAnUnreachableFrontendIsAlsoJustAnEmptyTarget(t *testing.T) {
-	store := openPGStore(t)
-	ctx := context.Background()
-	declareFullApplication(t, store)
+	forEachEngine(t, func(t *testing.T, store *storage.Store) {
+		ctx := context.Background()
+		declareFullApplication(t, store)
 
-	// Nothing at all registered: neither shop-web nor shop-api.
-	tbl := NewTable()
-	if err := tbl.Refresh(ctx, store, gwTestNamespace); err != nil {
-		t.Fatalf("refresh: %v", err)
-	}
+		// Nothing at all registered: neither shop-web nor shop-api.
+		tbl := NewTable()
+		if err := tbl.Refresh(ctx, store, gwTestNamespace); err != nil {
+			t.Fatalf("refresh: %v", err)
+		}
 
-	front := tbl.Lookup(appTestDomain, "/", nil)
-	if front == nil {
-		t.Fatal("/ returned nil with no instances; declared routes must resolve to an empty target")
-	}
-	if front.Kind != "static" {
-		t.Errorf("component kind = %q, want it carried through as %q", front.Kind, "static")
-	}
-	if len(front.Instances) != 0 {
-		t.Errorf("a static component with nothing registered resolved to %v — goacos does not serve files today",
-			sortedAddrs(front.Instances))
-	}
+		front := tbl.Lookup(appTestDomain, "/", nil)
+		if front == nil {
+			t.Fatal("/ returned nil with no instances; declared routes must resolve to an empty target")
+		}
+		if front.Kind != "static" {
+			t.Errorf("component kind = %q, want it carried through as %q", front.Kind, "static")
+		}
+		if len(front.Instances) != 0 {
+			t.Errorf("a static component with nothing registered resolved to %v — goacos does not serve files today",
+				sortedAddrs(front.Instances))
+		}
+	})
 }
 
 // TestFullApplicationIsNotAStubFixture keeps the other three cases honest: they
@@ -282,33 +289,34 @@ func TestAnUnreachableFrontendIsAlsoJustAnEmptyTarget(t *testing.T) {
 // claim about which component and which instances, so a fixture that registered
 // too little would turn them all green for the wrong reason.
 func TestFullApplicationIsNotAStubFixture(t *testing.T) {
-	store := openPGStore(t)
-	ctx := context.Background()
-	declareFullApplication(t, store)
+	forEachEngine(t, func(t *testing.T, store *storage.Store) {
+		ctx := context.Background()
+		declareFullApplication(t, store)
 
-	if os.Getenv("GOACOS_TEST_PG_DSN") == "" {
-		t.Fatal("fixture requires a real database; openPGStore should have skipped instead")
-	}
+		if os.Getenv("GOACOS_TEST_PG_DSN") == "" {
+			t.Fatal("fixture requires a real database; openStore should have skipped instead")
+		}
 
-	registerAppInstance(t, store, "shop-web", "100.106.175.10", 80)
-	registerAppInstance(t, store, "shop-api", "100.106.175.20", 8080)
+		registerAppInstance(t, store, "shop-web", "100.106.175.10", 80)
+		registerAppInstance(t, store, "shop-api", "100.106.175.20", 8080)
 
-	tbl := NewTable()
-	if err := tbl.Refresh(ctx, store, gwTestNamespace); err != nil {
-		t.Fatalf("refresh: %v", err)
-	}
+		tbl := NewTable()
+		if err := tbl.Refresh(ctx, store, gwTestNamespace); err != nil {
+			t.Fatalf("refresh: %v", err)
+		}
 
-	front := tbl.Lookup(appTestDomain, "/", nil)
-	back := tbl.Lookup(appTestDomain, "/api", nil)
-	if front == nil || back == nil {
-		t.Fatalf("fixture produced no targets at all (front=%v back=%v)", front, back)
-	}
-	if len(front.Instances) != 1 || len(back.Instances) != 1 {
-		t.Fatalf("fixture registered %d frontend and %d backend instances, want 1 and 1",
-			len(front.Instances), len(back.Instances))
-	}
-	if front.ComponentName == back.ComponentName {
-		t.Fatalf("both prefixes resolved to component %q — the fixture cannot tell the two apart",
-			front.ComponentName)
-	}
+		front := tbl.Lookup(appTestDomain, "/", nil)
+		back := tbl.Lookup(appTestDomain, "/api", nil)
+		if front == nil || back == nil {
+			t.Fatalf("fixture produced no targets at all (front=%v back=%v)", front, back)
+		}
+		if len(front.Instances) != 1 || len(back.Instances) != 1 {
+			t.Fatalf("fixture registered %d frontend and %d backend instances, want 1 and 1",
+				len(front.Instances), len(back.Instances))
+		}
+		if front.ComponentName == back.ComponentName {
+			t.Fatalf("both prefixes resolved to component %q — the fixture cannot tell the two apart",
+				front.ComponentName)
+		}
+	})
 }

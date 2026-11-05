@@ -94,6 +94,29 @@ function noopLogger() {
 }
 
 /**
+ * Read a config value under either spelling.
+ *
+ * The published type declaration (`index.d.ts`) documents **snake_case**
+ * option names — `service_name`, `server_addr`, `namespace_id`, ... — because
+ * that is what the Python binding uses. The runtime, on the other hand, has
+ * always read **camelCase** — `serviceName`, `serverAddr`, ... .
+ *
+ * That gap was invisible until a consumer actually followed the type
+ * declaration: `new RegistryClient({ service_name: 'x', port: 80 })` threw
+ * "config.serviceName is required" — a TypeScript user who did exactly what
+ * the types told them to do could not start the client.
+ *
+ * So both spellings are accepted here. The camelCase ones keep their
+ * precedence (they are what the runtime has always meant), and the
+ * snake_case ones are the documented aliases.
+ */
+function pick(config, camelName, snakeName) {
+  const camel = config[camelName];
+  if (camel !== undefined && camel !== null) return camel;
+  return config[snakeName];
+}
+
+/**
  * Normalize a partial config into the full shape the client uses.
  * Mirrors registry.Config in Go and Config in Python.
  */
@@ -101,7 +124,8 @@ function normalizeConfig(config) {
   if (!config || typeof config !== 'object') {
     throw new Error('registry: config object is required');
   }
-  if (!config.serviceName) {
+  const serviceName = pick(config, 'serviceName', 'service_name');
+  if (!serviceName) {
     throw new Error('registry: config.serviceName is required');
   }
   const port = Number(config.port);
@@ -114,16 +138,22 @@ function normalizeConfig(config) {
   const weight = Number(config.weight);
   return {
     enabled: config.enabled !== false,
-    serverAddr: (config.serverAddr || 'http://127.0.0.1:8848').replace(/\/+$/, ''),
-    serviceName: config.serviceName,
+    serverAddr: (pick(config, 'serverAddr', 'server_addr') || 'http://127.0.0.1:8848').replace(/\/+$/, ''),
+    serviceName,
     // Trim before the fallback test: a group/cluster of "   " is not an
     // unset name to be filled in later, it is a DIFFERENT, unreachable name —
     // the instance lands in a bucket nobody queries while every layer above
     // reports success. The Python and Go bindings both treat whitespace as
     // unset; without this the three SDKs disagree on the same config.
-    namespaceId: (typeof config.namespaceId === 'string' ? config.namespaceId.trim() : '') || '',
-    groupName: (typeof config.groupName === 'string' ? config.groupName.trim() : '') || DEFAULT_GROUP_NAME,
-    clusterName: (typeof config.clusterName === 'string' ? config.clusterName.trim() : '') || DEFAULT_CLUSTER_NAME,
+    namespaceId: (typeof pick(config, 'namespaceId', 'namespace_id') === 'string'
+      ? pick(config, 'namespaceId', 'namespace_id').trim()
+      : '') || '',
+    groupName: (typeof pick(config, 'groupName', 'group_name') === 'string'
+      ? pick(config, 'groupName', 'group_name').trim()
+      : '') || DEFAULT_GROUP_NAME,
+    clusterName: (typeof pick(config, 'clusterName', 'cluster_name') === 'string'
+      ? pick(config, 'clusterName', 'cluster_name').trim()
+      : '') || DEFAULT_CLUSTER_NAME,
     ip: config.ip || '',
     port,
     weight: weight > 0 ? weight : 1.0,
@@ -132,12 +162,33 @@ function normalizeConfig(config) {
     password: config.password || '',
     token: config.token || '',
     heartbeatIntervalMs:
-      Number(config.heartbeatIntervalMs) > 0 ? Number(config.heartbeatIntervalMs) : 5000,
+      Number(pick(config, 'heartbeatIntervalMs', 'heartbeat_interval')) > 0
+        ? Number(pick(config, 'heartbeatIntervalMs', 'heartbeat_interval'))
+        : 5000,
     requestTimeoutMs:
-      Number(config.requestTimeoutMs) > 0
-        ? Number(config.requestTimeoutMs)
+      Number(pick(config, 'requestTimeoutMs', 'request_timeout')) > 0
+        ? Number(pick(config, 'requestTimeoutMs', 'request_timeout'))
         : DEFAULT_REQUEST_TIMEOUT_MS,
   };
+}
+
+/**
+ * A validated configuration.
+ *
+ * It exists because the type declaration promises one: `index.d.ts` has
+ * declared `export declare class Config` since the binding was written, but
+ * the runtime never exported it — `import { Config } from 'goacos-registry'`
+ * gave `undefined` and `new Config(...)` threw "Config is not a constructor".
+ * A type declaration nobody checks is a second source of truth that lies.
+ *
+ * The class is a thin shell over `normalizeConfig`, so it accepts the same
+ * option names (snake_case as documented, camelCase as aliases) and exposes
+ * the same normalized camelCase attributes the client itself uses.
+ */
+class Config {
+  constructor(options) {
+    Object.assign(this, normalizeConfig(options));
+  }
 }
 
 /** Unwrap `{code, message, data}`; a non-zero code is an error. */
@@ -593,6 +644,7 @@ class RegistryClient {
 }
 
 module.exports = {
+  Config,
   RegistryClient,
   RegistryError,
   StatusError,

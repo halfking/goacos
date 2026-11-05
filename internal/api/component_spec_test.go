@@ -103,3 +103,38 @@ func TestNormalizeComponentSpecRejectsUnknownKind(t *testing.T) {
 		}
 	}
 }
+
+// The declared service port is checked at the write boundary.
+//
+// A port that reaches the routing table by any other route — a row edited by
+// hand, an import from another tool — would silently narrow a component's
+// pool to a port nobody chose. Refusing it here is cheaper than debugging it
+// as "the service is up but the site 503s".
+func TestNormalizeComponentSpecValidatesServicePort(t *testing.T) {
+	c := componentSpec{ServiceName: "openpocket-api", Metadata: map[string]string{
+		storage.ServicePortMetaKey: "8090",
+	}}
+	if err := normalizeComponentSpec(&c); err != nil {
+		t.Fatalf("a valid servicePort must be accepted, got %v", err)
+	}
+
+	for _, raw := range []string{"", "abc", "0", "65536", "-1", "8090.5"} {
+		c := componentSpec{ServiceName: "s", Metadata: map[string]string{
+			storage.ServicePortMetaKey: raw,
+		}}
+		err := normalizeComponentSpec(&c)
+		if err == nil {
+			t.Errorf("servicePort %q must be rejected", raw)
+			continue
+		}
+		if !strings.Contains(err.Error(), storage.ServicePortMetaKey) {
+			t.Errorf("error should name the offending key, got %v", err)
+		}
+	}
+
+	// A component with no metadata at all is untouched by this rule.
+	c = componentSpec{ServiceName: "s"}
+	if err := normalizeComponentSpec(&c); err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+}

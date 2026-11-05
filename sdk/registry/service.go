@@ -60,15 +60,53 @@ import (
 // exist in acc-go, the myvpn registrar sidecar and the goacos-registrar command
 // under the same names. They drifted apart once, and that only happened because
 // each side made the tradeoff privately.
+//
+// EnvToken carries a **pre-issued** accessToken, so a service can authenticate
+// without holding a long-lived password. The other two clients of the same
+// registry already read this name: acc-go (`envconfig:"GOACOS_TOKEN"`) and the
+// myvpn registrar sidecar (`env_str("GOACOS_TOKEN")`). This package was the
+// only one of the three that could not take a token from the environment — its
+// Config.Token field worked, but only for callers that built Config in code.
+// For a fleet where every service registers itself, that difference decides
+// whether credentials can be per-service and revocable, or whether every
+// service has to hold a password instead.
 const (
-	EnvEnabled       = "GOACOS_ENABLED"
-	EnvServerAddr    = "GOACOS_SERVER_ADDR"
-	EnvNamespace     = "GOACOS_NAMESPACE"
-	EnvServiceName   = "GOACOS_SERVICE_NAME"
-	EnvIP            = "GOACOS_IP"
-	EnvPort          = "GOACOS_PORT"
-	EnvUsername      = "GOACOS_USERNAME"
-	EnvPassword      = "GOACOS_PASSWORD"
+	EnvEnabled     = "GOACOS_ENABLED"
+	EnvServerAddr  = "GOACOS_SERVER_ADDR"
+	EnvNamespace   = "GOACOS_NAMESPACE"
+	EnvServiceName = "GOACOS_SERVICE_NAME"
+	EnvIP          = "GOACOS_IP"
+	EnvPort        = "GOACOS_PORT"
+	EnvUsername    = "GOACOS_USERNAME"
+	EnvPassword    = "GOACOS_PASSWORD"
+	EnvToken       = "GOACOS_TOKEN"
+	// EnvCluster names the cluster an instance belongs to. It is part of the
+	// instance identity key on the server (namespace, group, service,
+	// cluster, ip, port), so a fleet spread over several hosts that all
+	// register as one cluster cannot be told apart in the registry — the
+	// cluster count reads one, and the balancing has no cluster dimension to
+	// work with.
+	//
+	// Same spelling as the other three clients of this registry: the
+	// goacos-registrar command, acc-go and the myvpn registrar sidecar all
+	// read GOACOS_CLUSTER. This package was the only one that could not, so
+	// every service that registers through it landed in "DEFAULT" whatever
+	// the operator asked for.
+	EnvCluster = "GOACOS_CLUSTER"
+	// EnvGroup names the group an instance belongs to. Like the cluster, it
+	// is part of the instance identity key on the server, and acc-go, the
+	// goacos-registrar command and the myvpn registrar sidecar all read it.
+	// This package could not: every service that registered through it landed
+	// in DEFAULT_GROUP whatever the operator asked for.
+	EnvGroup = "GOACOS_GROUP"
+	// EnvMetadata carries descriptive key/value pairs for the instance, in
+	// the same comma-separated `k=v,k=v` form the other clients of this
+	// registry already use (acc-go's ParseMetadata and the registrar
+	// sidecar's env_csv_map). Not JSON: commas cannot appear in a URL query
+	// safely, and a raw JSON value in an environment variable invites
+	// quoting mistakes. The format is a fleet convention, not a choice this
+	// package gets to make on its own.
+	EnvMetadata      = "GOACOS_METADATA"
 	EnvAllowLoopback = "GOACOS_ALLOW_LOOPBACK"
 )
 
@@ -113,6 +151,45 @@ type Service struct {
 // a non-boolean flag. Everything else (no address, no port, an unreachable
 // registry) is deliberately not an error here, because the correct response to
 // all of them is the same: serve traffic anyway, and say why.
+// mergeMetadata folds the operator's GOACOS_METADATA value into the service's
+// own metadata.
+//
+// The format is the fleet's: comma-separated `k=v` pairs. A segment that
+// cannot be parsed is skipped rather than fatal — metadata is descriptive and
+// must not be able to prevent a service from registering (acc-go's
+// ParseMetadata and the registrar sidecar's env_csv_map behave the same way).
+//
+// On a key collision the operator's value wins: the service's own metadata
+// says what the program is, the operator's says what this deployment is, and
+// the deployment is the more specific claim.
+//
+// The service's map is copied, never mutated in place: a caller that reuses
+// its Service value across two ConfigFromEnv calls must not see the first
+// call's operator metadata leak into the second.
+func mergeMetadata(base map[string]string, raw string) map[string]string {
+	raw = strings.TrimSpace(raw)
+	if raw == "" && len(base) == 0 {
+		return base
+	}
+	out := make(map[string]string, len(base)+2)
+	for k, v := range base {
+		out[k] = v
+	}
+	for _, seg := range strings.Split(raw, ",") {
+		seg = strings.TrimSpace(seg)
+		if seg == "" {
+			continue
+		}
+		k, v, ok := strings.Cut(seg, "=")
+		k = strings.TrimSpace(k)
+		if !ok || k == "" {
+			continue
+		}
+		out[k] = strings.TrimSpace(v)
+	}
+	return out
+}
+
 func ConfigFromEnv(getenv func(string) string, svc Service) (Config, error) {
 	if getenv == nil {
 		getenv = os.Getenv
@@ -149,17 +226,38 @@ func ConfigFromEnv(getenv func(string) string, svc Service) (Config, error) {
 		Port:        port,
 		Username:    getenv(EnvUsername),
 		Password:    getenv(EnvPassword),
-		Metadata:    svc.Metadata,
+		// A pre-issued token wins over the login flow: the client already
+		// prefers it (see Client.ensureToken), and the token is the credential
+		// that can be revoked per service. Trimmed, because a secret read from
+		// a file or a heredoc routinely carries a trailing newline, and a
+		// newline inside a Bearer header fails authentication in a way that
+		// looks like a bad token rather than a dirty read.
+		Token: strings.TrimSpace(getenv(EnvToken)),
+		// An empty cluster name is left empty on purpose: the server fills
+		// the default in, and the client's own defaulting does the same. What
+		// must not happen is an operator's cluster name being silently
+		// dropped, which is what happens when this line does not exist.
+		ClusterName: strings.TrimSpace(getenv(EnvCluster)),
+		// Same reasoning for the group: empty means "use the default", not
+		// "silently DEFAULT_GROUP".
+		GroupName: strings.TrimSpace(getenv(EnvGroup)),
+		Metadata:  mergeMetadata(svc.Metadata, getenv(EnvMetadata)),
 	}
 
 	// Auto-detect only when the operator named no address, and never when
 	// registration is off: an address nobody will publish should not be probed
 	// for on every boot of a service that never registers.
+	//
+	// The flag records the provenance, which is the one thing that decides
+	// whether the container-bridge warning may fire later: the operator named
+	// no address, so nobody chose this one.
 	if enabled && cfg.IP == "" {
 		if detected := detectedAdvertiseIP(getenv); isRoutable(detected) {
 			cfg.IP = detected
+			cfg.IPAutoDetected = true
 		} else if allowLoopback && isDialableLoopback(detected) {
 			cfg.IP = detected
+			cfg.IPAutoDetected = true
 		}
 		// Otherwise leave it empty. Announce reports that, loudly, with a hint.
 	}

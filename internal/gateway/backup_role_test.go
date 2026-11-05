@@ -61,7 +61,8 @@ func TestBackupInstanceStaysOutOfForwardingWhilePrimaryExists(t *testing.T) {
 		instanceWithRole("10.0.0.1", 4100, 1, "primary"),
 		instanceWithRole("10.0.0.2", 4100, 1, "backup"),
 	}
-	got := addrSet(selectForwardable(in, "", ""))
+	forwardable, _ := selectForwardable(in, "", "", 0)
+	got := addrSet(forwardable)
 	if got["10.0.0.2"] {
 		t.Fatalf("backup 实例进入了转发集合：%v", got)
 	}
@@ -78,7 +79,8 @@ func TestUntaggedInstancesAreForwarded(t *testing.T) {
 		instanceWithRole("10.0.0.1", 4100, 1, ""),
 		instanceWithRole("10.0.0.2", 4100, 1, ""),
 	}
-	got := addrSet(selectForwardable(in, "", ""))
+	forwardable, _ := selectForwardable(in, "", "", 0)
+	got := addrSet(forwardable)
 	if len(got) != 2 {
 		t.Fatalf("未标注 role 的实例应全部可转发，实际 %v", got)
 	}
@@ -90,7 +92,8 @@ func TestAllBackupInstancesStillServeWhenNothingElseIsLeft(t *testing.T) {
 		instanceWithRole("10.0.0.1", 4100, 1, "backup"),
 		instanceWithRole("10.0.0.2", 4100, 1, "backup"),
 	}
-	got := addrSet(selectForwardable(in, "", ""))
+	forwardable, _ := selectForwardable(in, "", "", 0)
+	got := addrSet(forwardable)
 	if len(got) != 2 {
 		t.Fatalf("全部为 backup 时应照常服务（宁可错不可黑），实际只转发 %v", got)
 	}

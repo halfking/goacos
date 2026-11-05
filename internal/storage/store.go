@@ -194,25 +194,47 @@ func (s *Store) Seed(ctx context.Context) error {
 		return err
 	}
 	if n == 0 {
-		hash, err := bcrypt.GenerateFromPassword([]byte(s.cfg.AdminPassword), bcrypt.DefaultCost)
-		if err != nil {
-			return err
+		// An empty admin username must never be seeded.
+		//
+		// The guard above is "the users table is empty", so a row inserted here
+		// decides the fate of this database for good: the real admin is only
+		// ever seeded while the table is empty, and a row whose primary key is
+		// the empty string is a row that will never be it. A goacos started
+		// without ADMIN_USERNAME would therefore leave behind a database in
+		// which **no admin exists** — and since ValidateAuthState only checks
+		// that no active admin still has the public password, nothing would
+		// say so. Every admin-only operation would fail with "unknown user or
+		// wrong password", on this boot and on every boot after it.
+		//
+		// It was not hypothetical: a test that opened a database with a
+		// zero-valued config (no AdminUsername) poisoned a shared registry
+		// this way, and the next package to open it could no longer log in.
+		if s.cfg.AdminUsername == "" {
+			log.Printf("[goacos] ADMIN_USERNAME is empty: skipping the admin seed. " +
+				"No administrator account will exist in this database, and every " +
+				"admin-only operation will fail until ADMIN_USERNAME is set and the " +
+				"account is created.")
+		} else {
+			hash, err := bcrypt.GenerateFromPassword([]byte(s.cfg.AdminPassword), bcrypt.DefaultCost)
+			if err != nil {
+				return err
+			}
+			// InsertIgnore: several replicas may boot against an empty database at
+			// once; the count guard above is best-effort, the unique key decides.
+			if _, err := s.Exec(ctx, s.dialect.InsertIgnore("users", "username", "password", "enabled"),
+				s.cfg.AdminUsername, string(hash), 1); err != nil {
+				return err
+			}
+			if _, err := s.Exec(ctx, s.dialect.Rebind(s.dialect.InsertIgnore("roles", "username", "role")),
+				s.cfg.AdminUsername, "ROLE_ADMIN"); err != nil {
+				return err
+			}
+			if _, err := s.Exec(ctx, s.dialect.Rebind(s.dialect.InsertIgnore("permissions", "role", "resource", "action")),
+				"ROLE_ADMIN", "/*", "rw"); err != nil {
+				return err
+			}
+			log.Printf("[goacos] seeded admin user %q (initial password from ADMIN_PASSWORD)", s.cfg.AdminUsername)
 		}
-		// InsertIgnore: several replicas may boot against an empty database at
-		// once; the count guard above is best-effort, the unique key decides.
-		if _, err := s.Exec(ctx, s.dialect.InsertIgnore("users", "username", "password", "enabled"),
-			s.cfg.AdminUsername, string(hash), 1); err != nil {
-			return err
-		}
-		if _, err := s.Exec(ctx, s.dialect.Rebind(s.dialect.InsertIgnore("roles", "username", "role")),
-			s.cfg.AdminUsername, "ROLE_ADMIN"); err != nil {
-			return err
-		}
-		if _, err := s.Exec(ctx, s.dialect.Rebind(s.dialect.InsertIgnore("permissions", "role", "resource", "action")),
-			"ROLE_ADMIN", "/*", "rw"); err != nil {
-			return err
-		}
-		log.Printf("[goacos] seeded admin user %q (initial password from ADMIN_PASSWORD)", s.cfg.AdminUsername)
 	}
 	if err := s.ValidateAuthState(ctx); err != nil {
 		return err
