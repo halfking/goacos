@@ -288,7 +288,7 @@ func Announce(ctx context.Context, cfg Config, listenAddr string, logger *slog.L
 	if !cfg.Enabled {
 		// Debug, not Warn. Off is the documented default, and warning about it
 		// on every boot is how a warning stops being read.
-		logger.Debug("goacos registration disabled", "env", EnvEnabled+" is not set")
+		logger.Debug("goacos registration disabled", "env_var", EnvEnabled+" is not set")
 		return noop
 	}
 
@@ -301,20 +301,20 @@ func Announce(ctx context.Context, cfg Config, listenAddr string, logger *slog.L
 	ip := strings.TrimSpace(cfg.IP)
 	if ip == "" {
 		logger.Warn("goacos registration skipped: no address peers can dial",
-			"service", name,
+			"registered_service", name,
 			"hint", "set "+EnvIP+"; loopback is not an option because every peer reads it as itself")
 		return noop
 	}
 	if net.ParseIP(ip) == nil {
 		logger.Warn("goacos registration skipped: configured address is not an IP",
-			"service", name, "ip", ip, "env", EnvIP)
+			"registered_service", name, "ip", ip, "env_var", EnvIP)
 		return noop
 	}
 
 	port := advertisedPortForTest(cfg.Port, listenAddr)
 	if port == 0 {
 		logger.Warn("goacos registration skipped: cannot determine the advertised port",
-			"service", name, "listen_addr", listenAddr,
+			"registered_service", name, "listen_addr", listenAddr,
 			"hint", "set "+EnvPort+" or pass the address the service listens on; "+
 				"broadcasting a wrong port publishes an endpoint that 502s the gateway")
 		return noop
@@ -353,20 +353,20 @@ func Announce(ctx context.Context, cfg Config, listenAddr string, logger *slog.L
 				// consequence (a routable-looking instance for a while longer)
 				// is otherwise invisible.
 				logger.Warn("goacos deregister failed; the instance will linger until "+
-					"the registry evicts it", "service", name, "error", stopErr)
+					"the registry evicts it", "registered_service", name, "error", stopErr)
 				return
 			}
-			logger.Info("deregistered from goacos", "service", name)
+			logger.Info("deregistered from goacos", "registered_service", name)
 		})
 	}
 
 	if err != nil {
 		logger.Warn("goacos registration failed; serving traffic anyway",
-			"service", name, "ip", ip, "port", port, "error", err)
+			"registered_service", name, "ip", ip, "port", port, "error", err)
 		return stop
 	}
 
-	logger.Info("registered with goacos", "service", name, "ip", ip, "port", port)
+	logger.Info("registered with goacos", "registered_service", name, "ip", ip, "port", port)
 
 	// Only now start the heartbeat. Starting it after a failed register would
 	// leave a client retrying forever against a registry that may never come

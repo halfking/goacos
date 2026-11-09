@@ -71,6 +71,8 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/halfking/goacos/internal/buildinfo"
+	"github.com/halfking/goacos/internal/logging"
 	"github.com/halfking/goacos/sdk/registry"
 )
 
@@ -122,14 +124,29 @@ func run() error {
 		return fmt.Errorf("unexpected argument %q; this command takes flags only", fs.Arg(0))
 	}
 
-	logger := slog.New(slog.NewTextHandler(os.Stderr, &slog.HandlerOptions{Level: slog.LevelInfo}))
+	// rule 71：registrar 也走规范层（此前是 slog 的 TextHandler ⇒ 纯文本）。
+	//
+	// 它的 service 字段是 goacos 自己的服务标识；而日志里的
+	// registered_service 是**被注册的那个服务**的名字（另一个实体）
+	// ⇒ 两者语义不同，必须分开，否则同一行里出现两个 service。
+	handler, err := logging.NewStandardHandler(os.Stdout, logging.Options{
+		Version:   buildinfo.UniqueVersion(),
+		Env:       os.Getenv("GOACOS_ENV"),
+		Level:     logging.LevelFromEnv(os.Getenv("GOACOS_LOG_LEVEL")),
+		AddSource: true,
+	})
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "goacos-registrar: standard log handler: %v\n", err)
+		return err
+	}
+	logger := slog.New(handler)
 
 	cfg, err := opt.registryConfig()
 	if err != nil {
 		return err
 	}
 	logger.Info("registering",
-		"service", cfg.ServiceName,
+		"registered_service", cfg.ServiceName,
 		"namespace", cfg.NamespaceID,
 		"group", cfg.GroupName,
 		"cluster", cfg.ClusterName,
@@ -156,7 +173,7 @@ func run() error {
 	if err := client.Register(ctx); err != nil {
 		return fmt.Errorf("register %s: %w", cfg.ServiceName, err)
 	}
-	logger.Info("registered", "service", cfg.ServiceName)
+	logger.Info("registered", "registered_service", cfg.ServiceName)
 
 	client.Start(ctx)
 
@@ -169,10 +186,10 @@ func run() error {
 	if err := client.Stop(shutdownCtx); err != nil {
 		// Not fatal enough to hide the fact that the instance is still there.
 		logger.Error("deregister failed; the instance will linger until the registry evicts it",
-			"service", cfg.ServiceName, "error", err)
+			"registered_service", cfg.ServiceName, "error", err)
 		return err
 	}
-	logger.Info("deregistered", "service", cfg.ServiceName)
+	logger.Info("deregistered", "registered_service", cfg.ServiceName)
 	return nil
 }
 

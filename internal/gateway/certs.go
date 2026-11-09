@@ -25,7 +25,7 @@ import (
 	"crypto/x509"
 	"encoding/pem"
 	"fmt"
-	"log"
+	"log/slog"
 	"math/rand"
 	"net/http"
 	"os"
@@ -133,7 +133,7 @@ func NewCertManager(ctx context.Context, cfg *config.Config, st *storage.Store, 
 	if err != nil {
 		// A missing account key directory is not fatal to the gateway: it
 		// serves what it has and reports why it cannot get more.
-		log.Printf("[gateway] acme disabled: %v", err)
+		slog.Warn("acme disabled", "error", err)
 		issuer = &acmeIssuer{}
 	}
 	m := &CertManager{
@@ -168,12 +168,12 @@ func acmeDirectory(cfg *config.Config) string {
 func (m *CertManager) buildDefaultCert() {
 	certPEM, keyPEM, _, err := newSelfSigned("goacos-gateway.invalid")
 	if err != nil {
-		log.Printf("[gateway] could not build default certificate: %v", err)
+		slog.Error("could not build default certificate", "error", err)
 		return
 	}
 	cert, err := tls.X509KeyPair([]byte(certPEM), []byte(keyPEM))
 	if err != nil {
-		log.Printf("[gateway] default certificate is unusable: %v", err)
+		slog.Error("default certificate is unusable", "error", err)
 		return
 	}
 	m.defaultCert = &cert
@@ -310,7 +310,7 @@ func (m *CertManager) reload(ctx context.Context) error {
 		row := rows[i]
 		cert, leaf, err := parseCertificate(row.CertPEM, row.KeyPEM)
 		if err != nil {
-			log.Printf("[gateway] certificate for %s is unusable (%s): %v", row.Domain, row.Source, err)
+			slog.Warn("certificate is unusable", "domain", row.Domain, "source", row.Source, "error", err)
 			continue
 		}
 		domain := storage.NormalizeDomain(row.Domain)
@@ -438,12 +438,12 @@ func (m *CertManager) scanDirectory(ctx context.Context) {
 		return
 	}
 	if _, err := os.Stat(m.cfg.GatewayCertDir); err != nil {
-		log.Printf("[gateway] certificate directory %s is unreadable, keeping current certificates: %v",
-			m.cfg.GatewayCertDir, err)
+		slog.Warn("certificate directory is unreadable, keeping current certificates",
+			"dir", m.cfg.GatewayCertDir, "error", err)
 		return
 	}
 	if err := m.reload(ctx); err != nil {
-		log.Printf("[gateway] certificate reload failed, keeping current cache: %v", err)
+		slog.Warn("certificate reload failed, keeping current cache", "error", err)
 	}
 }
 
@@ -465,11 +465,11 @@ func (m *CertManager) CertDirSources() []string {
 // reconcile looks at every served domain and decides what it needs.
 func (m *CertManager) reconcile(ctx context.Context, table *Table) {
 	if err := m.reload(ctx); err != nil {
-		log.Printf("[gateway] certificate reload failed, keeping current cache: %v", err)
+		slog.Warn("certificate reload failed, keeping current cache", "error", err)
 	}
 	if m.issuer.enabled && !m.accountReady() {
 		if err := m.issuer.registerAccount(ctx); err != nil {
-			log.Printf("[gateway] acme account unavailable: %v", err)
+			slog.Warn("acme account unavailable", "error", err)
 		} else {
 			m.markAccountReady()
 		}
@@ -493,8 +493,8 @@ func (m *CertManager) reconcile(ctx context.Context, table *Table) {
 			// disagree about expiry, would quietly take the domain down.
 			// Watching for it to expire is still this gateway's job.
 			if info.Expired() {
-				log.Printf("[gateway] WARNING: certificate for %s from %s expired on %s",
-					domain, info.FilePath, info.NotAfter.Format(time.RFC3339))
+				slog.Warn("certificate expired", "domain", domain, "file", info.FilePath,
+					"not_after", info.NotAfter.Format(time.RFC3339))
 			}
 		case info.Source == storage.CertSourceACME:
 			if m.needsRenewal(info) {
@@ -517,8 +517,8 @@ func (m *CertManager) reconcile(ctx context.Context, table *Table) {
 			// replacing an operator's certificate is worse than letting it
 			// expire visibly.
 			if info.Expired() {
-				log.Printf("[gateway] WARNING: manually uploaded certificate for %s expired on %s",
-					domain, info.NotAfter.Format(time.RFC3339))
+				slog.Warn("manually uploaded certificate expired", "domain", domain,
+					"not_after", info.NotAfter.Format(time.RFC3339))
 			}
 		}
 	}
@@ -576,18 +576,18 @@ func (m *CertManager) attemptIssuance(ctx context.Context, domain string) {
 
 	certPEM, keyPEM, err := m.issuer.issue(issueCtx, domain, m.setChallenge)
 	if err != nil {
-		log.Printf("[gateway] acme issuance failed for %s: %v", domain, err)
+		slog.Error("acme issuance failed", "domain", domain, "error", err)
 		m.recordFailure(domain)
 		_ = m.st.SetCertificateStatus(ctx, m.ns, domain, storage.CertStatusFailed, err.Error())
 		return
 	}
 	if err := m.storeIssued(ctx, domain, certPEM, keyPEM); err != nil {
-		log.Printf("[gateway] could not store issued certificate for %s: %v", domain, err)
+		slog.Error("could not store issued certificate", "domain", domain, "error", err)
 		m.recordFailure(domain)
 		return
 	}
 	m.recordSuccess(domain)
-	log.Printf("[gateway] issued certificate for %s", domain)
+	slog.Info("issued certificate", "domain", domain)
 }
 
 // storeIssued persists a freshly obtained certificate and puts it in the cache.
@@ -632,11 +632,11 @@ func (m *CertManager) mirrorToDir(domain, certPEM, keyPEM string) {
 		return
 	}
 	if err := writeCertPair(m.cfg.GatewayCertDir, domain, certPEM, keyPEM); err != nil {
-		log.Printf("[gateway] could not mirror certificate for %s into %s: %v",
-			domain, m.cfg.GatewayCertDir, err)
+		slog.Error("could not mirror certificate", "domain", domain,
+			"dir", m.cfg.GatewayCertDir, "error", err)
 		return
 	}
-	log.Printf("[gateway] mirrored certificate for %s to %s", domain, m.cfg.GatewayCertDir)
+	slog.Info("mirrored certificate", "domain", domain, "dir", m.cfg.GatewayCertDir)
 }
 
 // install publishes a certificate to the serving cache.
@@ -657,7 +657,7 @@ func (m *CertManager) install(domain string, cert *tls.Certificate, info CertInf
 func (m *CertManager) provisionFallback(ctx context.Context, domain string) {
 	certPEM, keyPEM, notAfter, err := generateSelfSigned(domain, m.cfg.SelfSignedDir)
 	if err != nil {
-		log.Printf("[gateway] could not generate fallback certificate for %s: %v", domain, err)
+		slog.Error("could not generate fallback certificate", "domain", domain, "error", err)
 		return
 	}
 	cert, leaf, err := parseCertificate(certPEM, keyPEM)
@@ -675,7 +675,7 @@ func (m *CertManager) provisionFallback(ctx context.Context, domain string) {
 		NotAfter:    notAfter,
 		Status:      storage.CertStatusActive,
 	}); err != nil {
-		log.Printf("[gateway] could not store fallback certificate for %s: %v", domain, err)
+		slog.Error("could not store fallback certificate", "domain", domain, "error", err)
 	}
 	m.install(domain, cert, CertInfo{
 		Domain:    domain,

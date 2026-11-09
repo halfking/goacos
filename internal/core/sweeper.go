@@ -2,7 +2,7 @@ package core
 
 import (
 	"context"
-	"log"
+	"log/slog"
 	"time"
 
 	"github.com/halfking/goacos/internal/config"
@@ -25,11 +25,11 @@ func StartNamingSweeper(ctx context.Context, st *storage.Store, cfg *config.Conf
 			}
 			unhealthy, deleted, err := st.SweepEphemeral(ctx, cfg.HeartbeatTimeoutMs, cfg.EphemeralDeleteAfterMs)
 			if err != nil {
-				log.Printf("[goacos] naming sweep error: %v", err)
+				slog.Error("naming sweep failed", "error", err)
 				continue
 			}
 			if unhealthy > 0 || deleted > 0 {
-				log.Printf("[goacos] naming sweep: marked unhealthy=%d deleted=%d", unhealthy, deleted)
+				slog.Info("naming sweep completed", "marked_unhealthy", unhealthy, "deleted", deleted)
 			}
 			// Persistent instances are never deleted for silence, but a silent
 			// one must stop being selected — otherwise a dead endpoint stays
@@ -37,11 +37,12 @@ func StartNamingSweeper(ctx context.Context, st *storage.Store, cfg *config.Conf
 			// have different meanings (ephemeral died, persistent went quiet).
 			stale, err := st.MarkStalePersistentUnhealthy(ctx, cfg.PersistentHeartbeatTimeoutMs)
 			if err != nil {
-				log.Printf("[goacos] persistent sweep error: %v", err)
+				slog.Error("persistent sweep failed", "error", err)
 				continue
 			}
 			if stale > 0 {
-				log.Printf("[goacos] persistent sweep: marked unhealthy=%d (still present, just out of rotation)", stale)
+				slog.Info("persistent sweep marked unhealthy", "marked_unhealthy", stale,
+					"note", "still present, just out of rotation")
 			}
 		}
 	}()

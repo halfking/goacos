@@ -32,7 +32,7 @@ import (
 	"bufio"
 	"context"
 	"fmt"
-	"log"
+	"log/slog"
 	"net"
 	"net/http"
 	"net/http/httputil"
@@ -373,13 +373,13 @@ func (g *Gateway) Forward(w http.ResponseWriter, r *http.Request, t *Target, pol
 			return
 		}
 		g.upstreamFailed.Add(1)
-		log.Printf("[gateway] upstream %s failed, trying another instance: %v", upstream, rec.failed)
+		slog.Warn("upstream failed, trying another instance", "upstream", upstream, "error", rec.failed)
 	}
 
 	if lastErr == nil {
 		lastErr = fmt.Errorf("no instance available for service %q", t.ServiceName)
 	}
-	log.Printf("[gateway] host=%s path=%s could not be served: %v", r.Host, r.URL.Path, lastErr)
+	slog.Error("request could not be served", "host", r.Host, "path", r.URL.Path, "error", lastErr)
 	writeGatewayError(w, http.StatusBadGateway, lastErr.Error())
 }
 

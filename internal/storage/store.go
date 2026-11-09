@@ -8,7 +8,7 @@ import (
 	"embed"
 	"encoding/hex"
 	"fmt"
-	"log"
+	"log/slog"
 	"strings"
 	"sync"
 	"sync/atomic"
@@ -210,10 +210,10 @@ func (s *Store) Seed(ctx context.Context) error {
 		// zero-valued config (no AdminUsername) poisoned a shared registry
 		// this way, and the next package to open it could no longer log in.
 		if s.cfg.AdminUsername == "" {
-			log.Printf("[goacos] ADMIN_USERNAME is empty: skipping the admin seed. " +
-				"No administrator account will exist in this database, and every " +
-				"admin-only operation will fail until ADMIN_USERNAME is set and the " +
-				"account is created.")
+			slog.Warn("ADMIN_USERNAME is empty: skipping the admin seed",
+				"impact", "no administrator account will exist in this database; "+
+					"every admin-only operation will fail until ADMIN_USERNAME is set "+
+					"and the account is created")
 		} else {
 			hash, err := bcrypt.GenerateFromPassword([]byte(s.cfg.AdminPassword), bcrypt.DefaultCost)
 			if err != nil {
@@ -233,7 +233,8 @@ func (s *Store) Seed(ctx context.Context) error {
 				"ROLE_ADMIN", "/*", "rw"); err != nil {
 				return err
 			}
-			log.Printf("[goacos] seeded admin user %q (initial password from ADMIN_PASSWORD)", s.cfg.AdminUsername)
+			slog.Info("seeded admin user", "username", s.cfg.AdminUsername,
+				"password_source", "ADMIN_PASSWORD")
 		}
 	}
 	if err := s.ValidateAuthState(ctx); err != nil {
