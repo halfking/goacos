@@ -4,7 +4,7 @@ package core
 import (
 	"context"
 	"github.com/halfking/goacos/internal/storage"
-	"log"
+	"log/slog"
 	"sync"
 	"time"
 )
@@ -36,7 +36,7 @@ func NewConfigHub(ctx context.Context, st *storage.Store) (*ConfigHub, error) {
 	for _, v := range entries {
 		h.md5s[ConfigKey{v.Tenant, v.Group, v.DataID}] = v.MD5
 	}
-	log.Printf("[goacos] database-active config hub preloaded %d entries", len(entries))
+	slog.Info("database-active config hub preloaded", "entries", len(entries))
 	return h, nil
 }
 func (h *ConfigHub) Md5(ctx context.Context, k ConfigKey) (string, error) {

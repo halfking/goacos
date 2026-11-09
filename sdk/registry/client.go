@@ -372,7 +372,7 @@ func NewClient(cfg Config, logger *slog.Logger) *Client {
 	}
 	c.logger.Info("nacos client configured",
 		"server", c.base,
-		"service", cfg.ServiceName,
+		"registered_service", cfg.ServiceName,
 		"namespace", cfg.NamespaceID,
 		"group", cfg.GroupName,
 		"cluster", cfg.ClusterName)
@@ -1422,7 +1422,7 @@ func (c *Client) Start(ctx context.Context) {
 	c.stopped = false
 
 	go c.run(runCtx, done)
-	c.logger.Info("nacos lifecycle started", "service", c.cfg.ServiceName)
+	c.logger.Info("nacos lifecycle started", "registered_service", c.cfg.ServiceName)
 }
 
 // run is the register/beat loop. It owns done and closes it on exit.
@@ -1451,7 +1451,7 @@ func (c *Client) run(ctx context.Context, done chan struct{}) {
 				consecutiveBeatFailures = 0
 				backoff = c.registerBackoffInitial
 				c.logger.Info("nacos instance registered",
-					"service", c.cfg.ServiceName,
+					"registered_service", c.cfg.ServiceName,
 					"ip", c.cfg.IP,
 					"port", c.cfg.Port,
 					"group", c.cfg.GroupName)
@@ -1459,7 +1459,7 @@ func (c *Client) run(ctx context.Context, done chan struct{}) {
 				return
 			} else {
 				c.logger.Warn("nacos registration failed; will retry",
-					"service", c.cfg.ServiceName,
+					"registered_service", c.cfg.ServiceName,
 					"attempt_in", backoff,
 					"error", err)
 				if !sleepCtx(ctx, backoff) {
@@ -1498,7 +1498,7 @@ func (c *Client) run(ctx context.Context, done chan struct{}) {
 			// beating is pointless forever until we register again. Re-register
 			// rather than assume our own state is still authoritative.
 			c.logger.Warn("nacos beat failing repeatedly; re-registering",
-				"service", c.cfg.ServiceName)
+				"registered_service", c.cfg.ServiceName)
 			registered = false
 			consecutiveBeatFailures = 0
 		}
@@ -1565,7 +1565,7 @@ func (c *Client) Stop(ctx context.Context) error {
 		}
 		return fmt.Errorf("nacos: deregister on shutdown: %w", err)
 	}
-	c.logger.Info("nacos instance deregistered", "service", c.cfg.ServiceName)
+	c.logger.Info("nacos instance deregistered", "registered_service", c.cfg.ServiceName)
 	return nil
 }
 
