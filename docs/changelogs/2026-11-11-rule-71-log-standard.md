@@ -10,7 +10,7 @@ goacos 是 Nacos 兼容的配置中心 / 服务发现 server，8848 端口。
 
 | 管线 | 位置 | 形态 | 级别 |
 |---|---|---|---|
-| 标准库 `log` | `internal/{app,api,core,gateway,storage}` 共 **40 处** | 纯文本 `2026/11/11 08:00:00 [goacos] ...` | **完全没有级别** |
+| 标准库 `log` | `internal/{app,api,core,gateway,storage}` 共 **41 处** | 纯文本 `2026/11/11 08:00:00 [goacos] ...` | **完全没有级别** |
 | `slog` TextHandler | `cmd/goacos-registrar` | 纯文本 `time=... level=INFO msg=...` | 大写 `INFO` |
 
 两条都是纯文本、都没有 rule 71 的 9 个必填字段，级别口径还不一致
@@ -18,15 +18,15 @@ goacos 是 Nacos 兼容的配置中心 / 服务发现 server，8848 端口。
 
 ## 本仓的工作量在「定级」
 
-标准库 `log` 没有级别概念 ⇒ 40 处 `log.Printf` **全部是同一优先级**。
+标准库 `log` 没有级别概念 ⇒ 41 处 `log.Printf` **全部是同一优先级**。
 接规范层之前必须**逐个按语义定级**，否则接上去之后
 「错误日志」和「日常巡检」在下游仍然分不开。
 
 | 级别 | 处数 | 判据 | 例子 |
 |---|---|---|---|
-| **INFO** | 19 | 正常流程的进展与结果 | 迁移进度、admin seed、监听就绪、访问日志、证书签发完成、命名清扫结果 |
-| **WARN** | 13 | 可恢复 / 降级 / 需要人看一眼但服务仍在正常服务 | 证书不可用、证书目录不可读、ACME 账户不可用、证书已过期、路由表刷新失败（**保留旧快照继续服务**）、上游实例失败改试下一个、证书目录不可写回落临时路径、`ADMIN_USERNAME` 为空跳过 seed |
-| **ERROR** | 8 | 真失败 | 命名/持久化清扫失败、监听器停止、ACME 签发失败、证书存储失败、代理无法提供服务 |
+| **INFO** | 15 | 正常流程的进展与结果 | 迁移进度、admin seed、监听就绪、访问日志、证书签发完成、命名清扫结果 |
+| **WARN** | 12 | 可恢复 / 降级 / 需要人看一眼但服务仍在正常服务 | 证书不可用、证书目录不可读、ACME 账户不可用、证书已过期、路由表刷新失败（**保留旧快照继续服务**）、上游实例失败改试下一个、证书目录不可写回落临时路径、`ADMIN_USERNAME` 为空跳过 seed |
+| **ERROR** | 14 | 真失败 | 命名/持久化清扫失败、监听器停止、ACME 签发失败、证书存储失败、代理无法提供服务 |
 
 其中两处判据值得单独记：
 
@@ -54,7 +54,7 @@ slog.Info("request served", "method", r.Method, "path", r.URL.Path,
 
 | 原键 | 新键 | 处数 | 位置 |
 |---|---|---|---|
-| `service` | `registered_service` | 16 | `cmd/goacos-registrar/main.go`（4）、`sdk/registry/service.go`（7）、`sdk/registry/client.go`（6）—— 表达**被注册的服务**名，与规范层的 `service`（goacos 自身标识）是两个实体 |
+| `service` | `registered_service` | 17 | `cmd/goacos-registrar/main.go`（4）、`sdk/registry/service.go`（7）、`sdk/registry/client.go`（6）—— 表达**被注册的服务**名，与规范层的 `service`（goacos 自身标识）是两个实体 |
 | `env` | `env_var` | 2 | `sdk/registry/service.go` —— `EnvIP` / `EnvEnabled` 是**环境变量名**，不是部署环境 |
 | `version` | `schema_version` | 2 | `internal/storage/migrate.go` —— 数据库 schema 版本，不是服务版本 |
 

@@ -14,7 +14,7 @@
   9 个必填字段（`timestamp`/`severity_text`/`severity_number`/`level`/`msg`/
   `service`/`version`/`env`/`instance_id`）、扁平单层、handler 层统一脱敏。
   - **两条管线合并成一条**：此前主服务全程用标准库 `log.Printf`（**纯文本**、
-    40 处、且**完全没有级别概念**），`cmd/goacos-registrar` 另用
+    41 处、且**完全没有级别概念**），`cmd/goacos-registrar` 另用
     `slog.NewTextHandler`（**纯文本**、且 `level` 大写）。
     现在两条都走规范层 ⇒ 同一个服务两种格式的问题消失。
   - **规范层必须早装**：`main.go` 的 `serve` 分支在 `config.FromEnv()` 之前先
@@ -25,14 +25,14 @@
   - 归档：`docs/changelogs/2026-11-11-rule-71-log-standard.md`。
 
 ### 🔧 Changed
-- **40 处 `log.Printf` 全部改走 `slog` 并按语义定级**（标准库 `log` 没有级别
+- **41 处 `log.Printf` 全部改走 `slog` 并按语义定级**（标准库 `log` 没有级别
   ⇒ 此前 40 行全是同一优先级，下游无法按级别过滤）：
-  - **INFO**（正常流程，19 处）：迁移进度、admin seed、监听就绪、访问日志、
+  - **INFO**（正常流程，15 处）：迁移进度、admin seed、监听就绪、访问日志、
     证书签发/镜像完成、命名清扫结果等。
-  - **WARN**（可恢复/降级，13 处）：证书不可用、证书目录不可读、ACME 账户不可用、
+  - **WARN**（可恢复/降级，12 处）：证书不可用、证书目录不可读、ACME 账户不可用、
     证书已过期、路由表刷新失败（保留旧快照）、上游实例失败改试下一个、
     证书目录不可写回落临时路径、`ADMIN_USERNAME` 为空跳过 seed 等。
-  - **ERROR**（真失败，8 处）：命名/持久化清扫失败、监听器停止、ACME 签发失败、
+  - **ERROR**（真失败，14 处）：命名/持久化清扫失败、监听器停止、ACME 签发失败、
     证书存储失败、代理无法提供服务等。
   - 访问日志从 `log.Printf("[goacos] %s %s %s", method, path, duration)` 改为
     `slog.Info("request served", "method", …, "path", …, "duration_ms", …)`
@@ -41,7 +41,7 @@
 - **保留名唯一**（rule 71 §4.4）：规范层**剥离**与 9 个必填字段 +
   `time`/`msg`/`message` 冲突的属性并记入 `reserved_name_conflicts` 诊断字段。
   业务侧同步改名：
-  - **`service` → `registered_service`**（16 处：`cmd/goacos-registrar/main.go` 4 处、
+  - **`service` → `registered_service`**（17 处：`cmd/goacos-registrar/main.go` 4 处、
     `sdk/registry/service.go` 7 处、`sdk/registry/client.go` 6 处）——
     这些 `service` 指的是**被注册的那个服务**的名字（另一个实体），
     与规范层的 `service`（goacos 自身服务标识）语义不同。
