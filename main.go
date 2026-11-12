@@ -6,8 +6,11 @@ import (
 	"fmt"
 	"io"
 	"log/slog"
+	"net"
 	"net/http"
 	"os"
+	"strconv"
+	"strings"
 	"time"
 
 	"github.com/halfking/goacos/internal/app"
@@ -76,12 +79,65 @@ func main() {
 	case "db":
 		dbcli.Run(args[1:])
 	case "healthcheck":
+		// --path/--port: probe templates used to hardcode the nacos-style
+		// <host>/nacos/actuator/health path, so non-nacos services reusing
+		// this binary (e.g. acc-go on 4101:/healthz) always probed a
+		// mismatched target. Flags override either half; the positional
+		// addr keeps working unchanged.
 		addr := "127.0.0.1:8848"
-		if len(args) > 1 {
-			addr = args[1]
+		path := "/nacos/actuator/health"
+		for i := 1; i < len(args); i++ {
+			arg := args[i]
+			name, value := arg, ""
+			hasValue := false
+			if strings.HasPrefix(arg, "--") {
+				if idx := strings.Index(arg, "="); idx >= 0 {
+					name, value, hasValue = arg[:idx], arg[idx+1:], true
+				}
+			}
+			switch name {
+			case "--path":
+				if !hasValue {
+					i++
+					if i >= len(args) {
+						fmt.Fprintln(os.Stderr, "goacos healthcheck: --path requires a value")
+						os.Exit(2)
+					}
+					value = args[i]
+				}
+				if value != "" && !strings.HasPrefix(value, "/") {
+					value = "/" + value
+				}
+				path = value
+			case "--port":
+				if !hasValue {
+					i++
+					if i >= len(args) {
+						fmt.Fprintln(os.Stderr, "goacos healthcheck: --port requires a value")
+						os.Exit(2)
+					}
+					value = args[i]
+				}
+				port, err := strconv.Atoi(value)
+				if err != nil || port < 1 || port > 65535 {
+					fmt.Fprintf(os.Stderr, "goacos healthcheck: invalid --port %q\n", value)
+					os.Exit(2)
+				}
+				host, _, splitErr := net.SplitHostPort(addr)
+				if splitErr != nil {
+					host = addr
+				}
+				addr = net.JoinHostPort(host, value)
+			default:
+				if strings.HasPrefix(arg, "--") {
+					fmt.Fprintf(os.Stderr, "goacos healthcheck: unknown flag %s\n", arg)
+					os.Exit(2)
+				}
+				addr = arg
+			}
 		}
 		client := &http.Client{Timeout: 3 * time.Second}
-		resp, err := client.Get("http://" + addr + "/nacos/actuator/health")
+		resp, err := client.Get("http://" + addr + path)
 		if err != nil {
 			fmt.Fprintln(os.Stderr, "unhealthy:", err)
 			os.Exit(1)
@@ -99,7 +155,11 @@ func main() {
 Usage:
   goacos serve                 run the server (default)
   goacos db discover|verify|init   MySQL/PostgreSQL discovery & initialization
-  goacos healthcheck [addr]    container health probe
+  goacos healthcheck [addr] [--path /p] [--port n]
+                               container health probe
+                               (addr default 127.0.0.1:8848, path default
+                               /nacos/actuator/health; override either for
+                               non-nacos-style services)
   goacos version               print version
 
 Server configuration is environment-driven (GOACOS_* or NACOS_* prefix):
