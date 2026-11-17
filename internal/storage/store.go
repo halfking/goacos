@@ -186,9 +186,26 @@ func truncate(s string, n int) string {
 	return s
 }
 
-// Seed inserts initial data (admin user, public namespace) when empty.
+// Seed inserts the public namespace and, for local authentication, the initial
+// administrator. Federated deployments must never bootstrap local credentials.
 // It is idempotent and safe to run on every boot and from multiple nodes.
 func (s *Store) Seed(ctx context.Context) error {
+	if s.cfg.AuthProvider != "casdoor" {
+		if err := s.seedLocalAuth(ctx); err != nil {
+			return err
+		}
+	}
+	// public namespace row so console tooling sees it (idempotent under races)
+	var m int
+	if err := s.QueryRow(ctx,
+		"SELECT COUNT(*) FROM tenant_info WHERE kp='1' AND tenant_id=''").Scan(&m); err == nil && m == 0 {
+		_, _ = s.Exec(ctx, s.dialect.InsertIgnore("tenant_info", "kp", "tenant_id", "namespace_name", "namespace_desc"),
+			"1", "", "public", "Public Namespace")
+	}
+	return nil
+}
+
+func (s *Store) seedLocalAuth(ctx context.Context) error {
 	var n int
 	if err := s.QueryRow(ctx, "SELECT COUNT(*) FROM users").Scan(&n); err != nil {
 		return err
@@ -214,17 +231,7 @@ func (s *Store) Seed(ctx context.Context) error {
 		}
 		log.Printf("[goacos] seeded admin user %q (initial password from ADMIN_PASSWORD)", s.cfg.AdminUsername)
 	}
-	if err := s.ValidateAuthState(ctx); err != nil {
-		return err
-	}
-	// public namespace row so console tooling sees it (idempotent under races)
-	var m int
-	if err := s.QueryRow(ctx,
-		"SELECT COUNT(*) FROM tenant_info WHERE kp='1' AND tenant_id=''").Scan(&m); err == nil && m == 0 {
-		_, _ = s.Exec(ctx, s.dialect.InsertIgnore("tenant_info", "kp", "tenant_id", "namespace_name", "namespace_desc"),
-			"1", "", "public", "Public Namespace")
-	}
-	return nil
+	return s.ValidateAuthState(ctx)
 }
 
 // Close closes the pool.

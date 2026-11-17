@@ -9,12 +9,13 @@ import (
 	"golang.org/x/crypto/bcrypt"
 )
 
-// ValidateAuthState blocks serving an auth-enabled database with an active
+// ValidateAuthState blocks serving a local-auth database with an active
 // administrator still using the old public seed credential. Bootstrap env
 // values do not replace existing password hashes; remediation needs an explicit
-// controlled rotation. Disabled accounts do not grant admission.
+// controlled rotation. Disabled accounts do not grant admission. Casdoor owns
+// federated principals, so local account state is not an admission dependency.
 func (s *Store) ValidateAuthState(ctx context.Context) error {
-	if !s.cfg.AuthEnabled {
+	if !s.cfg.AuthEnabled || s.cfg.AuthProvider == "casdoor" {
 		return nil
 	}
 	rows, err := s.Query(ctx, `SELECT DISTINCT u.password FROM users u

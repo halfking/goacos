@@ -249,3 +249,7 @@ make image-multi                     # 构建 linux/amd64 + linux/arm64 镜像
 
 - [alibaba/nacos](https://github.com/alibaba/nacos) — 原始 Java 实现
 - [heqingpan/rnacos](https://github.com/heqingpan/rnacos) — 独立的 Rust 重实现
+
+## Casdoor 统一认证与资源权限
+
+新增显式 `GOACOS_AUTH_PROVIDER=casdoor` 模式，逐请求 introspection、主体状态回读及 Casdoor enforce，禁止本地登录/token回退。首批覆盖配置发布和实例注册/心跳/发现的精确资源权限；默认local模式保持兼容。早期211私有Casdoor realm的签名密钥不同于公开issuer权威，其证据仅限私有域。2026-11-09另建的28450隔离中心已与原生公开auth.itestu.cn完成32项业务检查、39个资源作用域场景和144项模型矩阵验证；其他业务及生产入口尚未迁移。原生Casdoor的全限定模型响应组需显式设置 `GOACOS_CASDOOR_MODEL_RESPONSE_GROUP`，不自动接受两种形式；配置与边界见[接入说明](docs/casdoor-registry.md)。

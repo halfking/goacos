@@ -39,6 +39,8 @@ type Config struct {
 	MySQLUser     string
 	MySQLPassword string
 
+	AuthProvider    string
+	Casdoor         CasdoorConfig
 	AuthEnabled     bool
 	TokenSecret     string
 	TokenTTLSeconds int
@@ -258,6 +260,8 @@ func FromEnv() *Config {
 		MySQLDB:                getenv("MYSQL_DB", "goacos"),
 		MySQLUser:              getenv("MYSQL_USER", "root"),
 		MySQLPassword:          getenv("MYSQL_PASSWORD", ""),
+		AuthProvider:           getenv("AUTH_PROVIDER", "local"),
+		Casdoor:                casdoorFromEnv(),
 		AuthEnabled:            getenvBool("AUTH_ENABLED", false),
 		TokenSecret:            getenv("AUTH_TOKEN_SECRET", ""),
 		TokenTTLSeconds:        getenvInt("AUTH_TOKEN_TTL_SECONDS", 18000),
@@ -315,6 +319,15 @@ func FromEnv() *Config {
 func (c *Config) ValidateAuth() error {
 	if c == nil {
 		return fmt.Errorf("auth configuration: missing configuration")
+	}
+	if c.AuthProvider != "" && c.AuthProvider != "local" && c.AuthProvider != "casdoor" {
+		return fmt.Errorf("auth configuration: unknown provider")
+	}
+	if c.AuthProvider == "casdoor" {
+		if !c.AuthEnabled {
+			return fmt.Errorf("auth configuration: casdoor requires authentication enabled")
+		}
+		return c.Casdoor.Validate()
 	}
 	if !c.AuthEnabled {
 		return nil

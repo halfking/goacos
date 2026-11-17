@@ -2,6 +2,7 @@
 package api
 
 import (
+	"context"
 	"crypto/md5"
 	"encoding/hex"
 	"encoding/json"
@@ -16,12 +17,19 @@ import (
 	"github.com/halfking/goacos/internal/storage"
 )
 
+// ScopedAuthorizer resolves identity and evaluates one exact registry resource.
+// Implementations must never return a global administrator for this admission.
+type ScopedAuthorizer interface {
+	Authorize(context.Context, string, string, string) (*core.Claims, error)
+}
+
 // Server wires configuration, storage and core services into the HTTP API.
 type Server struct {
-	Cfg  *config.Config
-	ST   *storage.Store
-	Hub  *core.ConfigHub
-	Auth *core.AuthService
+	Cfg     *config.Config
+	ST      *storage.Store
+	Hub     *core.ConfigHub
+	Auth    *core.AuthService
+	Casdoor ScopedAuthorizer
 	// Gateway is nil when the data plane is disabled. Every gateway route
 	// checks it rather than assuming a running gateway, so the management API
 	// still works on a registry-only instance and can stage configuration

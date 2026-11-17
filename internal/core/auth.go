@@ -29,6 +29,9 @@ func NewAuthService(cfg *config.Config, st *storage.Store) *AuthService {
 
 // Login verifies credentials and returns (token, ttlSeconds, globalAdmin).
 func (a *AuthService) Login(ctx context.Context, username, password string) (string, int, bool, error) {
+	if a.cfg != nil && a.cfg.AuthProvider == "casdoor" {
+		return "", 0, false, ErrCasdoorDenied
+	}
 	if err := a.cfg.ValidateAuth(); err != nil {
 		return "", 0, false, err
 	}
@@ -77,6 +80,9 @@ type Claims struct {
 
 // Parse validates a token string and returns its claims.
 func (a *AuthService) Parse(tokenString string) (*Claims, error) {
+	if a.cfg != nil && a.cfg.AuthProvider == "casdoor" {
+		return nil, ErrCasdoorDenied
+	}
 	if err := a.cfg.ValidateAuth(); err != nil {
 		return nil, err
 	}

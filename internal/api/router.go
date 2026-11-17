@@ -161,7 +161,13 @@ func (s *Server) middleware(next http.Handler) http.Handler {
 				writeJSON(w, http.StatusInternalServerError, V1Result{Code: 500, Message: "internal error"})
 			}
 		}()
-		if s.Cfg.AuthEnabled && !isOpenPath(r.Method, r.URL.Path) {
+		if s.Cfg.AuthProvider == "casdoor" {
+			var ok bool
+			r, ok = s.admitCasdoor(w, r)
+			if !ok {
+				return
+			}
+		} else if s.Cfg.AuthEnabled && !isOpenPath(r.Method, r.URL.Path) {
 			claims, err := s.tokenFromRequest(r)
 			if err != nil {
 				writeJSON(w, http.StatusForbidden, map[string]any{

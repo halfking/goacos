@@ -25,6 +25,14 @@ func RunServer(cfg *config.Config) error {
 	if err := cfg.ValidateAuth(); err != nil {
 		return err
 	}
+	var casdoor api.ScopedAuthorizer
+	if cfg.AuthProvider == "casdoor" {
+		authorizer, err := core.NewCasdoorAuthorizer(cfg.Casdoor)
+		if err != nil {
+			return err
+		}
+		casdoor = authorizer
+	}
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer stop()
 
@@ -55,7 +63,7 @@ func RunServer(cfg *config.Config) error {
 		}
 	}
 
-	srv := &api.Server{Cfg: cfg, ST: st, Hub: hub, Auth: auth, Started: time.Now()}
+	srv := &api.Server{Cfg: cfg, ST: st, Hub: hub, Auth: auth, Casdoor: casdoor, Started: time.Now()}
 	if gw != nil {
 		srv.Gateway = gw
 	}
