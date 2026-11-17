@@ -15,6 +15,7 @@ const test = require('node:test');
 const assert = require('node:assert/strict');
 
 const {
+  Config,
   RegistryClient,
   RegistryError,
   StatusError,
@@ -432,4 +433,71 @@ test('a failing registry never rejects out of start/stop', async () => {
   client.start();
   await client.stop();
   assert.equal(client.registered, false);
+});
+
+// --- Config 的公开面 -------------------------------------------------------
+//
+// 2026-10-29 实测：`index.d.ts` 声明了 `export declare class Config`，运行时
+// 却**没有导出它** —— `require('goacos-registry').Config` 是 undefined，
+// `new Config(...)` 抛 "Config is not a constructor"。类型声明是一份没人校验
+// 的第二真相，而它在骗人。
+test('Config is exported and constructible', () => {
+  assert.equal(typeof Config, 'function');
+  const cfg = new Config({ service_name: 'svc', port: 8080 });
+  assert.equal(cfg.serviceName, 'svc');
+  assert.equal(cfg.port, 8080);
+});
+
+// 类型声明里写的选项名是 snake_case（与 Python 绑定一致），运行时读的却是
+// camelCase ⇒ 照着类型声明写的调用方**根本起不来**。两种拼写都得认。
+test('the documented snake_case option names work', () => {
+  const cfg = new Config({
+    service_name: 'svc',
+    port: 8080,
+    server_addr: 'http://reg:8848/',
+    namespace_id: 'ns1',
+    group_name: 'g1',
+    cluster_name: 'c1',
+    heartbeat_interval: 2500,
+    request_timeout: 9,
+  });
+  assert.equal(cfg.serviceName, 'svc');
+  assert.equal(cfg.serverAddr, 'http://reg:8848');
+  assert.equal(cfg.namespaceId, 'ns1');
+  assert.equal(cfg.groupName, 'g1');
+  assert.equal(cfg.clusterName, 'c1');
+  assert.equal(cfg.heartbeatIntervalMs, 2500);
+  assert.equal(cfg.requestTimeoutMs, 9);
+});
+
+test('the camelCase option names still work', () => {
+  const cfg = new Config({
+    serviceName: 'svc',
+    port: 8080,
+    serverAddr: 'http://reg:8848',
+    namespaceId: 'ns1',
+    groupName: 'g1',
+    clusterName: 'c1',
+    heartbeatIntervalMs: 2500,
+    requestTimeoutMs: 9,
+  });
+  assert.equal(cfg.serviceName, 'svc');
+  assert.equal(cfg.serverAddr, 'http://reg:8848');
+  assert.equal(cfg.namespaceId, 'ns1');
+  assert.equal(cfg.groupName, 'g1');
+  assert.equal(cfg.clusterName, 'c1');
+  assert.equal(cfg.heartbeatIntervalMs, 2500);
+  assert.equal(cfg.requestTimeoutMs, 9);
+});
+
+test('camelCase wins when both spellings are given', () => {
+  const cfg = new Config({ serviceName: 'camel', service_name: 'snake', port: 80 });
+  assert.equal(cfg.serviceName, 'camel');
+});
+
+test('a config built from snake_case is accepted by the client', () => {
+  // 这一条才是真正要保的东西：声明面说的那套拼法，端到端能跑起来。
+  const client = new RegistryClient({ service_name: 'svc', port: 8080 }, { fetch: async () => {} });
+  assert.equal(client.cfg.serviceName, 'svc');
+  assert.equal(client.cfg.port, 8080);
 });

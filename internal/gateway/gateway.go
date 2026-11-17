@@ -5,7 +5,7 @@ import (
 	"crypto/tls"
 	"errors"
 	"fmt"
-	"log"
+	"log/slog"
 	"net"
 	"net/http"
 	"strings"
@@ -136,10 +136,10 @@ func (g *Gateway) startHTTP(ctx context.Context) {
 	go func() {
 		defer g.wg.Done()
 		if err := srv.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
-			log.Printf("[gateway] HTTP listener stopped: %v", err)
+			slog.Error("HTTP listener stopped", "error", err)
 		}
 	}()
-	log.Printf("[gateway] http listening on %s (force_https=%v)", g.cfg.GatewayHTTPAddr, g.cfg.GatewayForceHTTPS)
+	slog.Info("http listening", "addr", g.cfg.GatewayHTTPAddr, "force_https", g.cfg.GatewayForceHTTPS)
 	_ = ctx
 }
 
@@ -167,10 +167,10 @@ func (g *Gateway) startHTTPS(ctx context.Context) {
 	go func() {
 		defer g.wg.Done()
 		if err := srv.ListenAndServeTLS("", ""); err != nil && !errors.Is(err, http.ErrServerClosed) {
-			log.Printf("[gateway] HTTPS listener stopped: %v", err)
+			slog.Error("HTTPS listener stopped", "error", err)
 		}
 	}()
-	log.Printf("[gateway] https listening on %s", g.cfg.GatewayHTTPSAddr)
+	slog.Info("https listening", "addr", g.cfg.GatewayHTTPSAddr)
 	_ = ctx
 }
 
@@ -360,7 +360,7 @@ func (g *Gateway) refresh(ctx context.Context) {
 	if err := g.table.Refresh(ctx, g.st, g.ns); err != nil {
 		// The previous snapshot stays in place. A transient database failure
 		// must not empty the routing table and take every domain offline.
-		log.Printf("[gateway] routing table refresh failed, keeping previous snapshot: %v", err)
+		slog.Warn("routing table refresh failed, keeping previous snapshot", "error", err)
 		return
 	}
 	g.pool.prune(liveAddresses(g.table))

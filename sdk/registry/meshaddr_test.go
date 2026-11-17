@@ -208,19 +208,27 @@ func TestDockerPoolExcludes17216(t *testing.T) {
 // The warning must fire for an auto-detected bridge address and stay silent
 // otherwise. Silent in three cases that matter: an explicit Config.IP (the
 // operator already decided), a normal LAN address, and a mesh address.
+//
+// The container context is PINNED per case, and that is a fix rather than a
+// detail. The first version of this test left the question to the machine it
+// ran on, so the verdict changed with the environment: "LAN does not warn" is
+// only true off a container, and the same test binary inside a CI container
+// answers a different question. A test whose result depends on where it runs
+// passes for the wrong reason.
 func TestContainerBridgeWarningFiresOnlyForAutoDetectedBridges(t *testing.T) {
 	cases := []struct {
-		name       string
-		cfgIP      string
-		detected   string
-		wantWarns  int
-		wantInText string
+		name        string
+		inContainer bool
+		cfgIP       string
+		detected    string
+		wantWarns   int
+		wantInText  string
 	}{
-		{"auto-detected container bridge warns", "", "172.18.0.5", 1, "cannot reach it"},
-		{"auto-detected LAN does not warn", "", "192.168.1.50", 0, ""},
-		{"auto-detected mesh does not warn", "", "100.106.67.198", 0, ""},
-		{"explicit choice is never second-guessed", "10.9.9.9", "172.18.0.5", 0, ""},
-		{"auto-detected 172.16 LAN does not warn", "", "172.16.2.210", 0, ""},
+		{"auto-detected container bridge warns", false, "", "172.18.0.5", 1, "cannot reach it"},
+		{"auto-detected LAN does not warn", false, "", "192.168.1.50", 0, ""},
+		{"auto-detected mesh does not warn", false, "", "100.106.67.198", 0, ""},
+		{"explicit choice is never second-guessed", false, "10.9.9.9", "172.18.0.5", 0, ""},
+		{"auto-detected 172.16 LAN does not warn", false, "", "172.16.2.210", 0, ""},
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
@@ -237,6 +245,8 @@ func TestContainerBridgeWarningFiresOnlyForAutoDetectedBridges(t *testing.T) {
 				fakeIface("eth0", true, tc.detected),
 			))
 			defer restore()
+			restoreNetns := swapContainerNetns(tc.inContainer)
+			defer restoreNetns()
 			c.AdvertiseIP()
 			c.AdvertiseIP() // once, not once per call
 
@@ -249,6 +259,150 @@ func TestContainerBridgeWarningFiresOnlyForAutoDetectedBridges(t *testing.T) {
 			}
 		})
 	}
+}
+
+// The bridge warning must also fire for the container networks that actually
+// run in production.
+//
+// 252 runs podman, and the app containers there sit in 10.89.x/24 — measured
+// 2026-10-24 on container redclaw-252-redclaw-api-1: eth0 10.89.11.126,
+// eth1 10.89.13.133, and /run/.containerenv present with no /.dockerenv.
+// Those addresses are outside Docker's default pool
+// (172.17.0.0/16-172.31.0.0/16), so the original range check said nothing
+// and the trap was silent on the one machine that runs the fleet.
+//
+// The addresses below are the measured ones, not invented ones.
+func TestContainerBridgeWarningFiresForPodmanCNIPoolAddresses(t *testing.T) {
+	cases := []struct {
+		name     string
+		detected string
+	}{
+		{"podman redclaw-local-stack network", "10.89.11.126"},
+		{"podman redclaw-252-ext network", "10.89.13.133"},
+		{"podman default CNI pool", "10.88.1.226"},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			var buf bytes.Buffer
+			c := &Client{cfg: Config{}, logger: slog.New(slog.NewTextHandler(&buf, nil))}
+			restore := swapIfaces(listOf(
+				fakeIface("lo", true, "127.0.0.1"),
+				fakeIface("eth0", true, tc.detected),
+			))
+			defer restore()
+			restoreNetns := swapContainerNetns(true)
+			defer restoreNetns()
+
+			c.AdvertiseIP()
+
+			if !strings.Contains(buf.String(), "cannot reach it") {
+				t.Errorf("no warning for container address %s; log=%q", tc.detected, buf.String())
+			}
+		})
+	}
+}
+
+// Outside a container the same private address is a perfectly good LAN
+// address: a laptop on 192.168.1.50 reaches its LAN peers with it, and so
+// does a host whose eth0 is 172.16.2.210. The warning is about a CONTAINER's
+// own bridge, so with no container context there is nothing to warn about —
+// warning on every private LAN address would be noise on every host.
+func TestContainerBridgeWarningSilentOutsideContainer(t *testing.T) {
+	for _, detected := range []string{"192.168.1.50", "10.89.11.126", "172.16.2.210"} {
+		t.Run(detected, func(t *testing.T) {
+			var buf bytes.Buffer
+			c := &Client{cfg: Config{}, logger: slog.New(slog.NewTextHandler(&buf, nil))}
+			restore := swapIfaces(listOf(
+				fakeIface("lo", true, "127.0.0.1"),
+				fakeIface("eth0", true, detected),
+			))
+			defer restore()
+			restoreNetns := swapContainerNetns(false)
+			defer restoreNetns()
+
+			c.AdvertiseIP()
+
+			if strings.Contains(buf.String(), "cannot reach it") {
+				t.Errorf("warned for %s outside a container; log=%q", detected, buf.String())
+			}
+		})
+	}
+}
+
+// A mesh address is dialable from outside the container's network, so it must
+// never trigger the warning — including from inside a container, where the
+// rest of the logic would otherwise treat any private address as a bridge.
+func TestContainerBridgeWarningNeverFiresForMeshAddress(t *testing.T) {
+	var buf bytes.Buffer
+	c := &Client{cfg: Config{}, logger: slog.New(slog.NewTextHandler(&buf, nil))}
+	restore := swapIfaces(listOf(
+		fakeIface("lo", true, "127.0.0.1"),
+		fakeIface("eth0", true, "100.106.190.139"),
+	))
+	defer restore()
+	restoreNetns := swapContainerNetns(true)
+	defer restoreNetns()
+
+	c.AdvertiseIP()
+
+	if strings.Contains(buf.String(), "cannot reach it") {
+		t.Errorf("warned for a mesh address; log=%q", buf.String())
+	}
+}
+
+// An explicit address is the operator's decision. The SDK does not
+// second-guess it, not even inside a container where the same address would
+// otherwise be flagged.
+func TestContainerBridgeWarningNeverFiresForExplicitIP(t *testing.T) {
+	var buf bytes.Buffer
+	c := &Client{cfg: Config{IP: "172.16.2.210"}, logger: slog.New(slog.NewTextHandler(&buf, nil))}
+	restore := swapIfaces(listOf(
+		fakeIface("lo", true, "127.0.0.1"),
+		fakeIface("eth0", true, "10.89.11.126"),
+	))
+	defer restore()
+	restoreNetns := swapContainerNetns(true)
+	defer restoreNetns()
+
+	c.AdvertiseIP()
+
+	if strings.Contains(buf.String(), "cannot reach it") {
+		t.Errorf("warned despite an explicit address; log=%q", buf.String())
+	}
+}
+
+// Docker's default pool must keep warning even when the container probe
+// says "not a container".
+//
+// The probe is a best-effort signal: a runtime that writes neither marker
+// file would switch the warning off entirely if the range check were made to
+// depend on it. The range check is the one that cannot silently stop
+// working, so it stays independent.
+func TestDockerPoolWarningSurvivesAFailedContainerProbe(t *testing.T) {
+	var buf bytes.Buffer
+	c := &Client{cfg: Config{}, logger: slog.New(slog.NewTextHandler(&buf, nil))}
+	restore := swapIfaces(listOf(
+		fakeIface("lo", true, "127.0.0.1"),
+		fakeIface("eth0", true, "172.18.0.5"),
+	))
+	defer restore()
+	restoreNetns := swapContainerNetns(false)
+	defer restoreNetns()
+
+	c.AdvertiseIP()
+
+	if !strings.Contains(buf.String(), "cannot reach it") {
+		t.Errorf("Docker pool address stopped warning when the container probe "+
+			"answered false; log=%q", buf.String())
+	}
+}
+
+// swapContainerNetns pins the container context for the duration of a test,
+// so the warning's verdict does not depend on the machine running it.
+func swapContainerNetns(inContainer bool) func() {
+	prev := containerNetns
+	containerNetns = func() bool { return inContainer }
+	return func() { containerNetns = prev }
 }
 
 // swapIfaces points the package-level interface lister at a fake for the

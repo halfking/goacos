@@ -112,6 +112,15 @@ func normalizeComponentSpec(c *componentSpec) error {
 	if c.Protocol == "" {
 		c.Protocol = storage.ProtocolHTTP
 	}
+	// The declared service port is checked at the write boundary, so a typo
+	// never reaches the routing table. It is the one piece of address-like
+	// data a component may carry, and it names a contract ("this service
+	// listens on 4175") rather than a host, so it does not pin an instance.
+	if raw, ok := c.Metadata[storage.ServicePortMetaKey]; ok {
+		if _, err := storage.ParseServicePort(raw); err != nil {
+			return err
+		}
+	}
 	if c.GroupName == "" {
 		c.GroupName = "DEFAULT_GROUP"
 	}

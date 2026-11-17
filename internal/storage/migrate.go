@@ -31,7 +31,7 @@ import (
 	"context"
 	"embed"
 	"fmt"
-	"log"
+	"log/slog"
 	"path"
 	"sort"
 	"strings"
@@ -146,10 +146,10 @@ func (s *Store) runMigrations(ctx context.Context) error {
 		}
 	}
 	if len(pending) == 0 {
-		log.Printf("[goacos] schema at version %d (no migration applied)", highest(applied))
+		slog.Info("schema is up to date", "schema_version", highest(applied))
 	} else {
-		log.Printf("[goacos] schema at version %d, applying %d migration(s): %s",
-			highest(applied), len(pending), describe(pending))
+		slog.Info("applying schema migrations", "from_version", highest(applied),
+			"count", len(pending), "migrations", describe(pending))
 	}
 
 	for _, m := range pending {
@@ -173,7 +173,7 @@ func (s *Store) runMigrations(ctx context.Context) error {
 			"INSERT INTO goacos_schema_version (version, name) VALUES (?, ?)", m.Version, m.Name); err != nil {
 			return fmt.Errorf("record migration %03d: %w", m.Version, err)
 		}
-		log.Printf("[goacos] applied schema migration %03d_%s", m.Version, m.Name)
+		slog.Info("applied schema migration", "schema_version", m.Version, "name", m.Name)
 	}
 	return nil
 }

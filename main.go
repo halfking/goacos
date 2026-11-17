@@ -5,14 +5,19 @@ package main
 import (
 	"fmt"
 	"io"
+	"log/slog"
+	"net"
 	"net/http"
 	"os"
+	"strconv"
+	"strings"
 	"time"
 
 	"github.com/halfking/goacos/internal/app"
 	"github.com/halfking/goacos/internal/buildinfo"
 	"github.com/halfking/goacos/internal/config"
 	"github.com/halfking/goacos/internal/dbcli"
+	"github.com/halfking/goacos/internal/logging"
 )
 
 // version and buildNumber are injected at build time via -ldflags
@@ -34,8 +39,38 @@ func main() {
 	}
 	switch args[0] {
 	case "serve":
-		if err := app.RunServer(config.FromEnv()); err != nil {
-			fmt.Fprintln(os.Stderr, "goacos:", err)
+		// rule 71 §4.5 ①：规范层必须装在**任何日志产生之前**。
+		//
+		// 下一个打日志的地方就是 app.RunServer（连库、迁移、seed 都会打）。
+		// 晚装 ⇒ 那几行是旧格式（标准库 log 纯文本）⇒ 同一进程两种格式。
+		//
+		// ⚠ 只装在 serve 分支：version / healthcheck / db 三个子命令各有
+		// **stdout 机器契约**（goacos version 打印版本、healthcheck 打印
+		// "healthy"、db 打印扫描结果），规范层写 stdout，装早了会污染它们。
+		if err := logging.InstallEarly(logging.Options{
+			Version:   buildinfo.UniqueVersion(),
+			AddSource: true,
+		}); err != nil {
+			// 规范层起不来不能拖垮服务——退回默认 handler，但要显式说出来。
+			fmt.Fprintf(os.Stderr, "logging: install early standard layer: %v\n", err)
+		}
+		cfg := config.FromEnv()
+		// rule 71：完整安装规范层。
+		//
+		// GOACOS_ENV 默认 local；GOACOS_LOG_LEVEL 默认 info。
+		if err := logging.Init(logging.Options{
+			Version:   buildinfo.UniqueVersion(),
+			Env:       os.Getenv("GOACOS_ENV"),
+			Level:     logging.LevelFromEnv(os.Getenv("GOACOS_LOG_LEVEL")),
+			AddSource: true,
+		}); err != nil {
+			fmt.Fprintf(os.Stderr, "logging: init standard layer: %v\n", err)
+		}
+		if err := app.RunServer(cfg); err != nil {
+			// rule 71：serve 路径的错误也要走规范层——
+			// fmt.Fprintln 到 stderr 是纯文本行，绕过规范层 ⇒ 不合规。
+			// （version / healthcheck / db 三个子命令的 stdout 契约不动。）
+			slog.Error("server exited", "error", err)
 			os.Exit(1)
 		}
 	case "version":
@@ -44,12 +79,65 @@ func main() {
 	case "db":
 		dbcli.Run(args[1:])
 	case "healthcheck":
+		// --path/--port: probe templates used to hardcode the nacos-style
+		// <host>/nacos/actuator/health path, so non-nacos services reusing
+		// this binary (e.g. acc-go on 4101:/healthz) always probed a
+		// mismatched target. Flags override either half; the positional
+		// addr keeps working unchanged.
 		addr := "127.0.0.1:8848"
-		if len(args) > 1 {
-			addr = args[1]
+		path := "/nacos/actuator/health"
+		for i := 1; i < len(args); i++ {
+			arg := args[i]
+			name, value := arg, ""
+			hasValue := false
+			if strings.HasPrefix(arg, "--") {
+				if idx := strings.Index(arg, "="); idx >= 0 {
+					name, value, hasValue = arg[:idx], arg[idx+1:], true
+				}
+			}
+			switch name {
+			case "--path":
+				if !hasValue {
+					i++
+					if i >= len(args) {
+						fmt.Fprintln(os.Stderr, "goacos healthcheck: --path requires a value")
+						os.Exit(2)
+					}
+					value = args[i]
+				}
+				if value != "" && !strings.HasPrefix(value, "/") {
+					value = "/" + value
+				}
+				path = value
+			case "--port":
+				if !hasValue {
+					i++
+					if i >= len(args) {
+						fmt.Fprintln(os.Stderr, "goacos healthcheck: --port requires a value")
+						os.Exit(2)
+					}
+					value = args[i]
+				}
+				port, err := strconv.Atoi(value)
+				if err != nil || port < 1 || port > 65535 {
+					fmt.Fprintf(os.Stderr, "goacos healthcheck: invalid --port %q\n", value)
+					os.Exit(2)
+				}
+				host, _, splitErr := net.SplitHostPort(addr)
+				if splitErr != nil {
+					host = addr
+				}
+				addr = net.JoinHostPort(host, value)
+			default:
+				if strings.HasPrefix(arg, "--") {
+					fmt.Fprintf(os.Stderr, "goacos healthcheck: unknown flag %s\n", arg)
+					os.Exit(2)
+				}
+				addr = arg
+			}
 		}
 		client := &http.Client{Timeout: 3 * time.Second}
-		resp, err := client.Get("http://" + addr + "/nacos/actuator/health")
+		resp, err := client.Get("http://" + addr + path)
 		if err != nil {
 			fmt.Fprintln(os.Stderr, "unhealthy:", err)
 			os.Exit(1)
@@ -67,7 +155,11 @@ func main() {
 Usage:
   goacos serve                 run the server (default)
   goacos db discover|verify|init   MySQL/PostgreSQL discovery & initialization
-  goacos healthcheck [addr]    container health probe
+  goacos healthcheck [addr] [--path /p] [--port n]
+                               container health probe
+                               (addr default 127.0.0.1:8848, path default
+                               /nacos/actuator/health; override either for
+                               non-nacos-style services)
   goacos version               print version
 
 Server configuration is environment-driven (GOACOS_* or NACOS_* prefix):

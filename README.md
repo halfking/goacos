@@ -86,7 +86,7 @@ make build && GOACOS_MYSQL_HOST=127.0.0.1 GOACOS_MYSQL_USER=root GOACOS_MYSQL_PA
 | `GOACOS_MYSQL_MAX_OPEN_CONNS` | `100` | database pool max open connections |
 | `GOACOS_MYSQL_MAX_IDLE_CONNS` | `20` | database pool max idle connections |
 | `GOACOS_MYSQL_CONN_MAX_LIFETIME_SECONDS` | `1800` | database connection max lifetime |
-| `GOACOS_LOG_LEVEL` | `info` | log level (read into the config; not consumed by the logger yet) |
+| `GOACOS_LOG_LEVEL` | `info` | log level (read into the config and consumed by the rule 71 standard logging layer in `internal/logging`) |
 
 `NACOS_*` is accepted as an alias prefix.
 

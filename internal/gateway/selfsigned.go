@@ -28,7 +28,7 @@ import (
 	"crypto/x509/pkix"
 	"encoding/pem"
 	"fmt"
-	"log"
+	"log/slog"
 	"math/big"
 	"net"
 	"os"
@@ -203,9 +203,10 @@ func writableDir(dir, name string) string {
 	if err := os.MkdirAll(dir, 0o700); err == nil {
 		return dir
 	} else {
-		log.Printf("[gateway] %s directory %s is not writable (%v); falling back to a temporary path. "+
-			"Set GOACOS_GATEWAY_CERT_DIR or the matching data-dir variable to a mounted volume to keep state across restarts.",
-			name, dir, err)
+		slog.Warn("certificate directory is not writable; falling back to a temporary path",
+			"name", name, "dir", dir, "error", err,
+			"hint", "set GOACOS_GATEWAY_CERT_DIR or the matching data-dir variable "+
+				"to a mounted volume to keep state across restarts")
 	}
 	fallback := filepath.Join(os.TempDir(), "goacos-"+name)
 	if err := os.MkdirAll(fallback, 0o700); err != nil {

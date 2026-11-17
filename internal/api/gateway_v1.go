@@ -56,7 +56,7 @@ func (s *Server) gatewayStatus(w http.ResponseWriter, r *http.Request) {
 		// whose /ui route points at a component with no instances is a
 		// different problem from a domain with no route at all.
 		for _, t := range g.TargetsFor(domain) {
-			entry[t.PathPrefix] = map[string]any{
+			prefix := map[string]any{
 				"app":       t.AppName,
 				"component": t.ComponentName,
 				"kind":      t.Kind,
@@ -75,6 +75,20 @@ func (s *Server) gatewayStatus(w http.ResponseWriter, r *http.Request) {
 				"healthy":       len(t.Instances),
 				"healthyIsFrom": "registry (registrar heartbeat), not a data-plane probe",
 			}
+			// A service whose name carries instances on more than one port has
+			// no pool to balance across. The instances are all healthy, so
+			// this is invisible in the count above and would otherwise be
+			// discovered only as a 503 in a customer's browser.
+			if t.PortConflict != nil {
+				prefix["portConflict"] = map[string]any{
+					"ports":    portList(t.PortConflict.Ports),
+					"declared": t.PortConflict.Declared,
+					"chosen":   t.PortConflict.Chosen,
+					"excluded": t.PortConflict.Excluded,
+					"reason":   t.PortConflict.Reason(),
+				}
+			}
+			entry[t.PathPrefix] = prefix
 		}
 		if info, ok := g.Certs().Info(domain); ok {
 			entry["tls"] = info.Source
@@ -526,6 +540,15 @@ func sortedAddresses(instances []gateway.Instance) []string {
 	out := make([]string, 0, len(instances))
 	for _, i := range instances {
 		out = append(out, i.IP+":"+strconv.Itoa(int(i.Port)))
+	}
+	return out
+}
+
+// portList renders the ports of a conflict for status output.
+func portList(ports []uint32) []string {
+	out := make([]string, 0, len(ports))
+	for _, p := range ports {
+		out = append(out, strconv.Itoa(int(p)))
 	}
 	return out
 }

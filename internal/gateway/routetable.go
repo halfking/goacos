@@ -60,6 +60,11 @@ type Target struct {
 	// overrides can be read on the request path without another lookup.
 	Metadata  map[string]string
 	Instances []storage.Instance
+	// PortConflict is set when the component's candidate set spanned more than
+	// one port. It is the reason a component can have healthy instances in the
+	// registry and still have no usable upstream, so it travels with the
+	// target instead of being logged and forgotten.
+	PortConflict *storage.PortConflict
 }
 
 // Certificate source aliases. The gateway reasons about provenance in its own
@@ -253,7 +258,8 @@ func (t *Table) Lookup(host, path string, metaFilters map[string]string) *Target
 			group = "DEFAULT_GROUP"
 		}
 		instances := t.services[serviceKey(group, comp.ServiceName)]
-		instances = selectForwardable(instances, comp.LBAlgorithm, comp.ClusterName)
+		instances, portConflict := selectForwardable(instances, comp.LBAlgorithm, comp.ClusterName,
+			storage.DeclaredServicePort(comp.Metadata))
 		if len(metaFilters) > 0 {
 			instances = filterInstancesByMeta(instances, metaFilters)
 		}
@@ -275,6 +281,7 @@ func (t *Table) Lookup(host, path string, metaFilters map[string]string) *Target
 			StripPrefix:   stripPrefixRequested(comp),
 			Metadata:      comp.Metadata,
 			Instances:     instances,
+			PortConflict:  portConflict,
 		}
 	}
 	return nil
@@ -332,6 +339,13 @@ func (t *Table) allTargets(domain string) []*Target {
 		if group == "" {
 			group = "DEFAULT_GROUP"
 		}
+		// The operator view keeps every eligible instance, stand-bys included:
+		// hiding them would make the fleet view lie exactly when someone is
+		// trying to work out why traffic is 502ing. The conflict is computed
+		// over the same set, because a service name carrying two ports is a
+		// registration defect whether or not one of them is standing by.
+		narrowed := selectInstances(t.services[serviceKey(group, comp.ServiceName)], comp.LBAlgorithm, comp.ClusterName)
+		_, portConflict := storage.SelectPortPool(narrowed, storage.DeclaredServicePort(comp.Metadata))
 		out = append(out, &Target{
 			Domain:        d,
 			PathPrefix:    e.PathPrefix,
@@ -348,7 +362,8 @@ func (t *Table) allTargets(domain string) []*Target {
 			HealthPath:    comp.HealthPath,
 			StripPrefix:   stripPrefixRequested(comp),
 			Metadata:      comp.Metadata,
-			Instances:     selectInstances(t.services[serviceKey(group, comp.ServiceName)], comp.LBAlgorithm, comp.ClusterName),
+			Instances:     narrowed,
+			PortConflict:  portConflict,
 		})
 	}
 	return out
@@ -443,14 +458,30 @@ func selectInstances(instances []storage.Instance, lb, cluster string) []storage
 }
 
 // selectForwardable is the **data plane** view of a component's instances: the
-// cluster/Enabled narrowing of selectInstances, then nginx's `backup` semantics.
+// cluster/Enabled narrowing of selectInstances, then nginx's `backup`
+// semantics, then the single-port narrowing.
 //
-// The two are kept separate on purpose. selectInstances is also what feeds the
-// operator listing (`/goacos/v1/routes`), and an operator debugging a service
-// must still see its backup instances — hiding them would make the fleet view
-// lie exactly when someone is trying to work out why traffic is 502ing.
-func selectForwardable(instances []storage.Instance, lb, cluster string) []storage.Instance {
-	return dropBackupsWhenPrimaryExists(selectInstances(instances, lb, cluster))
+// The two views are kept separate on purpose. selectInstances is also what
+// feeds the operator listing (`/goacos/v1/routes`), and an operator debugging
+// a service must still see its backup instances — hiding them would make the
+// fleet view lie exactly when someone is trying to work out why traffic is
+// 502ing.
+//
+// The conflict it returns is judged over every eligible instance, stand-bys
+// included: a service name carrying two ports is a registration defect
+// whether or not one of those ports is currently standing by.
+func selectForwardable(instances []storage.Instance, lb, cluster string, declaredPort uint32) ([]storage.Instance, *storage.PortConflict) {
+	narrowed := selectInstances(instances, lb, cluster)
+	_, conflict := storage.SelectPortPool(narrowed, declaredPort)
+
+	forwardable := dropBackupsWhenPrimaryExists(narrowed)
+	// The pool is judged over the instances that would actually be dialled.
+	// Without a declared port every one of them stays eligible, each at its
+	// own port — which is what the naming model means. With a declared port
+	// only that port's instances are, and a component whose service has none
+	// is left with no upstream rather than a neighbouring service's.
+	pool, _ := storage.SelectPortPool(forwardable, declaredPort)
+	return pool, conflict
 }
 
 // roleBackup is the metadata.role value the reconcile writes for a `!` row in

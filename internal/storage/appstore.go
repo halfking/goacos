@@ -332,6 +332,11 @@ type ResolvedRoute struct {
 	ServiceName   string
 	GroupName     string
 	Instances     []Instance
+	// PortConflict is set when the component's candidate set spanned more than
+	// one port, which means the instance list above is either narrowed to the
+	// declared port or empty. A caller that ignores it will route to whatever
+	// it finds; a caller that reads it can tell the operator what is wrong.
+	PortConflict *PortConflict
 }
 
 // ResolveRoute finds the route matching a domain and path, loads its component,
@@ -378,6 +383,10 @@ func (s *Store) ResolveRoute(ctx context.Context, ns, domain, path string, metaF
 	if len(metaFilters) > 0 {
 		instances = filterInstancesByMeta(instances, metaFilters)
 	}
+	// The candidate set is narrowed to one port before it is ordered, so a
+	// component whose name spans two services can never be balanced across
+	// both. See portpool.go for why failing closed is the deliberate choice.
+	instances, portConflict := SelectPortPool(instances, DeclaredServicePort(comp.Metadata))
 	sortInstances(instances, comp.LBAlgorithm)
 	return &ResolvedRoute{
 		NamespaceId:   ns,
@@ -396,6 +405,7 @@ func (s *Store) ResolveRoute(ctx context.Context, ns, domain, path string, metaF
 		ServiceName:   comp.ServiceName,
 		GroupName:     group,
 		Instances:     instances,
+		PortConflict:  portConflict,
 	}, nil
 }
 

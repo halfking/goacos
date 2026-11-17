@@ -82,7 +82,7 @@ make build && GOACOS_MYSQL_HOST=127.0.0.1 GOACOS_MYSQL_USER=root GOACOS_MYSQL_PA
 | `GOACOS_MYSQL_MAX_OPEN_CONNS` | `100` | 数据库连接池最大连接数 |
 | `GOACOS_MYSQL_MAX_IDLE_CONNS` | `20` | 数据库连接池最大空闲连接数 |
 | `GOACOS_MYSQL_CONN_MAX_LIFETIME_SECONDS` | `1800` | 数据库连接最长存活时间(秒) |
-| `GOACOS_LOG_LEVEL` | `info` | 日志级别(已读入配置,尚未被日志初始化消费) |
+| `GOACOS_LOG_LEVEL` | `info` | 日志级别(已读入配置,并由 rule 71 规范层 `internal/logging` 消费) |
 
 `NACOS_*` 前缀同样有效。
 

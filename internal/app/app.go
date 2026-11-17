@@ -4,7 +4,7 @@ package app
 import (
 	"context"
 	"errors"
-	"log"
+	"log/slog"
 	"net/http"
 	"os"
 	"os/signal"
@@ -43,7 +43,7 @@ func RunServer(cfg *config.Config) error {
 		return err
 	}
 	defer st.Close()
-	log.Printf("[goacos] attached to %s %s db=%s", st.Dialect(), cfg.MySQLAddr(), cfg.MySQLDB)
+	slog.Info("attached to database", "dialect", st.Dialect(), "addr", cfg.MySQLAddr(), "db", cfg.MySQLDB)
 
 	hub, err := core.NewConfigHub(openCtx, st)
 	if err != nil {
@@ -72,7 +72,7 @@ func RunServer(cfg *config.Config) error {
 	if gw != nil {
 		go func() {
 			if err := gw.Run(ctx); err != nil {
-				log.Printf("[gateway] stopped: %v", err)
+				slog.Error("gateway stopped", "error", err)
 			}
 		}()
 	}
@@ -89,10 +89,11 @@ func RunServer(cfg *config.Config) error {
 		defer cancel()
 		_ = httpSrv.Shutdown(shutdownCtx)
 	}()
-	log.Printf("[goacos] listening on %s (auth=%v, console=/nacos/index.html)", cfg.Addr(), cfg.AuthEnabled)
+	slog.Info("listening", "addr", cfg.Addr(), "auth_enabled", cfg.AuthEnabled,
+		"console", "/nacos/index.html")
 	if err := httpSrv.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
 		return err
 	}
-	log.Printf("[goacos] shutdown complete")
+	slog.Info("shutdown complete")
 	return nil
 }

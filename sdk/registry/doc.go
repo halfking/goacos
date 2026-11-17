@@ -97,6 +97,27 @@
 // behaviour so a future tightening cannot land without someone noticing the two
 // entry points disagree.
 //
+// # How a service authenticates to the registry
+//
+// Two ways, and they are not interchangeable:
+//
+//	GOACOS_USERNAME=… GOACOS_PASSWORD=…   log in, get a token, refresh it before it expires
+//	GOACOS_TOKEN=…                         a token somebody issued ahead of time
+//
+// The second exists because a fleet where every service registers itself
+// cannot run on shared passwords: one leaked password is a fleet-wide
+// credential, and rotating it means touching every service at once. A token
+// can be issued per service and revoked per service.
+//
+// The token wins when both are present (Client.ensureToken), and a
+// caller-supplied token is never cached, never refreshed and never cleared —
+// the client cannot mint a replacement for it. If the registry rejects it the
+// service fails loudly instead of silently falling back to a login it may not
+// be allowed to perform.
+//
+// Same spelling as the other two clients of the same registry (acc-go and the
+// myvpn registrar sidecar): one name for one meaning.
+//
 // # Why discovery fails fast
 //
 // The well-known candidates include Docker-network DNS names that frequently do

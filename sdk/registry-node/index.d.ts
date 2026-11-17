@@ -26,6 +26,18 @@ export interface ConfigOptions {
   token?: string;
   heartbeat_interval?: number;
   request_timeout?: number;
+  /**
+   * camelCase aliases. The runtime has always read these; the snake_case
+   * names above are the ones this declaration documents (they match the
+   * Python binding). Both are accepted, camelCase wins when both are given.
+   */
+  serviceName?: string;
+  serverAddr?: string;
+  namespaceId?: string;
+  groupName?: string;
+  clusterName?: string;
+  heartbeatIntervalMs?: number;
+  requestTimeoutMs?: number;
 }
 
 export interface Instance {
@@ -50,6 +62,22 @@ export declare class StatusError extends RegistryError {
 
 export declare class Config {
   constructor(options: ConfigOptions);
+  /** The normalized values the client itself uses (camelCase). */
+  serviceName: string;
+  port: number;
+  enabled: boolean;
+  serverAddr: string;
+  namespaceId: string;
+  groupName: string;
+  clusterName: string;
+  ip: string;
+  weight: number;
+  metadata: RegistryMetadata;
+  username: string;
+  password: string;
+  token: string;
+  heartbeatIntervalMs: number;
+  requestTimeoutMs: number;
 }
 
 export declare class RegistryClient {

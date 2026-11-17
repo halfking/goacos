@@ -3,7 +3,7 @@ package api
 import (
 	"context"
 	"errors"
-	"log"
+	"log/slog"
 	"net/http"
 	"strings"
 	"time"
@@ -157,7 +157,8 @@ func (s *Server) middleware(next http.Handler) http.Handler {
 		start := time.Now()
 		defer func() {
 			if rec := recover(); rec != nil {
-				log.Printf("[goacos] panic %s %s: %v", r.Method, r.URL.Path, rec)
+				// 被 recover 的 panic：进程未退出 ⇒ 按 rule 71 §4.1 归 ERROR 而非 FATAL。
+				slog.Error("panic recovered", "method", r.Method, "path", r.URL.Path, "panic", rec)
 				writeJSON(w, http.StatusInternalServerError, V1Result{Code: 500, Message: "internal error"})
 			}
 		}()
@@ -197,7 +198,8 @@ func (s *Server) middleware(next http.Handler) http.Handler {
 		} else {
 			next.ServeHTTP(w, r)
 		}
-		log.Printf("[goacos] %s %s %s", r.Method, r.URL.Path, time.Since(start).Round(time.Millisecond))
+		slog.Info("request served", "method", r.Method, "path", r.URL.Path,
+			"duration_ms", time.Since(start).Milliseconds())
 	})
 }
 
