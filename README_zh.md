@@ -23,7 +23,7 @@
 
 - **配置中心** — 发布/查询/删除、命名空间、分组、标签、变更历史+回滚、**长轮询监听**(v1 `\x02/\x01` 协议与 v2 JSON)、MD5 变更检测(进程内 hub,不冲击数据库)。
 - **服务发现** — 临时/持久实例注册注销、集群、权重、元数据、心跳(Nacos 同款 15 秒不健康 / 30 秒摘除生命周期)、实例与服务查询(v1 `ServiceInfo` 形状 + v2 信封)。
-- **认证** — JWT access token(HS256,要求 issuer 为 `goacos` 且带过期时间)、用户/角色、管理接口仅限管理员、可选开启(`GOACOS_AUTH_ENABLED=true`);按资源的细粒度权限尚未实现。
+- **认证** — JWT access token(HS256,要求 issuer 为 `goacos` 且带过期时间)、用户/角色、管理接口仅限管理员、可选开启(`GOACOS_AUTH_ENABLED=true`);按资源的细粒度权限在 **local** 提供方下尚未实现(显式 `GOACOS_AUTH_PROVIDER=casdoor` 模式已实现注册面精确资源权限,见[接入说明](docs/casdoor-registry.md))。
 - **控制台** — 内嵌单页 UI(`/nacos/index.html`):服务/实例、配置编辑器、命名空间、用户。
 - **双引擎存储** — **MySQL** 与 **PostgreSQL** 均为一等公民。每个引擎各内嵌一份 schema(配置表与 Nacos 官方布局一致);统一方言层自动切换。
 - **数据库自动发现** — `goacos db discover` 自动查找可达的数据库服务器:优先 Docker 容器(直接读取容器 env 中的 `MYSQL_ROOT_PASSWORD` / `POSTGRES_PASSWORD`),其次 localhost(MySQL :3306、PostgreSQL :5432),可选子网扫描(`--cidr`);`--db-type` 可限定引擎。
