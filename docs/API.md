@@ -46,7 +46,7 @@ matrix. "v1" = `/nacos/v1/...` (legacy REST), "v2" = `/nacos/v2/...`
 | Roles | `GET/POST/DELETE /v1/auth/roles` | ✅ |
 
 Token sources: `?accessToken=`, `accessToken` cookie, or `Authorization: Bearer`.
-JWT HS256 with an explicit private `GOACOS_AUTH_TOKEN_SECRET`, required issuer `goacos` and expiry. Protected requests reload enabled users and live roles from storage. All writes require global admin, including GET/HEAD v1 heartbeat; POST config listeners are read exceptions. Normal-user self password change and per-resource permissions are not implemented. Existing reads are authenticated without namespace/service isolation. Auth-disabled compatibility mode is unsecured. No commit-atomic revocation or HA guarantee is implied.
+JWT HS256 with an explicit private `GOACOS_AUTH_TOKEN_SECRET`, required issuer `goacos` and expiry. Protected requests reload enabled users and live roles from storage. All writes require global admin, including GET/HEAD v1 heartbeat; POST config listeners are read exceptions. Normal-user self password change and per-resource permissions are not implemented in the default **local** provider (the explicit `GOACOS_AUTH_PROVIDER=casdoor` mode enforces exact registry resource authorization — see [Casdoor registry authentication](casdoor-registry.md)). Existing reads are authenticated without namespace/service isolation. Auth-disabled compatibility mode is unsecured. No commit-atomic revocation or HA guarantee is implied.
 
 ## Console / ops
 
